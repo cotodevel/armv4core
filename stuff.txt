@@ -1,0 +1,383 @@
+08-05-2015
+works wonder:
+/*
+	
+SHARED_IPC->arm7cmd_inst[0] = (Tarm7commander*)0xc070ffff;
+	
+SHARED_IPC->arm7cmd_inst[1] = (Tarm7commander*)0xc171ffff;
+	
+SHARED_IPC->arm7cmd_inst[2] = (Tarm7commander*)0xc272ffff;
+	
+*/
+	
+
+
+
+27-02-2015
+0x08000610 = dma3 src address (0x08000240)
+0x08000612 = dma3 dest address (0x03001c00)
+0x08000614 = ldr r1,=0x84000200 
+0x08000616 = /DMA3 WORD CNT (0x200 bytes)
+0x08000618 = ldr r0, [r0[0x04000024],#0x8] /READ WORD CNT
+
+---
+0x080005f8 = push r4,r5,lr / 0x03007e3c
+0x08000648 = pop r0 [0x0800039d]
+!!!!!!!!!!!!!
+cpu_updateregs -> update IO mem
+cpuwrite/reads -> read/write IO mem
+process_registers -> cpu_calculate -> issue threads under lcd time
+
+
+0x081e2fe2 bad bl
+
+thumb:
+[patched instruction]
+bugged code: branch with link 20th bit not properly masked
+
+--
+15:mar
+fixed offsetting desde buffer local is OK
+
+auto-offseting from buffer local is broken
+
+code to detect local or stream is OK
+
+15:mar latest
+
+so far replacing slow fastldr/str with hw cpu regs (5.9 OK)
+--
+
+18:mar
+-fixed gbavirtreg_cpu(replaced)
+-added gbareads from ram stream (sectorsize buffer) if linear
+-some bugfixes related to incorrect values read/stored on some opcodes
+-bug: push->pop is again not restoring the stored values. fixed
+
+--
+20 mar:
+-0x081e5538 branch to #Imm label requires fix
+//
+
+21 mar:0x081e5580: b 081e554a (broken) jumps to other areas
+
+--
+
+30 mar: BL partially broken
+
+0X081e30a8: FIX gba map 0x04000006 reads.
+
+-
+
+31 mar: BL strikes again! we will defeat this!
+
+0x081e315e (0xf7ffff6d)
+
+
+-
+screen res:
+240x160 pixels (2.9 inch TFT color LCD display)
+
+Horizontal Dimensions
+The drawing time for each dot is 4 CPU cycles.
+  Visible     240 dots,  57.221 us,    960 cycles - 78% of h-time
+  H-Blanking   68 dots,  16.212 us,    272 cycles - 22% of h-time
+  Total       308 dots,  73.433 us,   1232 cycles - ca. 13.620 kHz
+VRAM and Palette RAM may be accessed during H-Blanking. OAM can accessed only if "H-Blank Interval Free" bit in DISPCNT register is set.
+
+Vertical Dimensions
+  Visible (*) 160 lines, 11.749 ms, 197120 cycles - 70% of v-time
+  V-Blanking   68 lines,  4.994 ms,  83776 cycles - 30% of v-time
+  Total       228 lines, 16.743 ms, 280896 cycles - ca. 59.737 Hz
+All VRAM, OAM, and Palette RAM may be accessed during V-Blanking.
+Note that no H-Blank interrupts are generated within V-Blank period.
+
+System Clock
+The system clock is 16.78MHz (16*1024*1024 Hz), one cycle is thus approx. 59.59ns.
+
+(*) Even though vertical screen size is 160 lines, the upper 8 lines are not <really> visible, these lines are covered by a shadow when holding the GBA orientated towards a light source, the lines are effectively black - and should not be used to display important information.
+
+-
+
+4 april:
+
+
+@debug: 0x081e73f8 fucked up PC: fixed (Word address aligned)
+
+0x081e30aa [wait for vcount line 0x9f] <- for debugging so far OK
+
+
+<- 0x080003a0 OK so far:
+
+5 dma
+
+
+callback @ 0x081e529c does not meet expected values stored @ 0x03007dfd
+
+
+5 april:
+
+implement GPIO gba (rtc)
+-
+
+
+
+arm 7:
+
+struct minigsf should be static (stack), as it's one way (not going to allocate more than that, and will be reused)
+DO NOT disable fifo_thread(); otherwise passing data through CPU's will cause a stall on ARM7
+
+
+arm9:
+
+struct GSF ARM9 (future GSF holder for both ARM7) MUST NOT be static as it needs to be on heap,
+or compiler will wrongly assign it to stack with no align or wrongly align.
+
+on decompressGSF, all variables will be static, as they must reside in a static location in RAM (and not stack)
+so they keep length and skip compiler optimizations.
+
+Makefile ARM9:
+
+added: 
+LIBS	:=	-lnds9 -lz //put libz.a
+
+copiar libz.a de arm9/source a:
+C:\devkitPro\libnds\lib
+
+arm9.c:
+#include ".\zlib\zutil.h"
+
+add zlib folder so zlib variables work on gsf and linker finds the required compress/decompress functions 
+
+now:
+
+revisar uncompress (linkear desde zlib ya compilada (.o/.d))
+
+agregar VBA GBA.CPP functions
+
+agregar disk functions (leer desde sd controller)
+
+agregar Protection Unit support (map physical addresses)
+
+extern macro should be included in proto .h, then macro included
+in C counterpart. Then you include proto (.h) in your source code.
+
+^^ this without static inline statement (that is up to the macro)
+
+--
+
+background.h <<-- ex: BgSize_B8_256x256, has DS videomodes for setting
+then in video controller
+
+fix:
+
+
+  Bit   Expl.
+  0-1   BG Priority           (0-3, 0=Highest)
+  2-3   Character Base Block  (0-3, in units of 16 KBytes) (=BG Tile Data)
+  4-5   Not used (must be zero)
+  6     Mosaic                (0=Disable, 1=Enable)
+  7     Colors/Palettes       (0=16/16, 1=256/1)
+  8-12  Screen Base Block     (0-31, in units of 2 KBytes) (=BG Map Data)
+  13    Display Area Overflow (0=Transparent, 1=Wraparound; BG2CNT/BG3CNT only)
+  14-15 Screen Size (0-3)
+Internal Screen Size (dots) and size of BG Map (bytes):
+  Value  Text Mode      Rotation/Scaling Mode
+  0      256x256 (2K)   128x128   (256 bytes)
+  1      512x256 (4K)   256x256   (1K)
+  2      256x512 (4K)   512x512   (4K)
+  3      512x512 (8K)   1024x1024 (16K)
+
+--
+cpu_s.s <<-- includes PU calls (getCP15cnt)
+sbrk(sizetoallocforos) allocs up to 0x23f4000
+0xbfff reserved.
+
+
+BUILD		:=	build
+SOURCES		:=	source	\
+				source/zlib	\
+				source/zlib/zip \
+				source/disk \
+				source/util \
+				source/pu 
+				
+				
+INCLUDES	:=	include 
+-------------------------
+
+//original backup cpumode
+if( ((cpsrvirt&0x1f) == (0x10)) || ((cpsrvirt&0x1f) == (0x1f)) ){ //detect usr/sys (0x10 || 0x1f)
+				spsr_last=spsr_usr=cpsrvirt;
+				
+				//gbastckadr_usr=gbastckmodeadr_curr=; //not required this is to know base stack usr/sys
+				gbastckfp_usr=gbastckfpadr_curr;
+				gbavirtreg_r13usr[0x0]=gbavirtreg_cpu[0xd]; //user/sys is the same stacks
+				gbavirtreg_r14usr[0x0]=gbavirtreg_cpu[0xe];
+				#ifdef DEBUGEMU
+					iprintf("stacks backup usr_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13usr[0x0]);
+				#endif
+				//iprintf("before nuked SP usr:%x",(unsigned int)gbavirtreg_r13usr[0x0]);
+				
+			}
+			else if((cpsrvirt&0x1f)==0x11){
+				spsr_last=spsr_fiq=cpsrvirt;
+				gbastckfp_fiq=gbastckfpadr_curr;
+				gbavirtreg_r13fiq[0x0]=gbavirtreg_cpu[0xd];
+				gbavirtreg_r14fiq[0x0]=gbavirtreg_cpu[0xe];
+				
+				//save
+				//5 extra regs r8-r12 for fiq
+				gbavirtreg_fiq[0x0] = gbavirtreg_cpu[0x0 + 8];
+				gbavirtreg_fiq[0x1] = gbavirtreg_cpu[0x1 + 8];
+				gbavirtreg_fiq[0x2] = gbavirtreg_cpu[0x2 + 8];
+				gbavirtreg_fiq[0x3] = gbavirtreg_cpu[0x3 + 8];
+				gbavirtreg_fiq[0x4] = gbavirtreg_cpu[0x4 + 8];
+				
+				//restore 5 extra reg subset for other modes
+				gbavirtreg_cpu[0x0 + 8]=gbavirtreg_cpubup[0x0];
+				gbavirtreg_cpu[0x1 + 8]=gbavirtreg_cpubup[0x1];
+				gbavirtreg_cpu[0x2 + 8]=gbavirtreg_cpubup[0x2];
+				gbavirtreg_cpu[0x3 + 8]=gbavirtreg_cpubup[0x3];
+				gbavirtreg_cpu[0x4 + 8]=gbavirtreg_cpubup[0x4];
+				#ifdef DEBUGEMU
+					iprintf("stacks backup fiq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13fiq[0x0]);
+				#endif
+			}
+			else if((cpsrvirt&0x1f)==0x12){
+				spsr_last=spsr_irq=cpsrvirt;
+				gbastckfp_irq=gbastckfpadr_curr;
+				gbavirtreg_r13irq[0x0]=gbavirtreg_cpu[0xd];
+				gbavirtreg_r14irq[0x0]=gbavirtreg_cpu[0xe];
+				#ifdef DEBUGEMU
+					iprintf("stacks backup irq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13irq[0x0]);
+				#endif
+			}
+			
+			else if((cpsrvirt&0x1f)==0x13){
+				spsr_last=spsr_svc=cpsrvirt;
+				gbastckfp_svc=gbastckfpadr_curr;
+				gbavirtreg_r13svc[0x0]=gbavirtreg_cpu[0xd];
+				gbavirtreg_r14svc[0x0]=gbavirtreg_cpu[0xe];
+				#ifdef DEBUGEMU
+					iprintf("stacks backup svc_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13svc[0x0]);
+				#endif
+			}
+			else if((cpsrvirt&0x1f)==0x17){
+				spsr_last=spsr_abt=cpsrvirt;
+				gbastckfp_abt=gbastckfpadr_curr;
+				gbavirtreg_r13abt[0x0]=gbavirtreg_cpu[0xd];
+				gbavirtreg_r14abt[0x0]=gbavirtreg_cpu[0xe];
+				#ifdef DEBUGEMU
+					iprintf("stacks backup abt_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13abt[0x0]);
+				#endif
+			}
+			
+			else if((cpsrvirt&0x1f)==0x1b){
+				spsr_last=spsr_und=cpsrvirt;
+				gbastckfp_und=gbastckfpadr_curr;
+				gbavirtreg_r13und[0x0]=gbavirtreg_cpu[0xd];
+				gbavirtreg_r14und[0x0]=gbavirtreg_cpu[0xe];
+				#ifdef DEBUGEMU
+					iprintf("stacks backup und_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13und[0x0]);
+				#endif
+			}
+			
+			//default (no previous PSR) sets
+			else {
+			
+				// disable FIQ & set SVC
+				// gba->reg[16].I |= 0x40;
+				cpsr|=0x40;
+				cpsr|=0x13;
+				
+				//#ifdef DEBUGEMU
+				//	iprintf("ERROR CHANGING CPU MODE/STACKS : CPSR: %x \n",(unsigned int)cpsrvirt);
+				//	while(1);
+				//#endif
+			}
+
+
+--
+
+
+//original cpumode swapper
+
+/* //ori
+		//user/sys
+		if ( ((cpumode&0x1f) == (0x10)) || ((cpumode&0x1f) == (0x1f)) ){	
+				
+				gbastckmodeadr_curr=gbastckadr_usr;
+				gbastckfpadr_curr=gbastckfp_usr;			//current framepointer address (setup in util.c) and updated here
+				gbavirtreg_cpu[0xd]=gbavirtreg_r13usr[0x0]; //user SP/LR registers for cpu<mode> (user/sys is the same stacks)
+				gbavirtreg_cpu[0xe]=gbavirtreg_r14usr[0x0];
+				#ifdef DEBUGEMU
+					iprintf("| stacks swap to usr_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
+				#endif
+		}
+		
+		else if((cpumode&0x1f)==0x11){
+				gbastckmodeadr_curr=gbastckadr_fiq;
+				gbastckfpadr_curr=gbastckfp_fiq;			//current framepointer address (setup in util.c) and updated here
+				gbavirtreg_cpu[0xd]=gbavirtreg_r13fiq[0x0]; //fiq SP/LR registers for cpu<mode>
+				gbavirtreg_cpu[0xe]=gbavirtreg_r14fiq[0x0];
+				
+				//save register r8-r12 subset before entering fiq
+				gbavirtreg_cpubup[0x0]=gbavirtreg_cpu[0x0 + 8];
+				gbavirtreg_cpubup[0x1]=gbavirtreg_cpu[0x1 + 8];
+				gbavirtreg_cpubup[0x2]=gbavirtreg_cpu[0x2 + 8];
+				gbavirtreg_cpubup[0x3]=gbavirtreg_cpu[0x3 + 8];
+				gbavirtreg_cpubup[0x4]=gbavirtreg_cpu[0x4 + 8];
+				
+				//restore: 5 extra regs r8-r12 for fiq restore
+				gbavirtreg_cpu[0x0 + 8]=gbavirtreg_fiq[0x0];
+				gbavirtreg_cpu[0x1 + 8]=gbavirtreg_fiq[0x1];
+				gbavirtreg_cpu[0x2 + 8]=gbavirtreg_fiq[0x2];
+				gbavirtreg_cpu[0x3 + 8]=gbavirtreg_fiq[0x3];
+				gbavirtreg_cpu[0x4 + 8]=gbavirtreg_fiq[0x4];
+				#ifdef DEBUGEMU
+					iprintf("| stacks swap to fiq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
+				#endif
+		}
+		//irq
+		else if((cpumode&0x1f)==0x12){
+				gbastckmodeadr_curr=gbastckadr_irq;
+				gbastckfpadr_curr=gbastckfp_irq;			//current framepointer address (setup in util.c) and updated here
+				gbavirtreg_cpu[0xd]=gbavirtreg_r13irq[0x0]; //irq SP/LR registers for cpu<mode>
+				gbavirtreg_cpu[0xe]=gbavirtreg_r14irq[0x0];
+				#ifdef DEBUGEMU
+					iprintf("| stacks swap to irq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
+				#endif
+		}
+		//svc
+		else if((cpumode&0x1f)==0x13){
+				gbastckmodeadr_curr=gbastckadr_svc;
+				gbastckfpadr_curr=gbastckfp_svc;			//current framepointer address (setup in util.c) and updated here
+				gbavirtreg_cpu[0xd]=gbavirtreg_r13svc[0x0]; //svc SP/LR registers for cpu<mode> (user/sys is the same stacks)
+				gbavirtreg_cpu[0xe]=gbavirtreg_r14svc[0x0];
+				#ifdef DEBUGEMU
+					iprintf("| stacks swap to svc_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
+				#endif
+		}
+		//abort
+		else if((cpumode&0x1f)==0x17){
+				gbastckmodeadr_curr=gbastckadr_abt;
+				gbastckfpadr_curr=gbastckfp_abt;			//current framepointer address (setup in util.c) and updated here
+				gbavirtreg_cpu[0xd]=gbavirtreg_r13abt[0x0]; //abt SP/LR registers for cpu<mode>
+				gbavirtreg_cpu[0xe]=gbavirtreg_r14abt[0x0];
+				#ifdef DEBUGEMU
+					iprintf("| stacks swap to abt_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
+				#endif
+		}
+		//undef
+		else if((cpumode&0x1f)==0x1b){
+				gbastckmodeadr_curr=gbastckadr_und;
+				gbastckfpadr_curr=gbastckfp_und;			//current framepointer address (setup in util.c) and updated here
+				gbavirtreg_cpu[0xd]=gbavirtreg_r13und[0x0]; //und SP/LR registers for cpu<mode>
+				gbavirtreg_cpu[0xe]=gbavirtreg_r14und[0x0];
+				#ifdef DEBUGEMU
+					iprintf("| stacks swap to und_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
+				#endif
+		}
+		*/
+		
