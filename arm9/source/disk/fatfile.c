@@ -63,6 +63,7 @@ bool _FAT_findEntry(const char *path, DIR_ENTRY *dirEntry) {
 	
 }
 
+//int	FAT_getAttr(const char *file);
 int	FAT_getAttr(const char *file) {
 	DIR_ENTRY dirEntry;
 	if (!_FAT_findEntry(file,&dirEntry)) return -1;
@@ -70,7 +71,10 @@ int	FAT_getAttr(const char *file) {
 	return dirEntry.entryData[DIR_ENTRY_attributes];
 }
 
-int FAT_setAttr(const char *file, int attr) {
+
+//int	FAT_setAttr(const char *file, uint8_t attr );
+
+int	FAT_setAttr(const char *file, uint8_t attr ) {
 
 	// Defines...
 	DIR_ENTRY_POSITION entryEnd;

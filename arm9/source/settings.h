@@ -4,7 +4,7 @@
 
 #define libdir
 
-#define NOBIOS		//skip the GBA.BIOS requirement at startup
+//#define NOBIOS		//skip the GBA.BIOS requirement at startup, if you execute ARM7 code that is not GBA, put the ARM7 bios (for desired device) here (root micro sd drive)
 
 #define DEBUGEMU	//enables LR tracing of every function called
 
@@ -18,7 +18,7 @@
 
 //#define OWNIRQSYS //enable for own IRQ handling / disable for LIBNDS IRQ (makefile is recompiled as ARM code, LIBNDS IRQ is THUMB...) so nope
 
-#define MPURECONFIG //enable: set dcache and mpu map / disable: as libnds provides default NDS MPU setup 
+//#define MPURECONFIG //enable: set dcache and mpu map / disable: as libnds provides default NDS MPU setup 
 	//<-raises exceptions..
 	//useful for enable: you want to detect wrong accesses, but breaks printf output..
 	//so 	for disable: you want printf output regardless wrong accesses

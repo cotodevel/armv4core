@@ -550,7 +550,7 @@ fifoInit();
 //so far code is stable, this will cause lockups definitely
 #ifdef MPURECONFIG
 	setgbamap(); //does not Reconfig MPU memory properties (VECTORS set to 0x00000000) anymore :)
-	iprintf("setgbamap();\n"); //<-------CAUSES SERIOUS FREEZES
+	//iprintf("setgbamap();\n"); //<-------CAUSES SERIOUS FREEZES
 #endif
 
 
@@ -585,7 +585,7 @@ else{
 }
 
 //show gbadata iprintf("\x1b[21;1H
-strcat(temppath,(char*)"/gba/rs-pzs.gba");
+strcat(temppath,(char*)"/arm7.bin");
 //printgbainfo (temppath);
 
 //debug stuff that only runs once.

@@ -1282,7 +1282,7 @@ void hblank_thread(){
 	
 	//2) Interrupts and GBA Core CPU handle
 	//Interrupts should be here as well : generate threads based time (IF/IE/IO/DMA/ETC)
-	cpu_calculate();
+	//cpu_calculate();
 	
 	//3) GBA Core Fetch Decode Execute Routine
 	//cpu_fdexecute();
