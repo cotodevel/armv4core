@@ -56,12 +56,6 @@ static inline void _FAT_unlock(mutex_t *mutex)
 #else
 
 // We still need a blank lock type
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
 #ifndef mutex_t
 typedef int mutex_t;
 #endif
@@ -70,10 +64,6 @@ void _FAT_lock_init(mutex_t *mutex);
 void _FAT_lock_deinit(mutex_t *mutex);
 void _FAT_lock(mutex_t *mutex);
 void _FAT_unlock(mutex_t *mutex);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // USE_LWP_LOCK
 

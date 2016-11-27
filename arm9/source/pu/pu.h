@@ -13,7 +13,7 @@
 #include <errno.h>
 #include <ctype.h>
 
-#include "../arm9.h"
+#include "../main.h"
 
 
 //PU setup all NDS region addresses
@@ -207,7 +207,7 @@ extern u32 mpu_setup();
 extern u32 exceptswi(u32); 		//swi vector
 extern u32 exceptundef(u32 undef);	//undefined vector
 
-extern u32 exceptirq(u32 temp_gbavirt_iemasking,u32 temp_gbavirt_ifmasking,u32 sp_ptr);
+extern u32 exceptirq(u32 temp_IE,u32 temp_IF,u32 sp_ptr);
 
 extern u32 swicaller(u32 arg);
 

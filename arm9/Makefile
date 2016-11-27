@@ -18,14 +18,17 @@ BUILD		:=	build
 SOURCES		:=	source	\
 				source/disk \
 				source/pu \
-				source/util \
+				source/gbacore \
 				source/armstorm \
 				source/disasm \
+                source/rom  \
+                source/hbmenustub   \
 				source/zlib	\
 				source/zlib/zip \
 				../common/
 
 INCLUDES	:=	include \
+                source/rom  \
 				../common/
 				
 DATA		:=	data
@@ -34,24 +37,22 @@ GRAPHICS	:=  gfx
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-ARCH	:=	-mthumb -mthumb-interwork
-
-CFLAGS	:=	-g -Wall -O2\
- 			-march=armv5te -mtune=arm946e-s -fomit-frame-pointer\
-			-ffast-math \
-			$(ARCH) 
+ARCH	:= -mthumb-interwork -march=armv5te -mtune=arm946e-s -marm
+CFLAGS	:=  -Wall -O3\
+ 		-mapcs-frame	\
+		-funsafe-math-optimizations	\
+		$(ARCH)
 
 CFLAGS	+=	$(INCLUDE) -DARM9
-CXXFLAGS	:=	$(CFLAGS) -fno-rtti -fno-exceptions
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -fdata-sections -ffunction-sections
 
-ASFLAGS	:=	-g $(ARCH) -march=armv5te -mtune=arm946e-s
-
-LDFLAGS	=	-specs=ds_arm9.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+ASFLAGS	:=	-s $(ARCH)
+LDFLAGS       =       --specs=ds_arm9.specs $(ARCH) -Wl,--gc-sections,-Map,$(notdir $*.map) 
 
 #---------------------------------------------------------------------------------
 # any extra libraries we wish to link with the project
 #---------------------------------------------------------------------------------
-LIBS	:=	-lfat -lnds9
+LIBS	:=	-lnds9 -ldswifi9
  
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

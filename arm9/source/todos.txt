@@ -1,0 +1,1 @@
+so far 0x08000374 : 0xe070c1a1  (rsbs r12,r0,r1,lsr #3)

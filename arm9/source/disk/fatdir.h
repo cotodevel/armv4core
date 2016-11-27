@@ -1,6 +1,8 @@
 /*
- filetime.h
- Conversion of file time and date values to various other types
+ fatdir.h
+ 
+ Functions used by the newlib disc stubs to interface with 
+ this library
 
  Copyright (c) 2006 Michael "Chishm" Chisholm
 	
@@ -26,16 +28,46 @@
  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _FILETIME_H
-#define _FILETIME_H
 
+#ifndef _FATDIR_H
+#define _FATDIR_H
+
+#include <sys/reent.h>
+#include <sys/stat.h>
+#include <sys/statvfs.h>
+#include <sys/iosupport.h>
 #include "common.h"
-#include <sys/types.h>
+#include "directory.h"
 
-uint16_t _FAT_filetime_getTimeFromRTC (void);
-uint16_t _FAT_filetime_getDateFromRTC (void);
+typedef struct {
+	PARTITION* partition;
+	DIR_ENTRY  currentEntry;
+	uint32_t   startCluster;
+	bool       inUse;
+	bool       validEntry;
+} DIR_STATE_STRUCT;
 
-time_t _FAT_filetime_to_time_t (uint16_t t, uint16_t d);
+extern int _FAT_stat_r (struct _reent *r, const char *path, struct stat *st);
+
+extern int _FAT_link_r (struct _reent *r, const char *existing, const char *newLink);
+
+extern int _FAT_unlink_r (struct _reent *r, const char *name);
+
+extern int _FAT_chdir_r (struct _reent *r, const char *name);
+
+extern int _FAT_rename_r (struct _reent *r, const char *oldName, const char *newName);
+
+extern int _FAT_mkdir_r (struct _reent *r, const char *path, int mode);
+
+extern int _FAT_statvfs_r (struct _reent *r, const char *path, struct statvfs *buf);
+
+/*
+Directory iterator functions
+*/
+extern DIR_ITER* _FAT_diropen_r(struct _reent *r, DIR_ITER *dirState, const char *path);
+extern int _FAT_dirreset_r (struct _reent *r, DIR_ITER *dirState);
+extern int _FAT_dirnext_r (struct _reent *r, DIR_ITER *dirState, char *filename, struct stat *filestat);
+extern int _FAT_dirclose_r (struct _reent *r, DIR_ITER *dirState);
 
 
-#endif // _FILETIME_H
+#endif // _FATDIR_H

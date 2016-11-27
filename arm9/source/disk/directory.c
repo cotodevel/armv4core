@@ -257,7 +257,7 @@ static bool _FAT_directory_incrementDirEntryPosition (PARTITION* partition, DIR_
 
 	// Increment offset, wrapping at the end of a sector
 	++ position.offset;
-	if (position.offset == ((int)partition->bytesPerSector) / DIR_ENTRY_DATA_SIZE) {
+	if (position.offset == partition->bytesPerSector / DIR_ENTRY_DATA_SIZE) {
 		position.offset = 0;
 		// Increment sector when wrapping
 		++ position.sector;

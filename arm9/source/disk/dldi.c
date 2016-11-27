@@ -34,7 +34,6 @@
 #include <malloc.h>
 #include <unistd.h>
 #include <sys/fcntl.h>
-#include "dldi.h"
 
 const u32  DLDI_MAGIC_NUMBER = 
 	0xBF8DA5ED;	

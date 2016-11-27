@@ -18,16 +18,15 @@
 #include "supervisor.h"
 
 #include "pu.h"
-#include "../util/opcode.h"
-#include "../util/util.h"
-#include "../util/buffer.h"
-#include "../util/translator.h"
-#include "../util/bios.h"
-#include "../util/gbacore.h"
-#include "../util/spinlock.h"
+#include "../gbacore/opcode.h"
+#include "../gbacore/util.h"
+#include "../gbacore/translator.h"
+#include "../gbacore/bios.h"
+#include "../gbacore/gba.arm.core.h"
+#include "../gbacore/spinlock.h"
 
 //disk
-#include "../disk/stream_disk.h"
+#include "../disk/fatmore.h"
 
 //sharedIPC
 #include "gba_ipc.h"
@@ -73,11 +72,11 @@ void vblank_thread(){
 
 //tempbuffer[0x0]=0xc00ffee0; //patched bios address
 //tempbuffer[0x0]=0xc00ffeee;
-tempbuffer[0x0]=(u32)&gbabios[0];
+//tempbuffer[0x0]=(u32)&gbabios[0];
 //tempbuffer[0x1]=0xc0ca;
 //tempbuffer[0x1]=0x0;
 //tempbuffer[0x1]=(u32)&tempbuffer2[0];
-tempbuffer[0x1]=0x3;
+//tempbuffer[0x1]=0x3;
 
 //tempbuffer[0x2]=(u32)(u32*)rom;
 
@@ -85,9 +84,9 @@ tempbuffer[0x1]=0x3;
 //tempbuffer[0x2]=0xff;
 //tempbuffer[0x2]=(u32)&tempbuffer2[0]; //COFFE1 SHOULD BE AT tempbuf2[0]
 
-tempbuffer2[0]=0x0; //AND COFFEE 2 SHOULD BE AT R0
+//tempbuffer2[0]=0x0; //AND COFFEE 2 SHOULD BE AT R0
 
-tempbuffer[0x3]=0xc33ffee3;
+//tempbuffer[0x3]=0xc33ffee3;
 //tempbuffer[0x3]=(u32)(u32*)rom;
 
 //tempbuffer[0x3]=(u32)&tempbuffer2[0x0];
@@ -96,32 +95,32 @@ tempbuffer[0x3]=0xc33ffee3;
 
 //tempbuffer[0x3]=(u32)&tempbuffer[0xc];
 //tempbuffer[0x3]=(u32)(u32*)rom;
-tempbuffer[0x4]=0xc00ffee4;
+//tempbuffer[0x4]=0xc00ffee4;
 //tempbuffer[0x4]=0xc0c0caca;
 //tempbuffer[0x4]=(u32)(u32*)rom;
-tempbuffer[0x5]=0xc00ffee5;
+//tempbuffer[0x5]=0xc00ffee5;
 
 //tempbuffer[0x6]=-56;
-tempbuffer[0x6]=0xc00ffee6; //for some reason ldrsb does good with sign bit 2^8 values, but -128 is Z flag enabled  (+127 / -128) 
+//tempbuffer[0x6]=0xc00ffee6; //for some reason ldrsb does good with sign bit 2^8 values, but -128 is Z flag enabled  (+127 / -128) 
 //tempbuffer[0x6]=(u32)(u32*)rom;
 
-tempbuffer[0x7]=0xc00ffee7;
-tempbuffer[0x8]=0xc00ffee8;
-tempbuffer[0x9]=0xc00ffee9;
-tempbuffer[0xa]=0xc00ffeea;
-tempbuffer[0xb]=0xc00ffeeb;
-tempbuffer[0xc]=0xc00ffeec;
+//tempbuffer[0x7]=0xc00ffee7;
+//tempbuffer[0x8]=0xc00ffee8;
+//tempbuffer[0x9]=0xc00ffee9;
+//tempbuffer[0xa]=0xc00ffeea;
+//tempbuffer[0xb]=0xc00ffeeb;
+//tempbuffer[0xc]=0xc00ffeec;
 
 //*((u32*)gbastckmodeadr_curr+0)=0xfedcba98;
 
 //stack ptr
 //tempbuffer[0xd]=(u32)(u32*)gbastckmodeadr_curr;
-tempbuffer[0xd]=(u32)(u32*)gbastckmodeadr_curr;
+//tempbuffer[0xd]=(u32)(u32*)gbastckmodeadr_curr;
 
 //tempbuffer[0xd]=0xc00ffeed;
 
-tempbuffer[0xe]=0xc070eeee;
-tempbuffer[0xf]=rom;
+//tempbuffer[0xe]=0xc070eeee;
+//tempbuffer[0xf]=rom;
 
 //c07000-1:  usr/sys  _ c17100-6: fiq _ c27200-1: irq _ c37300-1: svc _ c47400-1: abt _ c57500-1: und
 
@@ -167,7 +166,6 @@ gbavirtreg_r14und[0]=0xc57501;
 
 //writing to (0x7fff for stmiavirt opcode) destroys PC , be aware that buffer_input[0xf] slot should be filled before rewriting PC.
 //0 for CPURES/BACKUP / 2 for stack/push pop / 1 free
-stmiavirt( ((u8*)tempbuffer), (u32)gbavirtreg_cpu, 0x00ff, 32, 0, 0);
 
 //stack pointer test
 /*
@@ -194,7 +192,7 @@ disthumbcode(0xb4ff);  //push r0-r7
 
 //clean registers
 for(i=0;i<16;i++){
-	*((u32*)gbavirtreg_cpu[0]+(i))=0x0;
+	*((u32*)exRegs[0]+(i))=0x0;
 }
 iprintf(" 1/2 new sfp:%x \n",(u32)(u32*)gbastckfpadr_curr);
 
@@ -213,7 +211,7 @@ disthumbcode(0xb5ff);  //push r0-r7,LR
 
 //clean registers
 for(i=0;i<16;i++){
-	*((u32*)gbavirtreg_cpu[0]+(i))=0x0;
+	*((u32*)exRegs[0]+(i))=0x0;
 }
 rom=0x0;
 
@@ -231,7 +229,7 @@ iprintf(" 2/2 new sfp:%x \n",(u32)(u32*)gbastckfpadr_curr);
 disthumbcode(0x9302); //str r3,[sp,#0x8]
 
 dummyreg2=0;
-faststr((u8*)&dummyreg2, (u32)gbavirtreg_cpu[0], (0x3), 32,0);
+faststr((u8*)&dummyreg2, (u32)exRegs[0], (0x3), 32,0);
 
 //restore (5.11)
 disthumbcode(0x9b02); //ldr r3,[sp,#0x8]
@@ -250,7 +248,7 @@ disthumbcode(0xc3ff); // stmia r3!,{rdlist}
 
 for(i=0;i<16;i++){
 	if(i!=0x2 )
-		gbavirtreg_cpu[i]=0x0;
+		exRegs[i]=0x0;
 
 }
 
@@ -281,7 +279,7 @@ disthumbcode(0xcaff); // ldmia r2!,{rdlist}
 /*disthumbcode(0xb5f0); //push r4-r7,lr
 for(i=0;i<16;i++){
 	if(i!=0x2 )
-		gbavirtreg_cpu[i]=0x0;
+		exRegs[i]=0x0;
 }
 disthumbcode(0xbdf0); //pop {r4-r7,pc}
 */
@@ -655,10 +653,10 @@ disarmcode(0xe880ffff); //stm r0,{r0-r15}
 //clean registers
 for(i=0;i<16;i++){
 	if(i!=0x0 )
-		gbavirtreg_cpu[i]=0x0;
+		exRegs[i]=0x0;
 
 }
-gbavirtreg_cpu[0x0]=(u32)&gbabios[0];
+exRegs[0x0]=(u32)&gbabios[0];
 rom=0;
 disarmcode(0xe890ffff); //ldm r0,{r0-r15}
 */
@@ -798,7 +796,7 @@ disarmcode(0xe93d0007);		//pop {r0,r1,r2} (writeback enabled and pre-bit enabled
 			/*
 			iprintf("rom contents @ 0x08000000 \n");
 			for(cntr=0;cntr<4;cntr++){
-			iprintf(" %d:[%x] ",cntr,(unsigned int)cpuread_word(0x08000000+(cntr*4)));//ldru32asm((u32)tempbuffer2,i));
+			iprintf(" %d:[%x] ",cntr,(unsigned int)CPUReadMemory(0x08000000+(cntr*4)));//ldru32asm((u32)tempbuffer2,i));
 			
 				if (cntr==15) iprintf("\n");
 			
@@ -806,49 +804,43 @@ disarmcode(0xe93d0007);		//pop {r0,r1,r2} (writeback enabled and pre-bit enabled
 			*/
 			iprintf("\n hardware r0-r15 stack (GBA) [MODE");
 			
-			if ((cpsrvirt&0x1f) == (0x10) || (cpsrvirt&0x1f) == (0x1f))
+			if ((cpsrvirt&PSR_MODE) == (PSR_USR) || (cpsrvirt&PSR_MODE) == (PSR_SYS))
 				iprintf(" USR/SYS STACK]");
-			else if ((cpsrvirt&0x1f)==(0x11))
+			else if ((cpsrvirt&PSR_MODE)==(PSR_FIQ))
 				iprintf(" FIQ STACK]");
-			else if ((cpsrvirt&0x1f)==(0x12))
+			else if ((cpsrvirt&PSR_MODE)==(PSR_IRQ))
 				iprintf(" IRQ STACK]");
-			else if ((cpsrvirt&0x1f)==(0x13))
+			else if ((cpsrvirt&PSR_MODE)==(PSR_SVC))
 				iprintf(" SVC STACK]");
-			else if ((cpsrvirt&0x1f)==(0x17))
+			else if ((cpsrvirt&PSR_MODE)==(PSR_ABT))
 				iprintf(" ABT STACK]");
-			else if ((cpsrvirt&0x1f)==(0x1b))
+			else if ((cpsrvirt&PSR_MODE)==(PSR_UND))
 				iprintf(" UND STACK]");
 			else
-				iprintf(" STACK LOAD ERROR] CPSR: %x -> psr:%x",(unsigned int)cpsrvirt,(unsigned int)(cpsrvirt&0x1f));
-				
-			iprintf("@ %x",(unsigned int)gbastckmodeadr_curr); //base sp cpu <mode>
-			iprintf("\n curr_fp:%x ",(unsigned int)gbastckfpadr_curr); //fp sp cpu <mode>
+				iprintf(" STACK LOAD ERROR] CPSR: %x -> psr:%x",(unsigned int)cpsrvirt,(unsigned int)(cpsrvirt&PSR_MODE));
 			iprintf("\n //////contents//////: \n");
 			
 			for(cntr=0;cntr<16;cntr++){
-				//iprintf(" r%d :[%x] ",cntr,(unsigned int)ldru32asm((u32)&gbavirtreg_cpu,cntr*4)); //byteswap reads
+				//iprintf(" r%d :[%x] ",cntr,(unsigned int)ldru32asm((u32)&exRegs,cntr*4)); //byteswap reads
 				if (cntr!=0xf) 
-				iprintf(" r%d :[0x%x] ",cntr, (unsigned int)gbavirtreg_cpu[cntr]);
-				else iprintf(" PC(0x%x)",  (unsigned int)rom); //works: (u32)&rom  // &gbavirtreg_usr[0xf] OK
+				iprintf(" r%d :[0x%x] ",cntr, (unsigned int)exRegs[cntr]);
+				else iprintf(" PC(0x%x)",  (unsigned int)exRegs[0xf]); //works: (u32)&rom  // &gbavirtreg_usr[0xf] OK
 			}
 			
 			iprintf("\n CPSR[%x] / SPSR:[%x] \n",(unsigned int)cpsrvirt,(unsigned int)spsr_last);
 			iprintf("CPUvirtrunning:");
-			if (gba.cpustate==true) iprintf("true:");
-			else iprintf("false");
+			if (armState==true) iprintf("[ARM]");
+			else iprintf("[THMB]");
 			iprintf("/ CPUmode:");
-			if (armstate==1) iprintf("THUMB");
-			else iprintf("ARM \n");
 			//coto
-			iprintf("\n shared CPU ticks:(%d) / gba.lcdticks:(%x) / soft_vcount(direct): (%x) / soft_vcount(cpuread): (%d) / hw_vcount : (%x)",
-			/*(int)cputotalticks*/(int)SHARED_IPC->inst_globalemutick[0]->gbacore_emuticker,(int)gba.lcdticks,(int)gba.VCOUNT,(int)cpuread_byte(0x04000006),(int)ndsvcounter());
+			iprintf("\n shared CPU ticks:(%d) / gba.lcdticks:(%x) /  soft_vcount(cpuread): (%d)",
+			/*(int)cputotalticks*/(int)SHARED_IPC->inst_globalemutick[0]->gbacore_emuticker,(int)lcdTicks,(int)CPUReadByte(0x04000006));
 			
 			iprintf("\n DMAEnbl: 0:(%d) | 1:(%d) | 2:(%d) | 3:(%d)",
-			(int)((gba.DM0CNT_H>>15)&0xf),(int)((gba.DM1CNT_H>>15)&0xf),
-			(int)((gba.DM2CNT_H>>15)&0xf),(int)((gba.DM3CNT_H>>15)&0xf)
+			(int)((DM0CNT_H>>15)&0xf),(int)((DM1CNT_H>>15)&0xf),
+			(int)((DM2CNT_H>>15)&0xf),(int)((DM3CNT_H>>15)&0xf)
 			);
-			iprintf("\n IOMAP @ %x",(unsigned int)gba.iomem);
-			
+            
 			iprintf("DAY:%d ",(int)gba_get_dayrtc());
 			iprintf("MONTH:%d ",(int)gba_get_monthrtc());
 			iprintf("YEAR:%d \n",(int)libnds_get_yearrtc(libnds_get_timeinst()));
@@ -857,7 +849,6 @@ disarmcode(0xe93d0007);		//pop {r0,r1,r2} (writeback enabled and pre-bit enabled
 			iprintf("MM:%d ",(int)gba_get_minrtc());
 			iprintf("SS:%d \n",(int)gba_get_secrtc());
 			
-	
 		/*
 		int hours, seconds, minutes, day, month, year;
 		
@@ -907,7 +898,7 @@ disarmcode(0xe93d0007);		//pop {r0,r1,r2} (writeback enabled and pre-bit enabled
 			/*
 			for(i=0;i<16;i++){
 			
-				iprintf(" [%c] ",(unsigned int)*((u32*)&gbavirtreg_cpu+i));
+				iprintf(" [%c] ",(unsigned int)*((u32*)&exRegs+i));
 				if (i==15) iprintf("\n"); //sizeof(tempbuffer[0]) == 1 byte (u8)
 			}
 			*/
@@ -918,7 +909,7 @@ disarmcode(0xe93d0007);		//pop {r0,r1,r2} (writeback enabled and pre-bit enabled
 			
 			stru32asm( (u32)&tempbuffer, i*(4/(sizeof(tempbuffer[0]))) ,0xc0700000+i);
 			
-			//stru32asm((u32)&gbavirtreg_cpu, i*4,ldru32asm((u32)&tempbuffer,i*4));
+			//stru32asm((u32)&exRegs, i*4,ldru32asm((u32)&tempbuffer,i*4));
 			
 			}
 			
@@ -927,7 +918,7 @@ disarmcode(0xe93d0007);		//pop {r0,r1,r2} (writeback enabled and pre-bit enabled
 			tempbuffer[i]=0;
 			}
 			
-			ldmiavirt((u8*)&tempbuffer, (u32)&gbavirtreg_cpu, 0xffff, 32, 1); //read using normal reading method
+			ldmiavirt((u8*)&tempbuffer, (u32)&exRegs, 0xffff, 32, 1); //read using normal reading method
 			
 			for(i=0;i<16;i++){
 				iprintf(" [%x] ",(unsigned int)ldru32asm((u32)&tempbuffer,i*4));
@@ -1038,7 +1029,7 @@ disarmcode(0xe93d0007);		//pop {r0,r1,r2} (writeback enabled and pre-bit enabled
 			//}
 			
 			/*
-			gbavirtreg_cpu[0xf]=rom=(u32)rom_entrypoint;
+			exRegs[0xf]=rom=(u32)rom_entrypoint;
 			
 			//Set CPSR virtualized bits & perform USR/SYS CPU mode change. & set stacks
 			updatecpuflags(1,cpsrvirt,0x12);
@@ -1055,20 +1046,26 @@ disarmcode(0xe93d0007);		//pop {r0,r1,r2} (writeback enabled and pre-bit enabled
 			
 			/*
 			iprintf("writing 0xc070 @ 0x03007dfd \n");cpuwrite_hword(0x03007dfd,0xc070);
-			iprintf("read @ 0x03007dfd:[%x] \n",(unsigned int)cpuread_hword(0x03007dfd));
+			iprintf("read @ 0x03007dfd:[%x] \n",(unsigned int)CPUReadHalfWord(0x03007dfd));
 			*/
 			
-			iprintf("writing 0xc070c171 @ 0x03007dfd \n");cpuwrite_word(0x03007dfd,0xc070c171);
-			iprintf("read @ 0x03007dfd:[%x] \n",(unsigned int)cpuread_word(0x03007dfd));
+            
+			//iprintf("writing 0xc070c171 @ 0x03007dfd \n");CPUWriteMemory(0x03007dfd,0xc070c171);
+			//iprintf("read @ 0x03007dfd:[%x] \n",(unsigned int)CPUReadMemory(0x03007dfd));
 			
-				//set CPU <mode>
-				//updatecpuflags(1,0x0,0x10);
+            //u32 read_val = (u32)0x08000000 + (u32)(rand()&0xffff);
+            //iprintf("read @ %x:[%x] \n",read_val,(unsigned int)CPUReadByte(read_val));  //CPUReadHalfWord / CPUReadMemory  / CPUReadByte ok
+			//iprintf("read @ %x:[%x] \n",(unsigned int)read_val,(unsigned int)cache_read32(read_val&0x1ffffff)); //works OK
+			
+            
+			//set CPU <mode>
+			//updatecpuflags(1,0x0,0x10);
 			
 			//load store test
 			//tempbuffer[0]=0x0;
 			//tempbuffer[1]=0x00000000;
 			//tempbuffer[2]=(u32)&tempbuffer[2]; //address will be rewritten with gbaread / r2 value
-			//stmiavirt( ((u8*)&tempbuffer[0]), (u32)gbavirtreg_cpu[0], 0xe0, 32, 1);
+			//stmiavirt( ((u8*)&tempbuffer[0]), (u32)exRegs[0], 0xe0, 32, 1);
 	
 			
 			/* VBAM stats
@@ -1117,7 +1114,7 @@ disarmcode(0xe93d0007);		//pop {r0,r1,r2} (writeback enabled and pre-bit enabled
 			sendfifo(buffer_output);
 			*/
 			
-			//branch_stackfp=cpubackupmode((u32*)branch_stackfp,gbavirtreg_cpu,cpsrvirt);
+			//branch_stackfp=cpubackupmode((u32*)branch_stackfp,exRegs,cpsrvirt);
 			//iprintf("branch fp :%x \n",(unsigned int)(u32*)branch_stackfp);
 			
 			//psg noise test iprintf("pitch: %d\n",(*(buffer_input+0)>>16)&0xffff);temp3++;
@@ -1140,7 +1137,7 @@ disarmcode(0xe93d0007);		//pop {r0,r1,r2} (writeback enabled and pre-bit enabled
 			sendfifo(buffer_output);
 			*/
 			
-			//branch_stackfp=cpurestoremode((u32*)branch_stackfp,&gbavirtreg_cpu[0]);
+			//branch_stackfp=cpurestoremode((u32*)branch_stackfp,&exRegs[0]);
 			//iprintf("branch fp :%x \n",(unsigned int)(u32*)branch_stackfp);
 
 			//psg noise test iprintf("pitch: %d\n",(*(buffer_input+0)>>16)&0xffff);temp3--;
@@ -1193,7 +1190,7 @@ disarmcode(0xe93d0007);		//pop {r0,r1,r2} (writeback enabled and pre-bit enabled
 			
 			branchfpbu=branch_stackfp;
 			
-			branchfpbu=cpubackupmode((u32*)(branchfpbu),&gbavirtreg_cpu[0],cpsrvirt);
+			branchfpbu=cpubackupmode((u32*)(branchfpbu),&exRegs[0],cpsrvirt);
 			
 			stmiavirt((u8*)&cpsrvirt, (u32)(u32*)branchfpbu, 1 << 0x0, 32, 1);
 			
@@ -1204,7 +1201,7 @@ disarmcode(0xe93d0007);		//pop {r0,r1,r2} (writeback enabled and pre-bit enabled
 			//flush workreg
 			cpsrvirt=0;
 			for(i=0;i<0x10;i++){
-				*((u32*)gbavirtreg_cpu[0]+i)=0x0;
+				*((u32*)exRegs[0]+i)=0x0;
 			}
 			
 			
@@ -1214,7 +1211,7 @@ disarmcode(0xe93d0007);		//pop {r0,r1,r2} (writeback enabled and pre-bit enabled
 			
 			iprintf("restored cpsr: %x",(unsigned int)cpsrvirt);
 			
-			branchfpbu=cpurestoremode((u32*)(branchfpbu),&gbavirtreg_cpu[0]);
+			branchfpbu=cpurestoremode((u32*)(branchfpbu),&exRegs[0]);
 			
 			updatecpuflags(1,cpsrvirt,cpsrvirt&0x1f);
 			*/
@@ -1248,17 +1245,20 @@ disarmcode(0xe93d0007);		//pop {r0,r1,r2} (writeback enabled and pre-bit enabled
 			
 			
 			//testing ARM codes!
-			#define DEBUGEMU
-			disarmcode(0xE0E010B2);
+			//#define DEBUGEMU
+			//disarmcode(0xE0E010B2);
 			
+            //JUMP TO DESIRED PC ADDRESS!
+            u32 address = (u32)0x08000400; //0x08000400: PSR flags bugged -
+            executeuntil_pc(address);
+            
 			}
 			
 			if(0 == (REG_KEYINPUT & (KEY_R))){
 				//updatecpuflags(1,cpsrvirt,0x13); //swap stack to sys
 				//iprintf("switch to 0x11");
-				u32 tempaddr=((0x08000000)+(rand()&0xffff));
-				iprintf("gba:%x:->[%x] \n",(unsigned int)tempaddr,(unsigned int)cpuread_word(tempaddr));
-			
+				u32 tempaddr=((0x08000000)+((u16)rand()&0xffff));
+				iprintf("gba:%x:->[%x] \n",(unsigned int)tempaddr,(unsigned int)CPUReadMemory(tempaddr));
 			}
 			
 			
@@ -1289,29 +1289,14 @@ void hblank_thread(){
 	
 	//n) GBA Core CPU ticks
 	//DTCM mechanical refresh method
-	DC_InvalidateAll();
-	cputotalticks++;
-	hblankdelta++;
-	drainwrite();
+	hblank_ticks++;
 }
 
 void vcount_thread(){
-}
-
-//process saving list
-void save_thread(u32 * srambuf){
-	//check for u32 * sound_block, u32 freq, and other remaining lists from the block_list emu
-}
-
-//GBA Render threads
-u32 gbavideorender(u32 address, u32 offset){
-	//*(u32*)(0x04000000)= (0x8030000F) | (1 << 16); //nds DISPCNT
-	
-	//u8 *pointertogpuchip = (u8 *)(0x6820000);
-	
-		//dmaCopyWords(3, (void*)address, (void*)(0x6200000/*bgGetGfxPtr(bgrouid)*/+512*(iy)), 480);
-		dmaCopyWords(3, (void*)address, (void*)(0x6200000+512*(offset)), 480);
-		//pointertobild+=512;
-	
-return 0;
+    
+    if(VCOUNT > 160)
+        VCOUNT = 0;
+    else
+        VCOUNT++;
+    
 }

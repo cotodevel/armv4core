@@ -15,29 +15,24 @@
 #include "pu.h"
 #include "supervisor.h"
 
-#include "../util/opcode.h"
-#include "../util/util.h"
-#include "../util/buffer.h"
-#include "../util/translator.h"
+#include "../gbacore/opcode.h"
+#include "../gbacore/util.h"
+#include "../gbacore/translator.h"
 
 //filesystem
-#include "../disk/dldi.h"
 #include "../disk/file_browse.h"
 #include "../disk/disc.h"
 #include "../disk/fatfile.h"
 #include "../disk/directory.h"
-#include "../disk/dldi_patcher.h"
 #include "../disk/partition.h"
 #include "../disk/mem_allocate.h"
 #include "../disk/bit_ops.h"
-#include "../disk/disc_io.h"
-//#include ".\nds_loader_arm9.h" //<<--dldi_patcher.h is an update of this
 #include "../disk/file_allocation_table.h"
 #include "../disk/cache.h"
 #include "../disk/lock.h"
 #include "../disk/directory.h"
 #include "../disk/filetime.h"
-#include "../disk/stream_disk.h"
+#include "../disk/fatmore.h"
 
 
 /* exception vector abort handlers
@@ -424,79 +419,79 @@ return 0;
 }
 
 //GBA IRQ
-u32 exceptirq(u32 temp_gbavirt_iemasking,u32 temp_gbavirt_ifmasking,u32 sp_ptr){
+u32 exceptirq(u32 temp_IE,u32 temp_IF,u32 sp_ptr){
 
 //process callbacks (IEregister & IFregister)
-switch(temp_gbavirt_iemasking & temp_gbavirt_ifmasking){
+switch(temp_IE & temp_IF){
 	case(1<<0):	//LCD V-Blank
 		
-		temp_gbavirt_ifmasking&=~(1<<0);
+		temp_IF&=~(1<<0);
 	break;
 	
 	case(1<<1):	//LCD H-Blank
 	
-		temp_gbavirt_ifmasking&=~(1<<1);
+		temp_IF&=~(1<<1);
 	break;
 	
 	case(1<<2)://LCD V-Counter Match
 		
-		temp_gbavirt_ifmasking&=~(1<<2);
+		temp_IF&=~(1<<2);
 	break;
 	
 	case(1<<3)://Timer 0 Overflow
 		
-		temp_gbavirt_ifmasking&=~(1<<3);
+		temp_IF&=~(1<<3);
 	break;
 	
 	case(1<<4)://Timer 1 Overflow
 		
-		temp_gbavirt_ifmasking&=~(1<<4);
+		temp_IF&=~(1<<4);
 	break;
 	
 	case(1<<5)://Timer 2 Overflow
 		
-		temp_gbavirt_ifmasking&=~(1<<5);
+		temp_IF&=~(1<<5);
 	break;
 	
 	case(1<<6)://Timer 3 Overflow
 	
-		temp_gbavirt_ifmasking&=~(1<<6);
+		temp_IF&=~(1<<6);
 	break;
 	
 	case(1<<7)://Serial IO / SIO Comms
 		
-		temp_gbavirt_ifmasking&=~(1<<7);
+		temp_IF&=~(1<<7);
 	break;
 	
 	case(1<<8):// DMA 0
 		
-		temp_gbavirt_ifmasking&=~(1<<8);
+		temp_IF&=~(1<<8);
 	break;
 	
 	case(1<<9):// DMA 1
 		
-		temp_gbavirt_ifmasking&=~(1<<9);
+		temp_IF&=~(1<<9);
 	break;
 	
 	case(1<<10)://DMA 2
 		
-		temp_gbavirt_ifmasking&=~(1<<10);
+		temp_IF&=~(1<<10);
 	break;
 	
 	case(1<<11)://DMA 3
 		
-		temp_gbavirt_ifmasking&=~(1<<11);
+		temp_IF&=~(1<<11);
 	break;
 	
 	case(1<<12)://Keypad
 		
-		temp_gbavirt_ifmasking&=~(1<<12);
+		temp_IF&=~(1<<12);
 		scanKeys();
 	break;
 	
 	case(1<<13)://GBA-Slot (external IRQ source)
 		
-		temp_gbavirt_ifmasking&=~(1<<13);
+		temp_IF&=~(1<<13);
 	break;
 	
 	default:	//nothing
@@ -505,7 +500,7 @@ switch(temp_gbavirt_iemasking & temp_gbavirt_ifmasking){
 
 //cback_exit(sp_ptr); //restore LR
 
-return temp_gbavirt_ifmasking;
+return temp_IF;
 }
 
 

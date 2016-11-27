@@ -56,10 +56,6 @@ typedef struct {
 	CACHE_ENTRY*          cacheEntries;
 } CACHE;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*
 Read data from a sector in the cache
 If the sector is not in the cache, it will be swapped in
@@ -127,10 +123,6 @@ void _FAT_cache_invalidate (CACHE* cache);
 CACHE* _FAT_cache_constructor (unsigned int numberOfPages, unsigned int sectorsPerPage, const DISC_INTERFACE* discInterface, sec_t endOfPartition, unsigned int bytesPerSector);
 
 void _FAT_cache_destructor (CACHE* cache);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // _CACHE_H
 

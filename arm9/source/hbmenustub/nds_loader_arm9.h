@@ -19,30 +19,23 @@
 
 ------------------------------------------------------------------*/
 
-#ifndef FILE_BROWSE_H
-#define FILE_BROWSE_H
+#ifndef NDS_LOADER_ARM9_H
+#define NDS_LOADER_ARM9_H
 
-#ifdef __cplusplus
-#include <string>
 
-void browseForFile (const std::string& extension);
-
-#endif
-
-#define MAXPATHLEN 255
-
-#endif //FILE_BROWSE_H
+#endif // NDS_LOADER_ARM7_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern char biosPath[MAXPATHLEN * 2];
-extern char patchPath[MAXPATHLEN * 2];
-extern char savePath[MAXPATHLEN * 2];
-extern char szFile[MAXPATHLEN * 2];
-extern char temppath[MAXPATHLEN * 2];
+#define LOAD_DEFAULT_NDS 0
 
+int runNds (const void* loader, u32 loaderSize, u32 cluster, bool initDisc, bool dldiPatchNds, int argc, const char** argv);
+
+int runNdsFile (const char* filename, int argc, const char** argv);
+
+bool installBootStub(bool havedsiSD);
 
 #ifdef __cplusplus
 }

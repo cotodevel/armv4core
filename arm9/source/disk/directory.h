@@ -92,10 +92,6 @@ enum DIR_ENTRY_offset {
 	DIR_ENTRY_fileSize = 0x1C
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*
 Returns true if the file specified by entry is a directory
 */
@@ -181,9 +177,5 @@ void _FAT_directory_entryStat (PARTITION* partition, DIR_ENTRY* entry, struct st
 Get volume label
 */
 bool _FAT_directory_getVolumeLabel (PARTITION* partition, char *label);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // _DIRECTORY_H

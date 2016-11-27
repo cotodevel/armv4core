@@ -1,22 +1,20 @@
-#define SBRKCACHEOFFSET 0x40000 //256K for sbrk
+//#define CUSTOMIRQ		//enable for custom IRQs rather than just swiWaitForVBlank and default FIFO driver
 
-//#define ROMTEST 		//enables a default, and light gbarom
+//#define ROMTEST 		//enabled:
+						//a default, and light gbarom that is mapped to 0x08000000	(GBA Rom entrypoint)
+						//disabled:
+						//arm7tdmi payload support! allows to execute a small payload before jumping to 0x08000000 (GBA Rom entrypoint)
+						
+#define SBRKCACHEOFFSET 0x40000 //256K for sbrk
 
 #define libdir
 
-//#define NOBIOS		//skip the GBA.BIOS requirement at startup, if you execute ARM7 code that is not GBA, put the ARM7 bios (for desired device) here (root micro sd drive)
+#define DEBUGEMU	//enables LR tracing / debugging by printf
 
-#define DEBUGEMU	//enables LR tracing of every function called
-
-//#define BIOSHANDLER		//Activate this to jump to BIOS and do handling there (can cause problems if bad bios or corrupted)
+//#define BIOSHANDLER		//Activate this to jump to BIOS and do handling there (can cause problems if bad bios or corrupted) / require a gba.bios at root
 							//Deactivating this will BX LR as soon as swi code is executed
 
-//#define STACKTEST //enables GBA stack tests (used by cpu virt)
-				//if you enable this, disable #DEBUGEMU otherwise overload 2D system
-
 //#define NONDS9HANDLERS //disable: set vectors @ 0xffff0000 // enable : set vectors @0x00000000
-
-//#define OWNIRQSYS //enable for own IRQ handling / disable for LIBNDS IRQ (makefile is recompiled as ARM code, LIBNDS IRQ is THUMB...) so nope
 
 //#define MPURECONFIG //enable: set dcache and mpu map / disable: as libnds provides default NDS MPU setup 
 	//<-raises exceptions..
@@ -27,8 +25,6 @@
 
 //#define SPINLOCK_CODE //Enables own SPINLOCK library to run under HBLANK (locks down threads)
 
-//#define NDSTEST //set: for setting a default NDS9/NDS7 callback for stability / testing processors..
-				//unset: disables test
 //MEMORY {
 //       rom     : ORIGIN = 0x08000000, LENGTH = 32M
 //       gbarom  : ORIGIN = 0x02180000, LENGTH = 3M -512k
@@ -38,6 +34,3 @@
 //       vectors : ORIGIN = 0x01FF8000, LENGTH = 16K
 //       itcm    : ORIGIN = 0x01FFC000, LENGTH = 16K
 //}
-
-//ex_s.s <-- stack management from STACKGBA and link to C stacks.
-//cr.s <-- arm thumb opcode translator in ... well thumb code
