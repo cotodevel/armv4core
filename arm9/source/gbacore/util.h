@@ -178,8 +178,8 @@ extern "C" {
 #endif
 
 //lookup calls
-u8 lutu16bitcnt(u16 x);
-u8 lutu32bitcnt(u32 x);
+extern u8 lutu16bitcnt(u16 x);
+extern u8 lutu32bitcnt(u32 x);
 
 int utilload(const char *file,u8 *data,int size,bool extram);
 int CPULoadRom(const char *szFile,bool extram);
@@ -216,7 +216,7 @@ void WRITE16LE(u8 * x,u16 v);
 
 u8	clzero(u32);
 
-u32 gba_entrypoint;
+extern u32 gba_entrypoint;
 
 //debug
 extern void isdebugemu_defined();
