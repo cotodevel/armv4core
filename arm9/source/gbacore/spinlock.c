@@ -1,24 +1,16 @@
-//arm9 main libs
-#include <nds.h>
+#include "typedefsTGDS.h"
+#include "dsregs.h"
+#include "dsregs_asm.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>//BRK(); SBRK();
-#include <nds/ndstypes.h>
-#include <nds/memory.h>
-#include <nds/bios.h>
-#include <nds/system.h>
+#include <unistd.h>
 #include <fcntl.h>
-#include <fat.h>
 #include <sys/stat.h>
-//#include <dswifi9.h>
 #include <errno.h>
 #include <ctype.h>
-#include <filesystem.h>
-#include <dirent.h>
-
-#include "..\main.h"
-
+#include "main.h"
 #include "spinlock.h"
 
 u32cback_ptr cb_handler; //global callbacku32handler

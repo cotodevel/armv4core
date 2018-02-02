@@ -1,6 +1,13 @@
-#include <nds.h>
-#include <nds/ndstypes.h>
+#ifndef opcodegbaarmcore
+#define opcodegbaarmcore
 
+#include "typedefsTGDS.h"
+#include "dsregs.h"
+#include "dsregs_asm.h"
+
+#define gzFile void*
+
+#endif
 
 #ifdef __cplusplus
 extern "C"{

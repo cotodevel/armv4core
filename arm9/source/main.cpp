@@ -1,144 +1,111 @@
-//arm9 main libs
-#include <nds.h>
+/*
+
+			Copyright (C) 2017  Coto
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301
+USA
+
+*/
+#include "typedefsTGDS.h"
+#include "dsregs.h"
+#include "dsregs_asm.h"
+
+#include "socket.h"
+#include "in.h"
+#include <netdb.h>
+#include <ctype.h>
+#include <stdarg.h>
+#include <string.h>
+#include <unistd.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+
+#include "main.h"
+
+//filesystem
+#include "fsfatlayerTGDS.h"
+#include "fileHandleTGDS.h"
+#include "InterruptsARMCores_h.h"
+#include "specific_shared.h"
+#include "ff.h"
+#include "memoryHandleTGDS.h"
+#include "reent.h"
+#include "sys/types.h"
+#include "consoleTGDS.h"
+#include "utilsTGDS.h"
+#include "devoptab_devices.h"
+#include "posixHandleTGDS.h"
+#include "xenofunzip.h"
+
+#include "gbaemu4ds_fat_ext.h"
+
+#include "devoptab_devices.h"
+#include "fsfatlayerTGDS.h"
+#include "usrsettingsTGDS.h"
+
+#include "videoTGDS.h"
+#include "keypadTGDS.h"
+#include "guiTGDS.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>//BRK(); SBRK();
-#include <nds/ndstypes.h>
 
-#include <nds/bios.h>
-#include <nds/system.h>
-
-#include <nds/memory.h>
 #include <fcntl.h>
-#include <fat.h>
 #include <sys/stat.h>
-//#include <dswifi9.h>
 #include <errno.h>
 #include <ctype.h>
-#include <filesystem.h>
-#include <dirent.h>
 #include "stdint.h"
 
-#ifdef __cplusplus
-#include <vector>
-#include <algorithm>
-#endif
-
-//arm9 video
-#include <nds/arm9/math.h>
-#include <nds/arm9/video.h>
-#include <nds/arm9/videoGL.h>
-#include <nds/arm9/trig_lut.h>
-#include <nds/arm9/sassert.h>
-
-#include ".\main.h"
-#include ".\settings.h"
+#include "main.h"
+#include "settings.h"
 
 //zlib (gzip) and zip
-#include "zlib/zlib.h"
-#include "zlib/zip/unzip.h"
+//#include "zlib/zlib.h"
+//#include "zlib/zip/unzip.h"
 
-//CPU
-#include "gbacore/opcode.h"
-#include "gbacore/util.h"
-#include "gbacore/bios.h"
-#include "gbacore/translator.h"
-#include "gbacore/gba.arm.core.h"
-#include "gbacore/spinlock.h"
+//tools.
+#include "util/opcode.h"
+#include "util/util.h"
+#include "util/buffer.h"
+#include "util/translator.h"
+#include "bios.h"
+#include "opcode.h"
 
-//filesystem
-#include "disk/file_browse.h"
-#include "disk/disc.h"
-#include "disk/fatfile.h"
-#include "disk/directory.h"
-#include "disk/partition.h"
-#include "disk/mem_allocate.h"
-#include "disk/bit_ops.h"
-#include "disk/file_allocation_table.h"
-#include "disk/cache.h"
-#include "disk/lock.h"
-#include "disk/directory.h"
-#include "disk/filetime.h"
-#include "disk/fatmore.h"
+
+//disassembler (thumb)
+
+#include "armstorm/arm.h" //THUMB DISASSEMBLER
+#include "armstorm/armstorm.h" //THUMB DISASSEMBLER
+#include "armstorm/common.h" //THUMB DISASSEMBLER
+#include "armstorm/thumb.h" //THUMB DISASSEMBLER
+#include "armstorm/thumb_db.h" //THUMB DISASSEMBLER
 
 //PU and stack managmt
 #include "pu/pu.h"
 #include "pu/supervisor.h"
-#include "pu/virtualize.h"
+#include "gba.arm.core.h"
 
-#include "./hbmenustub/nds_loader_arm9.h"
-
-//rom
-#include "./rom/puzzle_original.h"
-
-#include "./wifi.h"
-
-/*
-//linker (bin) objects
-extern unsigned int rs_sappy_bin;
-extern unsigned int rs_sappy_bin_size;
-extern unsigned int battle_bin;
-extern unsigned int battle_bin_size;
-*/
-
-/*
-//splashscreen
-#include ".\hbmenu_banner.h"
-
-//ARM/THUMB disassembler :)
-#include ".\armdis.h"
-
-*/
-
-//NDS9
-//IPC: 04000180
-//IE: 04000210
-//IF: 04000214
-
+#include "bios.h"
 
 #define CLUSTER_FREE	0x00000000
 #define	CLUSTER_EOF		0x0FFFFFFF
 #define CLUSTER_FIRST	0x00000002
-
-//---------------------------------------------------------------
-// FAT constants
-#define CLUSTER_EOF_16	0xFFFF
-
-#define FILE_LAST 0x00
-#define FILE_FREE 0xE5
-
-#ifndef EOF
-#define EOF -1
-#define SEEK_SET	0
-#define SEEK_CUR	1
-#define SEEK_END	2
-#endif
-
-//browseforfile screen offsets
-#define SCREEN_COLS 32
-#define ENTRIES_PER_SCREEN 22
-#define ENTRIES_START_ROW 2
-#define ENTRY_PAGE_LENGTH 10
-/*
-	b	startUp
-	
-storedFileCluster:
-	.word	0x0FFFFFFF		@ default BOOT.NDS
-initDisc:
-	.word	0x00000001		@ init the disc by default
-wantToPatchDLDI:
-	.word	0x00000001		@ by default patch the DLDI section of the loaded NDS
-@ Used for passing arguments to the loaded app
-argStart:
-	.word	_end - _start
-argSize:
-	.word	0x00000000
-dldiOffset:
-	.word	_dldi_start - _start
-dsiSD:
-	.word	0
-*/
 
 //unzip buffer
 //char * uncompr = (char*) calloc(1024*1024,sizeof(char)); //for temp decomp buffer
@@ -150,7 +117,6 @@ asm volatile(
 	"\tbx %0\n"
 	: : "r" (0x02FFFE04)
 );
-
 
 struct GSF_FILE{
 	char psftag[220];//psftag[50001]; //int psftag[12500]; //minigsf 
@@ -302,6 +268,17 @@ free(uncompr);
 	
 	}*/
 
+/* THUMB DISASSEMBLER (little endian) */ //format { 0xc5, 0xc0-- };
+unsigned char buf[1*2]; //buffer for 16 thumb instructions
+struct DInst insts[10] = {{0},{0},{0},{0},{0},{0},{0},{0},{0},{0}}; //_DInst insts[10] = {0};
+struct DecomposeInfo info = {0}; //_DecomposeInfo info = {0};
+struct TInst tinst = {0}; //TInst t = {0};
+/* END THUMB DISASSEMBLER */
+
+GBASystem gba; //this creates a proper GBASystem pointer to struct (stack) - across C++ from struct GBASystem (C)
+//gbaHeader_t *gbaGamehdr;
+
+extern struct gbaheader_t gbaheader;
 
 //0x03800000 - 0x038082xx = 0x82B4 (33xxx bytesld) - 0x038082B5 - 0x03810000 = 0x7D4C free 
 //note:
@@ -312,25 +289,79 @@ free(uncompr);
 
 //linker (bin) objects (main.h)
 
+//vector for dirlibs
+int toggle=0; //toggler for browsefile() IRQ vsync-able
+
+bool dldiload = false;
+bool dirloaded;
+
+//ticker for emulator loop
+u32 cpucore_tick=0;
+
+//fifo
+extern struct fifo_semaphore FIFO_SEMAPHORE_FLAGS;
+
+typedef struct{
+	u32 Version;
+	u32 listentr;
+} __attribute__ ((__packed__)) patch_t;
+patch_t patchheader;
+
+typedef struct{
+	u32 gamecode;
+	u8 homebrew;
+	u64 crc;
+	char patchpath[512 * 2];
+	u8 swaplcd;
+	u8 savfetype;
+	u8 frameskip;
+	u8 frameskipauto;
+	u16 frameline;
+	u8 fastpu;
+	u8 mb;
+	u8 loadertype;
+} __attribute__ ((__packed__)) patch2_t;
+	
+struct DirEntry {
+	char name[512];
+	bool isDirectory;
+};
+
+DIR *pdir;
+struct dirent *pent;
+
 /*
 inline __attribute__((always_inline))
 int wramtst(int wram,int top){
 extern int temp,temp2;
 temp=wramtst1(wram,top);
 if(temp==alignw(top))
-	iprintf("ARM9 test1/2: OK (%d bytes @ 0x%lu+0x%lu) \n",temp,EWRAM,temp);
+	printf("ARM9 test1/2: OK (%d bytes @ 0x%lu+0x%lu) \n",temp,EWRAM,temp);
 else 
-	iprintf("ARM9RAM tst 1/2:\n FAIL (%d bytes @ 0x%lu+0x%lu) \n",temp,EWRAM,temp);
+	printf("ARM9RAM tst 1/2:\n FAIL (%d bytes @ 0x%lu+0x%lu) \n",temp,EWRAM,temp);
 temp2=wramtst2(wram,top);
 if(temp2==alignw(top))
-	iprintf("ARM9 test2/2: OK (%d bytes @ 0x%lu+0x%lu) \n",temp2,EWRAM,temp2);
+	printf("ARM9 test2/2: OK (%d bytes @ 0x%lu+0x%lu) \n",temp2,EWRAM,temp2);
 else if ((temp2-2)==alignw(top))
-	iprintf("ARM9 test2/2: OK (%d bytes @ 0x%lu+0x%lu) \n !!aligned read!!",temp2,EWRAM,temp2);
+	printf("ARM9 test2/2: OK (%d bytes @ 0x%lu+0x%lu) \n !!aligned read!!",temp2,EWRAM,temp2);
 else 
-	iprintf("ARM9RAM tst 2/2:\n FAIL (%d bytes @ 0x%lu+0x%lu) \n",temp2,EWRAM,temp2);
+	printf("ARM9RAM tst 2/2:\n FAIL (%d bytes @ 0x%lu+0x%lu) \n",temp2,EWRAM,temp2);
 return 0;
 }
 */
+
+int u32count_values(u32 u32word){
+int i=0,cntr=0;
+
+while(cntr<32){
+	if (((u32word>>cntr)&0xf)>0){
+		i++;
+	}
+	cntr+=4;
+}
+return i;
+}
+
 
 //psg noise test int temp5=0;
 
@@ -363,7 +394,7 @@ return 0;
 //When Count-up Timing is enabled, the prescaler value is ignored, instead the time is incremented each time when the previous counter overflows. This function cannot be used for Timer 0 (as it is the first timer).
 //F = System Clock (16.78MHz).
 
-/*
+
 //timer 0,1,2,3 (write only) TVAL
 u16 TMXCNT_LW(u8 TMXCNT,int TVAL){
 		*(u32*)(0x04000100+(TMXCNT*4))=TVAL;
@@ -380,61 +411,85 @@ u16 TMXCNT_HW(u8 TMXCNT, u8 prescaler,u8 countup,u8 status){
 		*(u32*)(0x04000100+(TMXCNT*4+2))=(prescaler<<0)|(countup<<2)|(status<<7);
 	return 0;
 }
-*/
 
+u32 emulatorgba(){
 
-//did we use dldi?
-bool dldiload = false;
+//1) read GBAROM entrypoint
+//2) reserve registers r0-r15, stack pointer , LR, PC and stack (for USR, AND SYS MODES)
+//3) get pointers from all reserved memory areas (allocated)
+//4) use this function to fetch addresses from GBAROM, patch swi calls (own BIOS calls), patch interrupts (by calling correct vblank draw, sound)
+//patch IO access , REDIRECT VIDEO WRITES TO ALLOCATED VRAM & VRAMIO [use switch and intercalls for asm]
 
-int main(void) {
+//btw entrypoint is always ARM code 
 
-//fifo setups
-irqInit();
-fifoInit();
+if(gba.cpustate==true){
+	
+	u32 new_instr=armfetchpc((uint32)rom);
+	#ifdef DEBUGEMU
+		printf("/*****************/");
+		printf("\n rom:%x [%x]\n",(unsigned int)rom,(unsigned int)new_instr);
+	#endif
+	
+	//CPUfetch depending on CPUmode
+	(armstate==0)?disarmcode(new_instr):disthumbcode(new_instr);	
 
-//so far code is stable, this will cause lockups definitely
-#ifdef MPURECONFIG
-	setgbamap(); //does not Reconfig MPU memory properties (VECTORS set to 0x00000000) anymore :)
-	//iprintf("setgbamap();\n"); //<-------CAUSES SERIOUS FREEZES
-#endif
+	//refresh vcount & disptat here before cpuloop
+	gba.lcdticks=((*(u32*)0x04000006) &0xfff); //use vcounter for generation ticks
 
-installBootStub(false);
-
-videoSetMode(MODE_5_2D);
-vramSetBankA(VRAM_A_MAIN_BG);
-
-// set up our bitmap background
-//bgInit(3, BgType_Bmp16, BgSize_B16_256x256, 0,0);
-//decompress(hbmenu_bannerBitmap, BG_GFX,  LZ77Vram);
-
-// Subscreen as a console
-videoSetModeSub(MODE_0_2D);
-vramSetBankH(VRAM_H_SUB_BG);
-
-//bg = bgInit(3, BgType_Bmp16, BgSize_B16_256x256, 0,0);
-consoleDemoInit();    
-
-biosPath[0] = 0;
-savePath[0] = 0;
-patchPath[0] = 0;
-
-#ifndef ROMTEST
-//dldi stuff
-iprintf("Init Fat...");
-
-if(fatInitDefault()){
-	dldiload = true;
-	getcwd (temppath, PATH_MAX); //fat:/ 
+	cpuloop(cpucore_tick);	//1 list per hblank / threads from gba.lcdticks into IF
+	cpucore_tick++;
+	if(cpucore_tick>10001) 
+		cpucore_tick=0;
 }
-else{
-	iprintf("\x1b[20;1H failed to init FAT driver \n");
-	iprintf("\x1b[21;1H Current dldi driver[%s]: \n",_io_dldi_stub.friendlyName);
+else
+	gba.cpustate=true;
+
+//read input is done already -> gba.GBAP1
+
+//increase PC depending on CPUmode
+(armstate==0)?rom+=4:rom+=2;
+
+//before anything, interrupts (GBA generated) are checked on NDS9 IRQ.s PU.C exceptirq()
+
+//old dcache is discarded
+//DC_InvalidateAll(); 
+//DC_FlushAll();
+
+return 0;
 }
 
-//show gbadata iprintf("\x1b[21;1H
+char temppath[255 * 2];
+char biospath[255 * 2];
+char savepath[255 * 2];
+char patchpath[255 * 2];
+
+int main(int _argc, sint8 **_argv) {
+
+IRQInit();
+bool project_specific_console = false;	//set default console or custom console: default console
+GUI_init(project_specific_console);
+GUI_clear();
+
+sint32 fwlanguage = (sint32)getLanguage();
+
+int ret=FS_init();
+if (ret == 0)
+{
+	printf("FS Init ok.");
+}
+else if(ret == -1)
+{
+	printf("FS Init error.");
+}
+
+biospath[0] = 0;
+savepath[0] = 0;
+patchpath[0] = 0;
+
+// GBA EMU INIT//
+//show gbadata printf("\x1b[21;1H
 strcat(temppath,(char*)"/gba/rs-pzs.gba");
 //printgbainfo (temppath);
-#endif
 
 //debugging is enabled at startup
 isdebugemu_defined();
@@ -442,40 +497,37 @@ isdebugemu_defined();
 /******************************************************** GBA EMU INIT CODE *********************************************************************/
 bool extram = false; //enabled for dsi
 
-iprintf("CPULoadRom...");
+printf("CPULoadRom...");
 bool failed = !CPULoadRom(temppath,extram);
 if(failed)
 {
     printf("failed");
 	while(1);
 }
-iprintf("OK\n");
+printf("OK\n");
 
 
 useBios = false;
-iprintf("CPUInit\n");
-CPUInit(biosPath, useBios,false);
+printf("CPUInit\n");
+CPUInit(biospath, useBios,false);
 
-iprintf("CPUReset\n");
-CPUReset();
+printf("CPUReset\n");
+bios_cpureset();
 
-iprintf("BIOS_RegisterRamReset\n");
-BIOS_RegisterRamReset(0xFF);
+printf("BIOS_RegisterRamReset\n");
+bios_registerramreset(0xFF);
 
-
-iprintf("arm7init\n");
+printf("arm7init\n");
 //execute_arm7_command(0xc0700100,0x1FFFFFFF,gba_frame_line);
 
-iprintf("irqinit\n");
+printf("irqinit\n");
 //IEBACKUP = 0;
-
 
 //bios calls (flush) destroyed sp13 for usr mode
 exRegs[0xd]=gbavirtreg_r13usr[0];
   
 //Set CPSR virtualized bits & perform USR/SYS CPU mode change. & set stacks
 updatecpuflags(1,cpsrvirt,0x10);
-
 
 
 //old entrypoint: gba map cant reach this ... so
@@ -486,7 +538,6 @@ gba_entrypoint = (u32)0x08000000;
 
 //re enable when opcodes are implemented
 #ifndef ROMTEST
-
 u8* gba_stack_src =(u8*)0x03000000;
 
 //new
@@ -497,11 +548,11 @@ u32 rom_pool_end = 0x03007f00;  //the last ARM disassembled opcode (top) from ou
 int PATCH_BOOTCODE_SIZE = 0;
 PATCH_BOOTCODE_SIZE = extract_word(PATCH_BOOTCODE_PTR,(PATCH_BOOTCODE_PTR[0]),(u32*)&somebuf[0],rom_pool_end,32);
 
-//iprintf("payload 1st op:%x / payload size: %d \n",(PATCH_BOOTCODE_PTR[0]),PATCH_BOOTCODE_SIZE);
+//printf("payload 1st op:%x / payload size: %d \n",(PATCH_BOOTCODE_PTR[0]),PATCH_BOOTCODE_SIZE);
 nds_2_gba_copy((u8*)&somebuf[0],gba_stack_src,PATCH_BOOTCODE_SIZE*4);
 
-//iprintf("gba read @ %x:%x \n",(u32)(u8*)gba_src,CPUReadMemory((u32)(u8*)gba_src));
-iprintf("nds payload set correctly! payload size: %d\n",(int)PATCH_BOOTCODE_SIZE*4);
+//printf("gba read @ %x:%x \n",(u32)(u8*)gba_src,CPUReadMemory((u32)(u8*)gba_src));
+printf("nds payload set correctly! payload size: %d\n",(int)PATCH_BOOTCODE_SIZE*4);
 
 exRegs[0xe]=(u32)gba_entrypoint;
 exRegs[0xf]=(u32)(u8*)gba_stack_src;
@@ -516,7 +567,7 @@ exRegs[0xf]=(u32)(u8*)gba_stack_src;
 	//so: rom is set at 0x08000000 and streamed instead ROP approach
 	
 	//nds_2_gba_copy(rom,gba_src,puzzle_original_size);
-    //iprintf("nds gba homebrew set correctly @ %x! payload size: %d\n",gba_src,puzzle_original_size);
+    //printf("nds gba homebrew set correctly @ %x! payload size: %d\n",gba_src,puzzle_original_size);
 
     exRegs[0xe]=(u32)gba_entrypoint;
     exRegs[0xf]=(u32)gba_entrypoint;
@@ -556,43 +607,19 @@ nopinlasm();
 nopinlasm();
 nopinlasm();
 nopinlasm();
-	
-	#ifndef CUSTOMIRQ
-	
-	//LIBNDS irq
-	//REG_IME = IME_DISABLE;
-	iprintf("LIBNDS IRQ handling.");
-	
-	//custom IRQ handlers don't allow jumping to these handlers
-	irqSet(IRQ_VBLANK, vblank_thread); //remove for debug
-	irqSet(IRQ_HBLANK,hblank_thread);
-	irqSet(IRQ_VCOUNT,vcount_thread);
 
-	//upon data transfer IRQ_CARD
-	irqEnable(IRQ_VBLANK | IRQ_VCOUNT | IRQ_HBLANK );
-	
-    iprintf("connecting..");
-    
-    if(Wifi_InitDefault(true) == true) 
-    {
-        iprintf("Connected : NDS IP Client Address: %s \n\n ",(char*)print_ip((u32)Wifi_GetIP()));
-    }
-    else
-        iprintf("Failed to connect! \n\n ");
-        
-	
-	while(1) {
-		//swiIntrWait(1,IRQ_VBLANK|IRQ_VCOUNT | IRQ_HBLANK |IRQ_FIFO_NOT_EMPTY);
-		swiWaitForVBlank();
+while (1)
+{
+	if (keysPressed() & KEY_A){
+		printf("test:%d",rand()&0xff);
 	}
 	
-	#else
-	
-	while(1) {
-
-		//custom IRQ code here
+	if (keysPressed() & KEY_B){
+		GUI_clear();
 	}
-	#endif
-return 0;
-
+	
+	IRQVBlankWait();
+}
+	
+	return 0;
 }

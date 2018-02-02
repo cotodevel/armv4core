@@ -20,6 +20,8 @@
 #ifndef VBA_EEPROM_H
 #define VBA_EEPROM_H
 
+#include "opcode.h"
+
 #define EEPROM_IDLE           0
 #define EEPROM_READADDRESS    1
 #define EEPROM_READDATA       2

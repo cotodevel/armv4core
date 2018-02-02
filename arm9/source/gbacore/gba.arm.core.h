@@ -1,24 +1,19 @@
+#ifndef armv4coregbaarmcore
+#define armv4coregbaarmcore
+
+#include "typedefsTGDS.h"
+#include "dsregs.h"
+#include "dsregs_asm.h"
+
 //arm9 main libs
-#include <nds.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>//BRK(); SBRK();
-#include <nds/ndstypes.h>
-#include <nds/memory.h>
-#include <nds/bios.h>
-#include <nds/system.h>
 #include <fcntl.h>
-#include <fat.h>
 #include <sys/stat.h>
-//#include <dswifi9.h>
 #include <errno.h>
 #include <ctype.h>
-#include <filesystem.h>
-#include <dirent.h>
-
-//NDS7 clock
-//#include <time.h> 
 
 //GBASystem struct declaration
 #include "util.h"
@@ -98,8 +93,6 @@ extern u32  gbavirtreg_nonfiq[0x5];
 //  12    Keypad                         (etc.)
 //  13    Game Pak (external IRQ source) (etc.)
 
-extern volatile u16 DISPCNT;
-
 extern memoryMap map[256];
 extern bool ioReadable[0x400];
 extern bool N_FLAG ;
@@ -139,6 +132,7 @@ extern u8 *oam ;
 
 extern u8 ioMem[0x400];
 
+/*
 extern u16 DISPSTAT ;
 extern u16 VCOUNT   ;
 extern u16 BG0CNT   ;
@@ -212,9 +206,11 @@ extern u16 TM2CNT ;
 extern u16 TM3D   ;
 extern u16 TM3CNT ;
 extern u16 P1 ;
-extern u16 IE ;
-extern u16 IF ;
-extern u16 IME;
+*/
+
+extern u16 GBAIE;
+extern u16 GBAIF;
+extern u16 GBAIME;
 
 //gba arm core variables
 extern int SWITicks;
@@ -327,6 +323,7 @@ extern void CPUWriteHalfWord_stack(u32 address, u16 value);
 extern void CPUWriteMemory_stack(u32 address, u32 value);
 
 //stacked is safe but slow (we dont want speed but accuracy for this debugger)
+/*
 extern u8 gbawram[(256*1024)];
 extern u8 palram[0x400];
 extern u8 gbabios[0x4000];
@@ -335,6 +332,7 @@ extern u8 gbaoam[0x400];
 extern u8 gbacaioMem[0x400];
 //extern u8 iomem[0x400]; //already defined
 extern u8 saveram[512*1024]; //512K
+*/
 
 extern int hblank_ticks;
 
@@ -346,6 +344,10 @@ extern u32 myROM[173];
 
 extern int romSize;
 
+extern struct GBASystem gbaSystemGlobal;
+
 #ifdef __cplusplus
 }
+#endif
+
 #endif

@@ -212,7 +212,7 @@ writebufenable:
 	bx lr
 	
 @----------------------------------------------------------------------------------
-@C2,C0,0 - DATA cache for region enable
+@C2,C0,0 - DATA cachability region enable
 //---------------------------------------------------------------------------------
 	.global	dcacheenable
 	.type	dcacheenable STT_FUNC
@@ -237,6 +237,9 @@ prepcache:
 	@str	r9,[r0]
 	bx lr
 
+//dsmasks:
+//	.word	0x003fffff, 0x02000000, 0x02c00000
+
 @lockdown DCACHE (VA)
 //---------------------------------------------------------------------------------
 	.global	DC_lockdownVA
@@ -246,6 +249,10 @@ DC_lockdownVA:
 	mcr	p15, 0, r0, c9, c0, 0
 	bx lr
 
-.align
-.pool
-.end
+@.L100:
+@.word getdtcmbase @0
+@.word setdtcmsz @4
+
+@stack manag
+@stmfd  sp!, {LR}
+@ldmia sp!,{PC}

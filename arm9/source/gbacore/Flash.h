@@ -20,6 +20,8 @@
 #ifndef VBA_FLASH_H
 #define VBA_FLASH_H
 
+#include "opcode.h"
+
 	//save game
 	struct variable_desc{ 
 		void *address;

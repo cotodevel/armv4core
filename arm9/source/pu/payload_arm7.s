@@ -81,7 +81,7 @@ ldr r12,=0xcc7cffff
 ldr r14,=0xce7effff
 
 @test / bugged
-push {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r14}^
+push {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r14}
 
 @test2 ok
 @push {r0,r9,r10,r11,r12,r14}
@@ -100,7 +100,7 @@ mov r10,#0
 mov r11,#0
 mov r12,#0
 
-pop {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r14}^
+pop {r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r14}
 
 @test2 ok
 @pop {r0,r9,r10,r11,r12,r14}^

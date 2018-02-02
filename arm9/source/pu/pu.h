@@ -1,6 +1,7 @@
-#include <nds.h>
-#include <fat.h>
-#include <filesystem.h>
+#include "typedefsTGDS.h"
+#include "dsregs.h"
+#include "dsregs_asm.h"
+
 #include <dirent.h>
 #include <unistd.h>    // for sbrk()
 
@@ -12,9 +13,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <ctype.h>
-
-#include "../main.h"
-
+#include "main.h"
 
 //PU setup all NDS region addresses
 #define debug_vect	(*(intfuncptr *)(0x02FFFD9C)) //ori: #define EXCEPTION_VECTOR	(*(VoidFn *)(0x2FFFD9C))
@@ -206,15 +205,13 @@ extern u32 mpu_setup();
 //C vector exceptions
 extern u32 exceptswi(u32); 		//swi vector
 extern u32 exceptundef(u32 undef);	//undefined vector
-
-extern u32 exceptirq(u32 temp_IE,u32 temp_IF,u32 sp_ptr);
-
+extern u32 exceptirq(u32 nds_iemask,u32 nds_ifmask,u32 sp_ptr);
 extern u32 swicaller(u32 arg);
 
 //exception tests
 extern u32 inter_irq();
 
-//extern u32 __attribute__((section(".dtcm"))) curr_exception[]; //inter_regs.s
+extern u32 __attribute__((section(".dtcm"))) curr_exception[]; //inter_regs.s
 
 //extern void __attribute__((section(".dtcm"))) (*exHandler)();
 //extern void __attribute__((section(".dtcm"))) (*exHandlerswi)();
@@ -224,7 +221,7 @@ extern u32 inter_irq();
 
 //cpu_SetCP15Cnt(cpu_GetCP15Cnt() & ~0x1);
 //2 = 2048 / 3 = 4096 / 4 = 8192 / 5 = 16384
-//iprintf("%x \n",setdtcmsz(5)); //0x027C0000
+//printf("%x \n",setdtcmsz(5)); //0x027C0000
 //pu_Enable();
 
 #ifdef __cplusplus

@@ -1,18 +1,10 @@
 @--------------------------------------------------------------------------------
 @								virtualizer variables
 @--------------------------------------------------------------------------------
-.cpu arm946e-s
 .align 4
 .code 32
 .ARM
 @--------------------------------ARM virtualize----------------------------------
-
-#include "../settings.h"
-
-.global romsize					@no need to allocate to dtcm , its already on dtcm
-romsize:
-	.word 0x00000000
-
 
 @MOVS PC,R14 @return from exception and restore CPSR from SPSR_mode
 @BL put LR=PC then jumps to subroutine
@@ -240,6 +232,21 @@ tstasm:
 	LDMFD sp!, {r1-r12,lr}
 bx lr
 
+.global negasm	
+.type negasm STT_FUNC
+negasm:
+	STMFD sp!, {r1-r12,lr}		
+	
+	@opcode
+	rsbs r0,r0,#0				
+	@save asmCPSR results
+	mrs r6,CPSR		@APSR
+	ldr r2,=cpsrasm
+	str r6,[r2]
+	@opcode end
+	
+	LDMFD sp!, {r1-r12,lr}
+bx lr
 
 .global cmnasm	
 .type cmnasm STT_FUNC
@@ -264,6 +271,22 @@ orrasm:
 	
 	@opcode
 	orrs r0,r0,r1				
+	@save asmCPSR results
+	mrs r6,CPSR		@APSR
+	ldr r2,=cpsrasm
+	str r6,[r2]
+	@opcode end
+	
+	LDMFD sp!, {r1-r12,lr}
+bx lr
+
+.global mulasm	
+.type mulasm STT_FUNC
+mulasm:
+	STMFD sp!, {r1-r12,lr}		
+	
+	@opcode
+	mul r0,r1,r0				@rd = mul rd, rs, but compiler disaproves mul rd,rd,rs	
 	@save asmCPSR results
 	mrs r6,CPSR		@APSR
 	ldr r2,=cpsrasm
@@ -343,7 +366,7 @@ rscasm:
 	STMFD sp!, {r1-r12,lr}		
 	
 	@opcode
-	rscs r0,r0,r1						
+	rsc r0,r0,r1						
 	@save asmCPSR results
 	mrs r6,CPSR		@APSR
 	ldr r2,=cpsrasm
@@ -375,7 +398,7 @@ rsbasm:
 	STMFD sp!, {r1-r12,lr}		
 	
 	@opcode
-	rsbs r0,r0,r1						
+	rsb r0,r0,r1						
 	@save asmCPSR results
 	mrs r6,CPSR		@APSR
 	ldr r2,=cpsrasm
@@ -385,27 +408,7 @@ rsbasm:
 	LDMFD sp!, {r1-r12,lr}
 bx lr
 
-
-@ARM v5 multiplier opcodes
-
-.global mulasm	
-.type mulasm STT_FUNC
-mulasm:
-	STMFD sp!, {r1-r12,lr}		
-	
-	@opcode
-	muls r3,r0,r1				@Rd:=Rm(0)*Rs(1). Rn is ignored
-	@save asmCPSR results
-	mrs r6,CPSR		@APSR
-	ldr r2,=cpsrasm
-	str r6,[r2]
-	@opcode end
-	
-    mov r0,r3   @arg0 output
-    
-	LDMFD sp!, {r1-r12,lr}
-bx lr
-
+@mults
 
 .global mlaasm	
 .type mlaasm STT_FUNC
@@ -413,34 +416,8 @@ mlaasm:
 	STMFD sp!, {r1-r12,lr}		
 	
 	@opcode
-	mlas r3,r0,r1,r2			@Rd:=Rm(0)*Rs(1)+Rn(2)
+	mla r0,r1,r0,r2				@rd = mul rd, rs, but compiler disaproves mul rd,rd,rs	
 	@save asmCPSR results
-	mrs r6,CPSR		@APSR
-	ldr r4,=cpsrasm
-	str r6,[r4]
-	
-    mov r0,r3   @arg0 output
-    
-	LDMFD sp!, {r1-r12,lr}
-bx lr
-
-@signed multiply opcodes
-
-.global umullasm	
-.type umullasm STT_FUNC
-umullasm:
-	STMFD sp!, {r1-r12,lr}		
-	
-	@opcode
-    mov r4,r0   @Rdlo 
-    mov r5,r1   @Rdhi
-    
-	umulls r0,r1,r2,r3				@RdLo,RdHi,Rm,Rs / UMULL R1,R4,R2,R3 ; R4,R1:=R2*R3
-	
-    str r0,[r4]
-    str r1,[r5]
-    
-    @save asmCPSR results
 	mrs r6,CPSR		@APSR
 	ldr r2,=cpsrasm
 	str r6,[r2]
@@ -449,21 +426,14 @@ umullasm:
 	LDMFD sp!, {r1-r12,lr}
 bx lr
 
-.global smullasm	
-.type smullasm STT_FUNC
-smullasm:
+.global mulsasm	
+.type mulsasm STT_FUNC
+mulsasm:
 	STMFD sp!, {r1-r12,lr}		
 	
 	@opcode
-    mov r4,r0   @Rdlo 
-    mov r5,r1   @Rdhi
-    
-	smulls r0,r1,r2,r3				@RdLo,RdHi,Rm,Rs / UMULL R1,R4,R2,R3 ; R4,R1:=R2*R3
-	
-    str r0,[r4]
-    str r1,[r5]
-    
-    @save asmCPSR results
+	muls r0,r1,r0				@rd = mul rd, rs, but compiler disaproves mul rd,rd,rs	
+	@save asmCPSR results
 	mrs r6,CPSR		@APSR
 	ldr r2,=cpsrasm
 	str r6,[r2]
@@ -472,41 +442,37 @@ smullasm:
 	LDMFD sp!, {r1-r12,lr}
 bx lr
 
-.global umlalasm	
-.type umlalasm STT_FUNC
-umlalasm:
+.global mulltasm	
+.type mulltasm STT_FUNC
+mulltasm:
 	STMFD sp!, {r1-r12,lr}		
 	
-    umlals r5,r4,r2,r3				@ RdLo_addr(0), RdHi_addr(1) = Rm(2) * Rs(3) + RdLo(4), RdHi(5) / RdHi,RdLo := Rm * Rs + RdHi,RdLo
+	@opcode
+	mullt r0,r1,r0				@rd = mul rd, rs, but compiler disaproves mul rd,rd,rs	
 	@save asmCPSR results
-	mrs r7,CPSR		@APSR
-	ldr r8,=cpsrasm
-	str r7,[r8]
+	mrs r6,CPSR		@APSR
+	ldr r2,=cpsrasm
+	str r6,[r2]
 	@opcode end
 	
-    str r4,[r0]             @ RdLo_addr(0)
-    str r5,[r1]             @ RdHi_addr(1)
-    
 	LDMFD sp!, {r1-r12,lr}
 bx lr
 
-.global smlalasm	
-.type smlalasm STT_FUNC
-smlalasm:
+.global mlavcsasm	
+.type mlavcsasm STT_FUNC
+mlavcsasm:
 	STMFD sp!, {r1-r12,lr}		
 	
-	smlals r5,r4,r2,r3				@ RdLo_addr(0), RdHi_addr(1) = Rm(2) * Rs(3) + RdLo(4), RdHi(5) / RdHi,RdLo := Rm * Rs + RdHi,RdLo
+	@opcode
+	mlavcs r0,r1,r0,r2				@rd = mul rd, rs, but compiler disaproves mul rd,rd,rs	
 	@save asmCPSR results
-	mrs r7,CPSR		@APSR
-	ldr r8,=cpsrasm
-	str r7,[r8]
+	mrs r6,CPSR		@APSR
+	ldr r2,=cpsrasm
+	str r6,[r2]
 	@opcode end
 	
-    str r4,[r0]             @ RdLo_addr(0)
-    str r5,[r1]             @ RdHi_addr(1)
 	LDMFD sp!, {r1-r12,lr}
 bx lr
-
 
 @load/store
 .global ldru32extasm	
@@ -588,7 +554,17 @@ sqrtasm:
 	LDMFD sp!, {r1-r12,lr}
 bx lr
 
-@coto
+.global shift_word
+shift_word:
+	movs r6,r5,lsl #16	
+	movs r6,r6,lsr #16	@0xabcd
+	
+	movs r7,r5,ror #16	@0xefgh0000
+	movs r7,r7,lsl #16
+	
+	orr r6,r7,r6		@0xabcdefgh
+bx lr
+
 .global wramtstasm
 .type wramtstasm STT_FUNC
 wramtstasm:
@@ -624,7 +600,10 @@ wramtstasm:
 	LDMFD sp!, {r2-r12,lr}
 bx lr
 
-.pool       @we need the neccesary #imm fetches close
+@---------------------------------------------------------------------------------
+
+
+
 
 @--------------------------------------------------------------------------------------------------------------
 @EWRAM variables
@@ -636,9 +615,35 @@ gbachunk:
 	.word 0x00000000
 
 @--------------------------------- emulator interruptable registers / variables
-@.global cputotalticks	@emulator CPU heartbeats / moved to DTCM
-@cputotalticks:
-@	.word 0x00000000
+.global cputotalticks
+cputotalticks:
+	.word 0x00000000
+
+@virtual environment Interruptable Bits
+.global	gbavirt_ifmasking			@IF GBA
+gbavirt_ifmasking:
+	.word 0x00000000
+
+.global	gbavirt_iemasking			@IE GBA
+gbavirt_iemasking:
+	.word 0x00000000
+
+.global	gbavirt_imemasking			@IME GBA
+gbavirt_imemasking:
+	.word 0x00000000
+
+@nds hardware Interruptable Bits
+.global	nds_ifmasking			@IF GBA
+nds_ifmasking:
+	.word 0x00000000
+
+.global	nds_iemasking			@IE GBA
+nds_iemasking:
+	.word 0x00000000
+
+.global	nds_imemasking			@IME GBA
+nds_imemasking:
+	.word 0x00000000
 
 @-- destroyable regs (for virtual stack opcodes)
 .global dummyreg
@@ -663,18 +668,87 @@ dummyreg4:
 dummyreg5:
 	.word 0x00000000
 	
-@---------------------- CPU CPSR / SPSRs -------------------------
-@toggle that decides if an ARM opcode is #Imm
-@virtualizated cpsr (for reusing flags on whatever processor support ARM flags)
+@-- address patches
+.global addrpatches
+addrpatches:			@init - end
+	.word 0x00000000	@bios
+	.word 0x00003FFF	
+	.word 0x02000000	@ewram
+	.word 0x0203FFFF
+	.word 0x03000000	@internal wram
+	.word 0x03007FFF
+	.word 0x04000000	@GBA I/O map
+	.word 0x040003FE
+	.word 0x05000000	@BG/OBJ Palette RAM
+	.word 0x050003FF
+	.word 0x06000000	@vram
+	.word 0x06017FFF
+	.word 0x07000000	@object attribute memory
+	.word 0x070003FF
+	.word 0x00000000	@leftover
+	.word 0x00000000	@
+
+.global addrfixes
+addrfixes:				@init - end
+	.word 0x00000000	@bios
+	.word 0x00000000	
+	.word 0x00000000	@ewram
+	.word 0x00000000
+	.word 0x00000000	@internal wram
+	.word 0x00000000
+	.word 0x00000000	@GBA I/O map
+	.word 0x00000000
+	.word 0x00000000	@BG/OBJ Palette RAM
+	.word 0x00000000
+	.word 0x00000000	@vram
+	.word 0x00000000
+	.word 0x00000000	@object attribute memory
+	.word 0x00000000
+	.word 0x00000000	@rom
+	.word 0x00000000	@rom top
+
+@---------------------- CPU flags / CPSR / SPSRs -------------------------
+
+.global z_flag
+z_flag:
+	.word 0x00000000
+
+.global n_flag
+n_flag:
+	.word 0x00000000
+
+.global c_flag
+c_flag:
+	.word 0x00000000
+
+.global v_flag
+v_flag:
+	.word 0x00000000
+
+.global i_flag
+i_flag:
+	.word 0x00000000
+
+.global f_flag
+f_flag:
+	.word 0x00000000
+	
+.global immop_arm
+immop_arm:
+	.word 0x00000000
+	
+.global	setcond_arm
+setcond_arm:
+	.word 0x00000000
+	
 .global cpsrasm			@CPSR from hardware reads
 cpsrasm:
 	.word 0x00000000
-@emulated cpsr
+
 .global cpsrvirt		@CPSR from virtualized environment
 cpsrvirt:
 	.word 0x00000000
 
-@spsr for each ARMv4 PSR_MODE
 .global spsr_svc		@ saved, SVC(32) mode
 spsr_svc: 
 	.word 0x00000000
@@ -709,14 +783,155 @@ spsr_last:
 	
 @---------------------------virtualizer variables------------------------------------------
 
+.global armstate		@0 ARM / 1 THUMB 
+armstate:
+	.word 00000000
 
-.global gba_entrypoint
-gba_entrypoint:
+.global armirqstate		@0 disabled / 1 enabled
+armirqstate:
+	.word 00000000
+	
+.global armswistate 	@0 disabled / 1 enabled
+armswistate:
+	.word 00000000
+
+@--------------------------stack base address for different CPU modes-----------------------------
+.global gbastckadr_usr
+gbastckadr_usr:
+	.word 0x00000000
+	
+.global gbastckadr_fiq
+gbastckadr_fiq:
+	.word 0x00000000
+	
+.global gbastckadr_irq
+gbastckadr_irq:
+	.word 0x00000000
+	
+.global gbastckadr_svc
+gbastckadr_svc:
 	.word 0x00000000
 
+.global gbastckadr_abt
+gbastckadr_abt:
+	.word 0x00000000
+
+.global gbastckadr_und
+gbastckadr_und:
+	.word 0x00000000
+
+.global gbastckadr_sys
+gbastckadr_sys:
+	.word 0x00000000
+
+@--------------------------frame pointer address for each stack , different CPU modes-----------------------------
+.global gbastckfp_usr
+gbastckfp_usr:
+	.word 0x00000000
+
+.global gbastckfp_fiq
+gbastckfp_fiq:
+	.word 0x00000000
+
+.global gbastckfp_irq
+gbastckfp_irq:
+	.word 0x00000000
+
+.global gbastckfp_svc
+gbastckfp_svc:
+	.word 0x00000000
+
+.global gbastckfp_abt
+gbastckfp_abt:
+	.word 0x00000000
+
+.global gbastckfp_und
+gbastckfp_und:
+	.word 0x00000000
+
+.global gbastckfp_sys
+gbastckfp_sys:
+	.word 0x00000000
+
+.global gbastckfpadr_curr
+gbastckfpadr_curr:
+	.word 0x00000000
+@--------------------------------------------current slot for loaded stack ---------------------------------------
+.global gbastckmodeadr_curr
+gbastckmodeadr_curr:
+	.word 0x00000000
+
+@--------------------------------------------saved slot for framepointer SPSR ---------------------------------------
+.global gbastckfpadr_spsr
+gbastckfpadr_spsr:
+	.word 0x00000000
+
+@.equ REG_BASE,	0x04000000
+@.equ REG_IME,	0x04000208
 
 @The ARM9 Exception Vectors are located at FFFF0000h. The IRQ handler redirects to [DTCM+3FFCh].
 @= ADDRESS of label (phys location), dereference address and you get offset content
+
+
+@------------------------for ARM code calls
+.global gbastackarm
+gbastackarm:
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+
+.global branch_stackfp			@stack cpu mode registers and CPSR when branching occurs 
+branch_stackfp:					@works in tandem with branch_stack[17*32]
+	.word 0x00000000
+@-----------------------------------------------------------------
+
+.global branch_adrstack
+branch_adrstack:			@stack returning addresses when re-calling disassemblers code
+
+	.word 0x00000000		@PC+4 values are here 	(ret. values)
+	.word 0x00000000		
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+
+.global branch_adrstack_fp		@current frame pointer for address branching stack. works in tandem with branch_adrstack[0x10]
+branch_adrstack_fp:
+	.word 0x00000000
+
+.global call_adrstack
+call_adrstack:
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
+	.word 0x00000000
 
 .global vector_addr
 vector_addr:
@@ -726,29 +941,29 @@ vector_addr:
 vector_end_addr:
 	.word __vectors_end
 
+@----------------------------------------------------------------------------------------------------------------------------
+@ DTCM variables / DTCM IS NOT MEANT TO STORE ASM opcodes because caches must be coherent for that! Otherwise CPU will crash
+@--------------------------------------------------------------------------------
+@.section	.dtcm,"ax",%progbits
+@--------------------------------------------------------------------------------
+
+.global rom						@GBA virtual Program Counter, Instruction Pointer
+rom:
+	.word 0x00000000
+	
+.global romsize					@no need to allocate to dtcm , its already on dtcm
+romsize:
+	.word 0x00000000
+
+.global rom_entrypoint
+rom_entrypoint:
+	.word 0x00000000
+
+
 @useful macro to retrieve DTCMs top reserved area
 .global dtcm_end_alloced
 dtcm_end_alloced:
 	.word __dtcm_end
-
-
-@DEBUG and dissect ARM code
-.cpu arm7tdmi
-
-.global opcode_test_arm
-.type opcode_test_arm STT_FUNC
-opcode_test_arm:
-
-pop {r0,r9,r10,r11,r12,r15}
-
-pop {r0,r9,r10,r11,r12,r15}^
-
-bx lr
-
-
-
-@other
-@movs r15,r15 @spsr restore ARMV4+
 
 .align
 .pool

@@ -6,8 +6,8 @@
 @0x1b und
 @0x1f sys
 
-//.text
-//.equ REG_IME, 0x04000208
+.text
+.equ REG_IME, 0x04000208
 
 .align 4
 .code 32

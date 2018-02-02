@@ -16,25 +16,32 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+#include "typedefsTGDS.h"
+#include "dsregs.h"
+#include "dsregs_asm.h"
+
+//filesystem
+#include "fsfatlayerTGDS.h"
+#include "fileHandleTGDS.h"
+#include "InterruptsARMCores_h.h"
+#include "specific_shared.h"
+#include "ff.h"
+#include "memoryHandleTGDS.h"
+#include "reent.h"
+#include "sys/types.h"
+#include "consoleTGDS.h"
+#include "utilsTGDS.h"
+#include "devoptab_devices.h"
+#include "posixHandleTGDS.h"
+#include "xenofunzip.h"
+#include "gbaemu4ds_fat_ext.h"
+
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <nds/memory.h>
-#include <nds/ndstypes.h>
-#include <nds/memory.h>
-#include <nds/bios.h>
-#include <nds/system.h>
-#include <nds/arm9/math.h>
-#include <nds/arm9/video.h>
-#include <nds/arm9/videoGL.h>
-#include <nds/arm9/trig_lut.h>
-#include <nds/arm9/sassert.h>
 #include <stdarg.h>
 #include <string.h>
-
 #include "System.h"
-
-//#include <SDL.h> //ichfly realy todo
-//#include <SDL_thread.h>
 
 #define __DOUTBUFSIZE 256
 
@@ -100,7 +107,7 @@ void systemMessage(int _iId, const char * _csFormat, ...)
 	len=vsnprintf(__outstr,__DOUTBUFSIZE,_csFormat,args);
 	va_end(args);
 
-  iprintf(__outstr);//GUI()->vPopupErrorV(_(_csFormat), args);
+  printf(__outstr);//GUI()->vPopupErrorV(_(_csFormat), args);
 
   va_end(args);
   

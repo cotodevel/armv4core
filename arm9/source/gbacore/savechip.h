@@ -1,4 +1,6 @@
-#include <nds.h>
+#include "typedefsTGDS.h"
+#include "dsregs.h"
+#include "dsregs_asm.h"
 
 #ifdef __cplusplus
 extern "C" {

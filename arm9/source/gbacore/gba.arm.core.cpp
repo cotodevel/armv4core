@@ -1,39 +1,52 @@
+#include "typedefsTGDS.h"
+#include "dsregs.h"
+#include "dsregs_asm.h"
+
 #include "gba.arm.core.h"
 
-#include <nds.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <fat.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <ctype.h>
-#include <filesystem.h>
-#include <dirent.h>
 
 //NDS7 clock
 #include <time.h> 
 #include "clock.h"
 #include "gba_ipc.h"
 
+
 //emu clock
 #include "rtc.h"
 
-#include "../pu/supervisor.h"
-#include "../pu/pu.h"
-#include "../gbacore/opcode.h"
-#include "../gbacore/util.h"
-#include "../gbacore/translator.h"
-#include "../gbacore/bios.h"
+#include "supervisor.h"
+#include "pu.h"
+#include "opcode.h"
+#include "util.h"
+#include "translator.h"
+#include "bios.h"
 
-//disk
-#include "../disk/fatmore.h"
+//filesystem
+#include "fsfatlayerTGDS.h"
+#include "fileHandleTGDS.h"
+#include "InterruptsARMCores_h.h"
+#include "specific_shared.h"
+#include "ff.h"
+#include "memoryHandleTGDS.h"
+#include "reent.h"
+#include "sys/types.h"
+#include "consoleTGDS.h"
+#include "utilsTGDS.h"
+#include "devoptab_devices.h"
+#include "posixHandleTGDS.h"
+#include "xenofunzip.h"
 
 //player instance
-#include "../main.h"
+#include "main.h"
 
 //save
 #include "savechip.h"
@@ -43,9 +56,16 @@
 #include "Sram.h"
 #include "System.h"
 
-#include "../settings.h"
+#include "settings.h"
+#include "buffer.h"
+#include "keypadTGDS.h"
+
+//the gbasystem global instance
+struct GBASystem gbaSystemGlobal;
+
 
 //volatile u32 __attribute__((section(".gbawram"))) __attribute__ ((aligned (4))) gbawram[(256*1024)/4]; //ori specs
+/*
 u8 gbawram[(256*1024)];
 u8 palram[0x400];
 u8 gbabios[0x4000];
@@ -54,10 +74,10 @@ u8 gbaoam[0x400];
 u8 gbacaioMem[0x400];
 //u8 iomem[0x400];  //already defined
 u8 saveram[512*1024]; //sram 512K
-
+*/
 
 //gba vars
-volatile u16 DISPCNT;
+//volatile u16 gbaSystemGlobal.GBADISPCNT;
 
 __attribute__((section(".dtcm")))
 memoryMap map[256];
@@ -115,9 +135,7 @@ __attribute__((section(".dtcm")))
 bool mirroringEnable = false;
 
 __attribute__((section(".dtcm")))
-u8 *bios = gbabios; 
-__attribute__((section(".dtcm")))
-u8 *rom = (u8*)(u32)&exRegs[0xf];
+u8 *bios = (uint8*)gbabios; 
 
 __attribute__((section(".dtcm")))
 u8 *internalRAM = (u8*)gbaintram; 
@@ -138,159 +156,86 @@ u8 *oam = (u8*)0x07000000;
 __attribute__((section(".dtcm")))
 u8 ioMem[0x400];
 
-__attribute__((section(".dtcm")))
-u16 DISPSTAT = 0x0000;
-__attribute__((section(".dtcm")))
-u16 VCOUNT   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG0CNT   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG1CNT   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG2CNT   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG3CNT   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG0HOFS  = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG0VOFS  = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG1HOFS  = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG1VOFS  = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG2HOFS  = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG2VOFS  = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG3HOFS  = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG3VOFS  = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG2PA    = 0x0100;
-__attribute__((section(".dtcm")))
-u16 BG2PB    = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG2PC    = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG2PD    = 0x0100;
-__attribute__((section(".dtcm")))
-u16 BG2X_L   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG2X_H   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG2Y_L   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG2Y_H   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG3PA    = 0x0100;
-__attribute__((section(".dtcm")))
-u16 BG3PB    = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG3PC    = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG3PD    = 0x0100;
-__attribute__((section(".dtcm")))
-u16 BG3X_L   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG3X_H   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG3Y_L   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BG3Y_H   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 WIN0H    = 0x0000;
-__attribute__((section(".dtcm")))
-u16 WIN1H    = 0x0000;
-__attribute__((section(".dtcm")))
-u16 WIN0V    = 0x0000;
-__attribute__((section(".dtcm")))
-u16 WIN1V    = 0x0000;
-__attribute__((section(".dtcm")))
-u16 WININ    = 0x0000;
-__attribute__((section(".dtcm")))
-u16 WINOUT   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 MOSAIC   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 BLDMOD   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 COLEV    = 0x0000;
-__attribute__((section(".dtcm")))
-u16 COLY     = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM0SAD_L = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM0SAD_H = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM0DAD_L = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM0DAD_H = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM0CNT_L = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM0CNT_H = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM1SAD_L = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM1SAD_H = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM1DAD_L = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM1DAD_H = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM1CNT_L = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM1CNT_H = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM2SAD_L = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM2SAD_H = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM2DAD_L = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM2DAD_H = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM2CNT_L = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM2CNT_H = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM3SAD_L = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM3SAD_H = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM3DAD_L = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM3DAD_H = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM3CNT_L = 0x0000;
-__attribute__((section(".dtcm")))
-u16 DM3CNT_H = 0x0000;
-__attribute__((section(".dtcm")))
-u16 TM0D     = 0x0000;
-__attribute__((section(".dtcm")))
-u16 TM0CNT   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 TM1D     = 0x0000;
-__attribute__((section(".dtcm")))
-u16 TM1CNT   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 TM2D     = 0x0000;
-__attribute__((section(".dtcm")))
-u16 TM2CNT   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 TM3D     = 0x0000;
-__attribute__((section(".dtcm")))
-u16 TM3CNT   = 0x0000;
-__attribute__((section(".dtcm")))
-u16 P1       = 0xFFFF;
-__attribute__((section(".dtcm")))
-u16 IE       = 0x0000;
-__attribute__((section(".dtcm")))
-u16 IF       = 0x0000;
-__attribute__((section(".dtcm")))
-u16 IME      = 0x0000;
+/*
+u16 gbaSystemGlobal.GBADISPSTAT = 0x0000;
+u16 gbaSystemGlobal.GBAVCOUNT   = 0x0000;
+u16 gbaSystemGlobal.GBABG0CNT   = 0x0000;
+u16 gbaSystemGlobal.GBABG1CNT   = 0x0000;
+u16 gbaSystemGlobal.GBABG2CNT   = 0x0000;
+u16 gbaSystemGlobal.GBABG3CNT   = 0x0000;
+u16 gbaSystemGlobal.GBABG0HOFS  = 0x0000;
+u16 gbaSystemGlobal.GBABG0VOFS  = 0x0000;
+u16 gbaSystemGlobal.GBABG1HOFS  = 0x0000;
+u16 gbaSystemGlobal.GBABG1VOFS  = 0x0000;
+u16 gbaSystemGlobal.GBABG2HOFS  = 0x0000;
+u16 gbaSystemGlobal.GBABG2VOFS  = 0x0000;
+u16 gbaSystemGlobal.GBABG3HOFS  = 0x0000;
+u16 gbaSystemGlobal.GBABG3VOFS  = 0x0000;
+u16 gbaSystemGlobal.GBABG2PA    = 0x0100;
+u16 gbaSystemGlobal.GBABG2PB    = 0x0000;
+u16 gbaSystemGlobal.GBABG2PC    = 0x0000;
+u16 gbaSystemGlobal.GBABG2PD    = 0x0100;
+u16 gbaSystemGlobal.GBABG2X_L   = 0x0000;
+u16 gbaSystemGlobal.GBABG2X_H   = 0x0000;
+u16 gbaSystemGlobal.GBABG2Y_L   = 0x0000;
+u16 gbaSystemGlobal.GBABG2Y_H   = 0x0000;
+u16 gbaSystemGlobal.GBABG3PA    = 0x0100;
+u16 gbaSystemGlobal.GBABG3PB    = 0x0000;
+u16 gbaSystemGlobal.GBABG3PC    = 0x0000;
+u16 gbaSystemGlobal.GBABG3PD    = 0x0100;
+u16 gbaSystemGlobal.GBABG3X_L   = 0x0000;
+u16 gbaSystemGlobal.GBABG3X_H   = 0x0000;
+u16 gbaSystemGlobal.GBABG3Y_L   = 0x0000;
+u16 gbaSystemGlobal.GBABG3Y_H   = 0x0000;
+u16 gbaSystemGlobal.GBAWIN0H    = 0x0000;
+u16 gbaSystemGlobal.GBAWIN1H    = 0x0000;
+u16 gbaSystemGlobal.GBAWIN0V    = 0x0000;
+u16 gbaSystemGlobal.GBAWIN1V    = 0x0000;
+u16 gbaSystemGlobal.GBAWININ    = 0x0000;
+u16 gbaSystemGlobal.GBAWINOUT   = 0x0000;
+u16 gbaSystemGlobal.GBAMOSAIC   = 0x0000;
+u16 gbaSystemGlobal.GBABLDMOD   = 0x0000;
+u16 gbaSystemGlobal.GBACOLEV    = 0x0000;
+u16 gbaSystemGlobal.GBACOLY     = 0x0000;
+u16 gbaSystemGlobal.GBADM0SAD_L = 0x0000;
+u16 gbaSystemGlobal.GBADM0SAD_H = 0x0000;
+u16 gbaSystemGlobal.GBADM0DAD_L = 0x0000;
+u16 gbaSystemGlobal.GBADM0DAD_H = 0x0000;
+u16 gbaSystemGlobal.GBADM0CNT_L = 0x0000;
+u16 gbaSystemGlobal.GBADM0CNT_H = 0x0000;
+u16 gbaSystemGlobal.GBADM1SAD_L = 0x0000;
+u16 gbaSystemGlobal.GBADM1SAD_H = 0x0000;
+u16 gbaSystemGlobal.GBADM1DAD_L = 0x0000;
+u16 gbaSystemGlobal.GBADM1DAD_H = 0x0000;
+u16 gbaSystemGlobal.GBADM1CNT_L = 0x0000;
+u16 gbaSystemGlobal.GBADM1CNT_H = 0x0000;
+u16 gbaSystemGlobal.GBADM2SAD_L = 0x0000;
+u16 gbaSystemGlobal.GBADM2SAD_H = 0x0000;
+u16 gbaSystemGlobal.GBADM2DAD_L = 0x0000;
+u16 gbaSystemGlobal.GBADM2DAD_H = 0x0000;
+u16 gbaSystemGlobal.GBADM2CNT_L = 0x0000;
+u16 gbaSystemGlobal.GBADM2CNT_H = 0x0000;
+u16 gbaSystemGlobal.GBADM3SAD_L = 0x0000;
+u16 gbaSystemGlobal.GBADM3SAD_H = 0x0000;
+u16 gbaSystemGlobal.GBADM3DAD_L = 0x0000;
+u16 gbaSystemGlobal.GBADM3DAD_H = 0x0000;
+u16 gbaSystemGlobal.GBADM3CNT_L = 0x0000;
+u16 gbaSystemGlobal.GBADM3CNT_H = 0x0000;
+u16 gbaSystemGlobal.GBATM0D     = 0x0000;
+u16 gbaSystemGlobal.GBATM0CNT   = 0x0000;
+u16 gbaSystemGlobal.GBATM1D     = 0x0000;
+u16 gbaSystemGlobal.GBATM1CNT   = 0x0000;
+u16 gbaSystemGlobal.GBATM2D     = 0x0000;
+u16 gbaSystemGlobal.GBATM2CNT   = 0x0000;
+u16 gbaSystemGlobal.GBATM3D     = 0x0000;
+u16 gbaSystemGlobal.GBATM3CNT   = 0x0000;
+u16 gbaSystemGlobal.GBAP1       = 0xFFFF;
 
+*/
+
+u16 GBAIE       = 0x0000;
+u16 GBAIF       = 0x0000;
+u16 GBAIME      = 0x0000;
 
 //gba arm core variables
 __attribute__((section(".dtcm")))
@@ -456,10 +401,6 @@ __attribute__((section(".dtcm")))
 u8 gamepakWaitState1[2] = { 4, 1 };
 __attribute__((section(".dtcm")))
 u8 gamepakWaitState2[2] = { 8, 1 };
-__attribute__((section(".dtcm")))
-bool isInRom [16]=
-  { false, false, false, false, false, false, false, false,
-    true, true, true, true, true, true, false, false };              
 
 __attribute__((section(".dtcm")))
 u8 memoryWait[16] =
@@ -738,8 +679,8 @@ u32 __attribute__ ((hot)) cpu_calculate(){
 		lcdTicks -= cpuTotalTicks;
 		
 		///////////////////////////////////// Interrupt thread //////////////////////////////////////
-		if(IF && (IME & 1) && armIrqEnable){
-			int res = IF & IE;
+		if(GBAIF && (GBAIME & 1) && armIrqEnable){
+			int res = GBAIF & GBAIE;
 			if(stopState)
 				res &= 0x3080;
 			if(res) {
@@ -778,7 +719,7 @@ u32 __attribute__ ((hot)) cpu_calculate(){
 		/////////////////////////////////VBLANK/HBLANK THREAD/////////////////////////////////////////////////////////
 		//not this one
 		
-		if(DISPSTAT & 2) { //HBLANK period
+		if(gbaSystemGlobal.GBADISPSTAT & 2) { //HBLANK period
 			//draw
 			//gbavideorender((u32)gba.vidram, (u32)hblankdelta);
 		
@@ -786,89 +727,89 @@ u32 __attribute__ ((hot)) cpu_calculate(){
 			lcdTicks += 1008;
 			
 			//last (visible) vertical line
-			if(VCOUNT == 160) {
+			if(gbaSystemGlobal.GBAVCOUNT == 160) {
 				frameCount++;	//framecount
 				u32 joy = 0;	// update joystick information
 			
 				joy = systemreadjoypad(-1);
-				P1 = 0x03FF ^ (joy & 0x3FF);
+				gbaSystemGlobal.GBAP1 = 0x03FF ^ (joy & 0x3FF);
 				if(cpuEEPROMSensorEnabled){
 					//systemUpdateMotionSensor(); //
 				}
-				UPDATE_REG(0x130 , P1);	//UPDATE_REG(0x130, P1);
+				UPDATE_REG(0x130 , gbaSystemGlobal.GBAP1);	//UPDATE_REG(0x130, gbaSystemGlobal.GBAP1);
 				u16 P1CNT =	CPUReadHalfWord(((u32)ioMem[0x132]));	//u16 P1CNT = READ16LE(((u16 *)&ioMem[0x132]));
 				// this seems wrong, but there are cases where the game
 				// can enter the stop state without requesting an IRQ from
 				// the joypad.
 				if((P1CNT & 0x4000) || stopState) {
-					u16 p1 = (0x3FF ^ P1) & 0x3FF;
+					u16 p1 = (0x3FF ^ gbaSystemGlobal.GBAP1) & 0x3FF;
 					if(P1CNT & 0x8000) {
 						if(p1 == (P1CNT & 0x3FF)) {
-							IF |= 0x1000;
-							UPDATE_REG(0x202 , IF);	
+							GBAIF |= 0x1000;
+							UPDATE_REG(0x202 , GBAIF);	
 						}
 					} 
 					else {
 						if(p1 & P1CNT) {
-							IF |= 0x1000;
-							UPDATE_REG(0x202 , IF);
+							GBAIF |= 0x1000;
+							UPDATE_REG(0x202 , GBAIF);
 						}
 					}
 				}
 				
-				DISPSTAT |= 1; 			//V-BLANK flag set (period 160..226)
-				DISPSTAT &= 0xFFFD;		//UNSET V-COUNTER FLAG
-				//UPDATE_REG(0x04 , DISPSTAT);
+				gbaSystemGlobal.GBADISPSTAT |= 1; 			//V-BLANK flag set (period 160..226)
+				gbaSystemGlobal.GBADISPSTAT &= 0xFFFD;		//UNSET V-COUNTER FLAG
+				//UPDATE_REG(0x04 , gbaSystemGlobal.GBADISPSTAT);
 				
-				if(DISPSTAT & 0x0008) {
-					IF |= 1;
-					UPDATE_REG(0x202 , IF);
+				if(gbaSystemGlobal.GBADISPSTAT & 0x0008) {
+					GBAIF |= 1;
+					UPDATE_REG(0x202 , GBAIF);
 				}
 				
 				//CPUCheckDMA(1, 0x0f); 	//DMA is HBLANK period now
 			}
 			
 			//Reaching last (non-visible) line
-			else if(VCOUNT >= 228){ 	
-				DISPSTAT &= 0xFFFC;
-				VCOUNT = 0;
+			else if(gbaSystemGlobal.GBAVCOUNT >= 228){ 	
+				gbaSystemGlobal.GBADISPSTAT &= 0xFFFC;
+				gbaSystemGlobal.GBAVCOUNT = 0;
 			}
 			
 			
 			if(hblank_ticks>=240){
-				DISPSTAT &= 0xFFFD; //(unset) toggle HBLANK flag only when entering/exiting VCOUNTer
+				gbaSystemGlobal.GBADISPSTAT &= 0xFFFD; //(unset) toggle HBLANK flag only when entering/exiting VCOUNTer
 				hblank_ticks=0;
 			}
 		}
 		
-		//Entering H-Blank (VCOUNT time) 
-		//note: (can't set VCOUNT ticking on HBLANK because this is always HBLANK time on NDS interrupts (stuck VCOUNT from 0x04000006)
+		//Entering H-Blank (gbaSystemGlobal.GBAVCOUNT time) 
+		//note: (can't set gbaSystemGlobal.GBAVCOUNT ticking on HBLANK because this is always HBLANK time on NDS interrupts (stuck gbaSystemGlobal.GBAVCOUNT from 0x04000006)
 		else{
 			
-			DISPSTAT |= 2;					//(set) toggle HBLANK flag only when entering/exiting VCOUNTer
+			gbaSystemGlobal.GBADISPSTAT |= 2;					//(set) toggle HBLANK flag only when entering/exiting VCOUNTer
 			lcdTicks += 224;
-			VCOUNT=ndsvcounter();
-			//gba.VCOUNT++; 					//vcount method read from hardware from now on
+			gbaSystemGlobal.GBAVCOUNT=ndsvcounter();
+			//gba.gbaSystemGlobal.GBAVCOUNT++; 					//vcount method read from hardware from now on
 			
 			//CPUCheckDMA(2, 0x0f); 	//DMA is HBLANK period now
 			
-			if(DISPSTAT & 16) {
-				IF |= 2;
-				UPDATE_REG(0x202 , IF);	//UPDATE_REG(0x202, IF);
+			if(gbaSystemGlobal.GBADISPSTAT & 16) {
+				GBAIF |= 2;
+				UPDATE_REG(0x202 , GBAIF);	//UPDATE_REG(0x202, GBAIF);
 			}
 			
 			//////////////////////////////////////VCOUNTER Thread ////////////////////////////////////////////////////////////
-			if( (VCOUNT) == (DISPSTAT >> 8) ) { //V-Count Setting (LYC) == VCOUNT = IRQ VBLANK
-				DISPSTAT |= 4;
+			if( (gbaSystemGlobal.GBAVCOUNT) == (gbaSystemGlobal.GBADISPSTAT >> 8) ) { //V-Count Setting (LYC) == gbaSystemGlobal.GBAVCOUNT = IRQ VBLANK
+				gbaSystemGlobal.GBADISPSTAT |= 4;
 				
-				if(DISPSTAT & 0x20) {
-					IF |= 4;
-					UPDATE_REG(0x202, IF);		 //UPDATE_REG(0x202, gba->IF);
+				if(gbaSystemGlobal.GBADISPSTAT & 0x20) {
+					GBAIF |= 4;
+					UPDATE_REG(0x202, GBAIF);		 //UPDATE_REG(0x202, gba->GBAIF);
 				}
 			}
 			else {
-				DISPSTAT &= 0xFFFB;
-				//UPDATE_REG(0x4, gba->DISPSTAT);
+				gbaSystemGlobal.GBADISPSTAT &= 0xFFFB;
+				//UPDATE_REG(0x4, gba->gbaSystemGlobal.GBADISPSTAT);
 			}		
 		}
 		
@@ -876,12 +817,12 @@ u32 __attribute__ ((hot)) cpu_calculate(){
 		if((gba.layerenabledelay) >0){
 			gba.layerenabledelay--;
 			if (gba.layerenabledelay==1)
-				gba.layerenable = gba.layersettings & gba.DISPCNT;
+				gba.layerenable = gba.layersettings & gba.gbaSystemGlobal.GBADISPCNT;
 		}
 		*/
 		
-		UPDATE_REG(0x04, DISPSTAT);	
-		UPDATE_REG(0x06, VCOUNT);
+		UPDATE_REG(0x04, gbaSystemGlobal.GBADISPSTAT);	
+		UPDATE_REG(0x06, gbaSystemGlobal.GBAVCOUNT);
 		
 		//**********************************DMA THREAD runs on blank irq*************************************/
 		
@@ -903,8 +844,8 @@ u32 __attribute__ ((hot)) cpu_fdexecute(){
 		//Word alignment for opcode fetch. (doesn't ignore opcode's bit[0] globally, bc fetch will carry whatever Word is)
 		u32 new_instr=armfetchpc_arm(exRegs[0xf]&0xfffffffe); 
 		#ifdef DEBUGEMU
-			iprintf("/******ARM******/");
-			iprintf("\n rom:%x [%x]\n",(unsigned int)exRegs[0xf],(unsigned int)new_instr);
+			printf("/******ARM******/");
+			printf("\n rom:%x [%x]\n",(unsigned int)exRegs[0xf],(unsigned int)new_instr);
 		#endif
 		disarmcode(new_instr);
 		
@@ -914,8 +855,8 @@ u32 __attribute__ ((hot)) cpu_fdexecute(){
 		//Half Word alignment for opcode fetch. (doesn't ignore opcode's bit[0] globally, bc fetch will carry whatever HalfWord is)
 		u16 new_instr=armfetchpc_thumb((exRegs[0xf])&0xfffffffe);
 		#ifdef DEBUGEMU
-			iprintf("/******THUMB******/");
-			iprintf("\n rom:%x [%x]\n",(unsigned int)exRegs[0xf],(unsigned int)new_instr);
+			printf("/******THUMB******/");
+			printf("\n rom:%x [%x]\n",(unsigned int)exRegs[0xf],(unsigned int)new_instr);
 		#endif
 		disthumbcode(new_instr);
 		
@@ -924,12 +865,12 @@ u32 __attribute__ ((hot)) cpu_fdexecute(){
 
 /*
 if(rom==0x081e2b31){
-	iprintf("opcode for PC:(%x) [%x] \n",(unsigned int)rom,(unsigned int)armfetchpc_thumb((rom&0xfffffffe)));
+	printf("opcode for PC:(%x) [%x] \n",(unsigned int)rom,(unsigned int)armfetchpc_thumb((rom&0xfffffffe)));
 	while(1);
 }
 */
 
-//read input is done already -> gba.P1
+//read input is done already -> gba.gbaSystemGlobal.GBAP1
 
 //increase PC depending on CPUmode
 if (armState)
@@ -979,15 +920,15 @@ return 0;
 u32 __attribute__ ((hot)) swi_virt(u32 swinum){
     switch(swinum) {
         case 0x00:
-            BIOS_SoftReset();
+            //BIOS_SoftReset();
 		break;
         case 0x01:
-            BIOS_RegisterRamReset(exRegs[0]);
+            bios_registerramreset(exRegs[0]);
 		break;
         case 0x02:
         {
             #ifdef DEV_VERSION
-                iprintf("Halt: IE %x\n",(unsigned int)IE);
+                printf("Halt: GBAIE %x\n",(unsigned int)GBAIE);
             #endif
             //holdState = true;
             //holdType = -1;
@@ -1000,7 +941,7 @@ u32 __attribute__ ((hot)) swi_virt(u32 swinum){
         case 0x03:
         {
             #ifdef DEV_VERSION
-                iprintf("Stop\n");
+                printf("Stop\n");
             #endif
 			//holdState = true;
 			//holdType = -1;
@@ -1008,7 +949,7 @@ u32 __attribute__ ((hot)) swi_virt(u32 swinum){
 			//cpuNextEvent = cpuTotalTicks;
 			
             //ori
-            //gba4ds_swiIntrWait(1,(IE & 0x6080));
+            //gba4ds_swiIntrWait(1,(GBAIE & 0x6080));
             
             //coto: new safe GBA SWI sleepmode
             ////execute_arm7_command(0xc0700103,0x0,0x0);
@@ -1017,7 +958,7 @@ u32 __attribute__ ((hot)) swi_virt(u32 swinum){
         case 0x04:
         {
             #ifdef DEV_VERSION
-            iprintf("IntrWait: 0x%08x,0x%08x\n",(unsigned int)R[0],(unsigned int)R[1]);      
+            printf("IntrWait: 0x%08x,0x%08x\n",(unsigned int)R[0],(unsigned int)R[1]);      
             #endif
             
             //gba4ds_swiIntrWait(R[0],R[1]);
@@ -1028,7 +969,7 @@ u32 __attribute__ ((hot)) swi_virt(u32 swinum){
         case 0x05:
         {
             #ifdef DEV_VERSION
-                //iprintf("VBlankIntrWait: 0x%08X 0x%08X\n",REG_IE,anytimejmpfilter);
+                //printf("VBlankIntrWait: 0x%08X 0x%08X\n",REG_IE,anytimejmpfilter);
                 //VblankHandler(); //todo
             #endif
             //if((REG_DISPSTAT & DISP_IN_VBLANK)) while((REG_DISPSTAT & DISP_IN_VBLANK)); //workaround
@@ -1050,68 +991,68 @@ u32 __attribute__ ((hot)) swi_virt(u32 swinum){
         }
 		break;
         case 0x06:
-            BIOS_Div();
+            bios_div();
 		break;
         case 0x07:
-            BIOS_DivARM();
+            bios_divarm();
 		break;
         case 0x08:
-            BIOS_Sqrt();
+            bios_sqrt();
 		break;
         case 0x09:
-            BIOS_ArcTan();
+            bios_arctan();
 		break;
         case 0x0A:
-            BIOS_ArcTan2();
+            bios_arctan2();
 		break;
         case 0x0B:
-            BIOS_CpuSet();
+            bios_cpuset();
 		break;
         case 0x0C:
-            BIOS_CpuFastSet();
+            bios_cpufastset();
 		break;
         case 0x0D:
-            BIOS_GetBiosChecksum();
+            bios_getbioschecksum();
 		break;
         case 0x0E:
-            BIOS_BgAffineSet();
+            bios_bgaffineset();
 		break;
         case 0x0F:
-            BIOS_ObjAffineSet();
+            bios_objaffineset();
 		break;
         case 0x10:
-            BIOS_BitUnPack();
+            bios_bitunpack();
 		break;
         case 0x11:
-            BIOS_LZ77UnCompWram();
+            bios_lz77uncompwram();
 		break;
         case 0x12:
-            BIOS_LZ77UnCompVram();
+            bios_lz77uncompvram();
 		break;
         case 0x13:
-            BIOS_HuffUnComp();
+            bios_huffuncomp();
 		break;
         case 0x14:
-            BIOS_RLUnCompWram();
+            bios_rluncompwram();
 		break;
         case 0x15:
-            BIOS_RLUnCompVram();
+            bios_rluncompvram();
 		break;
         case 0x16:
-            BIOS_Diff8bitUnFilterWram();
+            bios_diff8bitunfilterwram();
 		break;
         case 0x17:
-            BIOS_Diff8bitUnFilterVram();
+            bios_diff8bitunfiltervram();
 		break;
         case 0x18:
-            BIOS_Diff16bitUnFilter();
+            bios_diff16bitunfilter();
 		break;
         
         //coto: added soundbias support
         case 0x19:
         {
             //#ifdef DEV_VERSION
-            iprintf("SoundBiasSet: 0x%08x \n",(unsigned int)exRegs[0]);
+            printf("SoundBiasSet: 0x%08x \n",(unsigned int)exRegs[0]);
             //#endif    
             //if(reg[0].I) //ichfly sound todo
             //systemSoundPause(); //ichfly sound todo
@@ -1126,10 +1067,10 @@ u32 __attribute__ ((hot)) swi_virt(u32 swinum){
 		}
         break;
         case 0x1F:
-            BIOS_MidiKey2Freq();
+           bios_midikey2freq();
 		break;
         case 0x2A:
-            BIOS_SndDriverJmpTableCopy();
+            bios_snddriverjmptablecopy();
 		break;
 		// let it go, because we don't really emulate this function
         case 0x2D: 
@@ -1144,11 +1085,11 @@ u32 __attribute__ ((hot)) swi_virt(u32 swinum){
         default:
             if((swinum & 0x30) >= 0x30)
             {
-                iprintf("r%x ",(unsigned int)(swinum));
+                printf("r%x ",(unsigned int)(swinum));
             }
             else
             {
-                iprintf("Unsupported BIOS function %02x. A BIOS file is needed in order to get correct behaviour.",(unsigned int)swinum);
+                printf("Unsupported BIOS function %02x. A BIOS file is needed in order to get correct behaviour.",(unsigned int)swinum);
                 
             }
 		break;
@@ -1181,6 +1122,7 @@ u32  __attribute__((section(".dtcm"))) gbavirtreg_fiq[0x5];
 
 //original registers used by any PSR_MODE that do not belong to FIQ r8-r12
 u32  __attribute__((section(".dtcm"))) gbavirtreg_nonfiq[0x5];
+u32  __attribute__((section(".dtcm"))) gbavirtreg_cpu[0x10];
 
 __attribute__((section(".itcm")))
 __attribute__ ((hot))
@@ -1235,11 +1177,11 @@ __attribute__ ((hot))
 void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
 {
   // DMA 0
-  if((DM0CNT_H & 0x8000) && (dmamask & 1)) {
-    if(((DM0CNT_H >> 12) & 3) == reason) {
+  if((gbaSystemGlobal.GBADM0CNT_H & 0x8000) && (dmamask & 1)) {
+    if(((gbaSystemGlobal.GBADM0CNT_H >> 12) & 3) == reason) {
       u32 sourceIncrement = 4;
       u32 destIncrement = 4;
-      switch((DM0CNT_H >> 7) & 3) {
+      switch((gbaSystemGlobal.GBADM0CNT_H >> 7) & 3) {
       case 0:
         break;
       case 1:
@@ -1249,7 +1191,7 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
         sourceIncrement = 0;
         break;
       }
-      switch((DM0CNT_H >> 5) & 3) {
+      switch((gbaSystemGlobal.GBADM0CNT_H >> 5) & 3) {
       case 0:
         break;
       case 1:
@@ -1261,42 +1203,42 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
       }      
 #ifdef DEV_VERSION
       if(systemVerbose & VERBOSE_DMA0) {
-        int count = (DM0CNT_L ? DM0CNT_L : 0x4000) << 1;
-        if(DM0CNT_H & 0x0400)
+        int count = (gbaSystemGlobal.GBADM0CNT_L ? gbaSystemGlobal.GBADM0CNT_L : 0x4000) << 1;
+        if(gbaSystemGlobal.GBADM0CNT_H & 0x0400)
           count <<= 1;
-        iprintf("DMA0: s=%08x d=%08x c=%04x count=%08x\n", dma0Source, dma0Dest, 
-            DM0CNT_H,
+        printf("DMA0: s=%08x d=%08x c=%04x count=%08x\n", dma0Source, dma0Dest, 
+            gbaSystemGlobal.GBADM0CNT_H,
             count);
       }
 #endif
       doDMA(dma0Source, dma0Dest, sourceIncrement, destIncrement,
-            DM0CNT_L ? DM0CNT_L : 0x4000,
-            DM0CNT_H & 0x0400);
+            gbaSystemGlobal.GBADM0CNT_L ? gbaSystemGlobal.GBADM0CNT_L : 0x4000,
+            gbaSystemGlobal.GBADM0CNT_H & 0x0400);
       cpuDmaHack = true;
 
-      /*if(DM0CNT_H & 0x4000) {
-        IF |= 0x0100;
-        UPDATE_REG(0x202, IF);
+      /*if(gbaSystemGlobal.GBADM0CNT_H & 0x4000) {
+        GBAIF |= 0x0100;
+        UPDATE_REG(0x202, GBAIF);
         cpuNextEvent = cpuTotalTicks;
       }*/ //ichfly todo
       
-      if(((DM0CNT_H >> 5) & 3) == 3) {
-        dma0Dest = DM0DAD_L | (DM0DAD_H << 16);
+      if(((gbaSystemGlobal.GBADM0CNT_H >> 5) & 3) == 3) {
+        dma0Dest = gbaSystemGlobal.GBADM0DAD_L | (gbaSystemGlobal.GBADM0DAD_H << 16);
       }
       
-      if(!(DM0CNT_H & 0x0200) || (reason == 0)) {
-        DM0CNT_H &= 0x7FFF;
-        UPDATE_REG(0xBA, DM0CNT_H);
+      if(!(gbaSystemGlobal.GBADM0CNT_H & 0x0200) || (reason == 0)) {
+        gbaSystemGlobal.GBADM0CNT_H &= 0x7FFF;
+        UPDATE_REG(0xBA, gbaSystemGlobal.GBADM0CNT_H);
       }
     }
   }
   
   // DMA 1
-  if((DM1CNT_H & 0x8000) && (dmamask & 2)) {
-    if(((DM1CNT_H >> 12) & 3) == reason) {
+  if((gbaSystemGlobal.GBADM1CNT_H & 0x8000) && (dmamask & 2)) {
+    if(((gbaSystemGlobal.GBADM1CNT_H >> 12) & 3) == reason) {
       u32 sourceIncrement = 4;
       u32 destIncrement = 4;
-      switch((DM1CNT_H >> 7) & 3) {
+      switch((gbaSystemGlobal.GBADM1CNT_H >> 7) & 3) {
       case 0:
         break;
       case 1:
@@ -1306,7 +1248,7 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
         sourceIncrement = 0;
         break;
       }
-      switch((DM1CNT_H >> 5) & 3) {
+      switch((gbaSystemGlobal.GBADM1CNT_H >> 5) & 3) {
       case 0:
         break;
       case 1:
@@ -1319,8 +1261,8 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
       if(reason == 3) {
 #ifdef DEV_VERSION
         if(systemVerbose & VERBOSE_DMA1) {
-          iprintf("DMA1: s=%08x d=%08x c=%04x count=%08x\n", dma1Source, dma1Dest,
-              DM1CNT_H,
+          printf("DMA1: s=%08x d=%08x c=%04x count=%08x\n", dma1Source, dma1Dest,
+              gbaSystemGlobal.GBADM1CNT_H,
               16);
         }
 #endif  
@@ -1329,43 +1271,43 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
       } else {
 #ifdef DEV_VERSION
         if(systemVerbose & VERBOSE_DMA1) {
-          int count = (DM1CNT_L ? DM1CNT_L : 0x4000) << 1;
-          if(DM1CNT_H & 0x0400)
+          int count = (gbaSystemGlobal.GBADM1CNT_L ? gbaSystemGlobal.GBADM1CNT_L : 0x4000) << 1;
+          if(gbaSystemGlobal.GBADM1CNT_H & 0x0400)
             count <<= 1;
-          iprintf("DMA1: s=%08x d=%08x c=%04x count=%08x\n", dma1Source, dma1Dest,
-              DM1CNT_H,
+          printf("DMA1: s=%08x d=%08x c=%04x count=%08x\n", dma1Source, dma1Dest,
+              gbaSystemGlobal.GBADM1CNT_H,
               count);
         }
 #endif          
         doDMA(dma1Source, dma1Dest, sourceIncrement, destIncrement,
-              DM1CNT_L ? DM1CNT_L : 0x4000,
-              DM1CNT_H & 0x0400);
+              gbaSystemGlobal.GBADM1CNT_L ? gbaSystemGlobal.GBADM1CNT_L : 0x4000,
+              gbaSystemGlobal.GBADM1CNT_H & 0x0400);
       }
       cpuDmaHack = true;
 
-      /*if(DM1CNT_H & 0x4000) {
-        IF |= 0x0200;
-        UPDATE_REG(0x202, IF);
+      /*if(gbaSystemGlobal.GBADM1CNT_H & 0x4000) {
+        GBAIF |= 0x0200;
+        UPDATE_REG(0x202, GBAIF);
         cpuNextEvent = cpuTotalTicks;
       }*/ //ichfly todo
       
-      if(((DM1CNT_H >> 5) & 3) == 3) {
-        dma1Dest = DM1DAD_L | (DM1DAD_H << 16);
+      if(((gbaSystemGlobal.GBADM1CNT_H >> 5) & 3) == 3) {
+        dma1Dest = gbaSystemGlobal.GBADM1DAD_L | (gbaSystemGlobal.GBADM1DAD_H << 16);
       }
       
-      if(!(DM1CNT_H & 0x0200) || (reason == 0)) {
-        DM1CNT_H &= 0x7FFF;
-        UPDATE_REG(0xC6, DM1CNT_H);
+      if(!(gbaSystemGlobal.GBADM1CNT_H & 0x0200) || (reason == 0)) {
+        gbaSystemGlobal.GBADM1CNT_H &= 0x7FFF;
+        UPDATE_REG(0xC6, gbaSystemGlobal.GBADM1CNT_H);
       }
     }
   }
   
   // DMA 2
-  if((DM2CNT_H & 0x8000) && (dmamask & 4)) {
-    if(((DM2CNT_H >> 12) & 3) == reason) {
+  if((gbaSystemGlobal.GBADM2CNT_H & 0x8000) && (dmamask & 4)) {
+    if(((gbaSystemGlobal.GBADM2CNT_H >> 12) & 3) == reason) {
       u32 sourceIncrement = 4;
       u32 destIncrement = 4;
-      switch((DM2CNT_H >> 7) & 3) {
+      switch((gbaSystemGlobal.GBADM2CNT_H >> 7) & 3) {
       case 0:
         break;
       case 1:
@@ -1375,7 +1317,7 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
         sourceIncrement = 0;
         break;
       }
-      switch((DM2CNT_H >> 5) & 3) {
+      switch((gbaSystemGlobal.GBADM2CNT_H >> 5) & 3) {
       case 0:
         break;
       case 1:
@@ -1389,8 +1331,8 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
 #ifdef DEV_VERSION
         if(systemVerbose & VERBOSE_DMA2) {
           int count = (4) << 2;
-          iprintf("DMA2: s=%08x d=%08x c=%04x count=%08x\n", dma2Source, dma2Dest,
-              DM2CNT_H,
+          printf("DMA2: s=%08x d=%08x c=%04x count=%08x\n", dma2Source, dma2Dest,
+              gbaSystemGlobal.GBADM2CNT_H,
               count);
         }
 #endif                  
@@ -1399,43 +1341,43 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
       } else {
 #ifdef DEV_VERSION
         if(systemVerbose & VERBOSE_DMA2) {
-          int count = (DM2CNT_L ? DM2CNT_L : 0x4000) << 1;
-          if(DM2CNT_H & 0x0400)
+          int count = (gbaSystemGlobal.GBADM2CNT_L ? gbaSystemGlobal.GBADM2CNT_L : 0x4000) << 1;
+          if(gbaSystemGlobal.GBADM2CNT_H & 0x0400)
             count <<= 1;
-          iprintf("DMA2: s=%08x d=%08x c=%04x count=%08x\n", dma2Source, dma2Dest,
-              DM2CNT_H,
+          printf("DMA2: s=%08x d=%08x c=%04x count=%08x\n", dma2Source, dma2Dest,
+              gbaSystemGlobal.GBADM2CNT_H,
               count);
         }
 #endif                  
         doDMA(dma2Source, dma2Dest, sourceIncrement, destIncrement,
-              DM2CNT_L ? DM2CNT_L : 0x4000,
-              DM2CNT_H & 0x0400);
+              gbaSystemGlobal.GBADM2CNT_L ? gbaSystemGlobal.GBADM2CNT_L : 0x4000,
+              gbaSystemGlobal.GBADM2CNT_H & 0x0400);
       }
       cpuDmaHack = true;
 
-      /*if(DM2CNT_H & 0x4000) {
-        IF |= 0x0400;
-        UPDATE_REG(0x202, IF);
+      /*if(gbaSystemGlobal.GBADM2CNT_H & 0x4000) {
+        GBAIF |= 0x0400;
+        UPDATE_REG(0x202, GBAIF);
         cpuNextEvent = cpuTotalTicks;
       }*/ //ichfly todo
 
-      if(((DM2CNT_H >> 5) & 3) == 3) {
-        dma2Dest = DM2DAD_L | (DM2DAD_H << 16);
+      if(((gbaSystemGlobal.GBADM2CNT_H >> 5) & 3) == 3) {
+        dma2Dest = gbaSystemGlobal.GBADM2DAD_L | (gbaSystemGlobal.GBADM2DAD_H << 16);
       }
       
-      if(!(DM2CNT_H & 0x0200) || (reason == 0)) {
-        DM2CNT_H &= 0x7FFF;
-        UPDATE_REG(0xD2, DM2CNT_H);
+      if(!(gbaSystemGlobal.GBADM2CNT_H & 0x0200) || (reason == 0)) {
+        gbaSystemGlobal.GBADM2CNT_H &= 0x7FFF;
+        UPDATE_REG(0xD2, gbaSystemGlobal.GBADM2CNT_H);
       }
     }
   }
 
   // DMA 3
-  if((DM3CNT_H & 0x8000) && (dmamask & 8)) {
-    if(((DM3CNT_H >> 12) & 3) == reason) {
+  if((gbaSystemGlobal.GBADM3CNT_H & 0x8000) && (dmamask & 8)) {
+    if(((gbaSystemGlobal.GBADM3CNT_H >> 12) & 3) == reason) {
       u32 sourceIncrement = 4;
       u32 destIncrement = 4;
-      switch((DM3CNT_H >> 7) & 3) {
+      switch((gbaSystemGlobal.GBADM3CNT_H >> 7) & 3) {
       case 0:
         break;
       case 1:
@@ -1445,7 +1387,7 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
         sourceIncrement = 0;
         break;
       }
-      switch((DM3CNT_H >> 5) & 3) {
+      switch((gbaSystemGlobal.GBADM3CNT_H >> 5) & 3) {
       case 0:
         break;
       case 1:
@@ -1457,30 +1399,30 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
       }      
 #ifdef DEV_VERSION
       if(systemVerbose & VERBOSE_DMA3) {
-        int count = (DM3CNT_L ? DM3CNT_L : 0x10000) << 1;
-        if(DM3CNT_H & 0x0400)
+        int count = (gbaSystemGlobal.GBADM3CNT_L ? gbaSystemGlobal.GBADM3CNT_L : 0x10000) << 1;
+        if(gbaSystemGlobal.GBADM3CNT_H & 0x0400)
           count <<= 1;
-        iprintf("DMA3: s=%08x d=%08x c=%04x count=%08x\n", dma3Source, dma3Dest,
-            DM3CNT_H,
+        printf("DMA3: s=%08x d=%08x c=%04x count=%08x\n", dma3Source, dma3Dest,
+            gbaSystemGlobal.GBADM3CNT_H,
             count);
       }
 #endif                
       doDMA(dma3Source, dma3Dest, sourceIncrement, destIncrement,
-            DM3CNT_L ? DM3CNT_L : 0x10000,
-            DM3CNT_H & 0x0400);
-      /*if(DM3CNT_H & 0x4000) {
-        IF |= 0x0800;
-        UPDATE_REG(0x202, IF);
+            gbaSystemGlobal.GBADM3CNT_L ? gbaSystemGlobal.GBADM3CNT_L : 0x10000,
+            gbaSystemGlobal.GBADM3CNT_H & 0x0400);
+      /*if(gbaSystemGlobal.GBADM3CNT_H & 0x4000) {
+        GBAIF |= 0x0800;
+        UPDATE_REG(0x202, GBAIF);
         cpuNextEvent = cpuTotalTicks;
       }*/ //ichfly todo
 
-      if(((DM3CNT_H >> 5) & 3) == 3) {
-        dma3Dest = DM3DAD_L | (DM3DAD_H << 16);
+      if(((gbaSystemGlobal.GBADM3CNT_H >> 5) & 3) == 3) {
+        dma3Dest = gbaSystemGlobal.GBADM3DAD_L | (gbaSystemGlobal.GBADM3DAD_H << 16);
       }
       
-      if(!(DM3CNT_H & 0x0200) || (reason == 0)) {
-        DM3CNT_H &= 0x7FFF;
-        UPDATE_REG(0xDE, DM3CNT_H);
+      if(!(gbaSystemGlobal.GBADM3CNT_H & 0x0200) || (reason == 0)) {
+        gbaSystemGlobal.GBADM3CNT_H &= 0x7FFF;
+        UPDATE_REG(0xDE, gbaSystemGlobal.GBADM3CNT_H);
       }
     }
   }
@@ -1515,21 +1457,21 @@ void  CPUUpdateRegister(u32 address, u16 value)
             
 			//(LCD) blend control register
 			//higher prio bg against lower prio, for alpha / blend / transparency (sprite pixels)
-			REG_BLDCNT = BLDMOD;
+			REG_BLDCNT = gbaSystemGlobal.GBABLDMOD;
 			
 			//window
-			WIN_IN = WININ;
-			WIN_OUT = WINOUT;
+			WIN_IN = gbaSystemGlobal.GBAWININ;
+			WIN_OUT = gbaSystemGlobal.GBAWINOUT;
 			
 			//scrolling
 			//bg0
-			bgSetScroll(bg_0_setting,BG0HOFS,BG0VOFS);
+			bgSetScroll(bg_0_setting,gbaSystemGlobal.GBABG0HOFS,gbaSystemGlobal.GBABG0VOFS);
 			//bg1
-			bgSetScroll(bg_1_setting,BG1HOFS,BG1VOFS);
+			bgSetScroll(bg_1_setting,gbaSystemGlobal.GBABG1HOFS,gbaSystemGlobal.GBABG1VOFS);
 			//bg2
-			bgSetScroll(bg_2_setting,BG2HOFS,BG2VOFS);
+			bgSetScroll(bg_2_setting,gbaSystemGlobal.GBABG2HOFS,gbaSystemGlobal.GBABG2VOFS);
 			//bg3
-			bgSetScroll(bg_3_setting,BG3HOFS,BG3VOFS);
+			bgSetScroll(bg_3_setting,gbaSystemGlobal.GBABG3HOFS,gbaSystemGlobal.GBABG3VOFS);
 			
 			//mode 0 does not use rotscale registers
 			
@@ -1543,33 +1485,33 @@ void  CPUUpdateRegister(u32 address, u16 value)
                 set_gba_bgmode(1);
 				
                 //not yet
-                //bgSetControlBits(bg_0_setting,BG0CNT);
-				//bgSetControlBits(bg_1_setting,BG0CNT);
-				//bgSetControlBits(bg_2_setting,BG2CNT);
-                    //bgSetControlBits(bg_3_setting,BG3CNT); //bg 0,1 & 2 only
+                //bgSetControlBits(bg_0_setting,gbaSystemGlobal.GBABG0CNT);
+				//bgSetControlBits(bg_1_setting,gbaSystemGlobal.GBABG0CNT);
+				//bgSetControlBits(bg_2_setting,gbaSystemGlobal.GBABG2CNT);
+                    //bgSetControlBits(bg_3_setting,gbaSystemGlobal.GBABG3CNT); //bg 0,1 & 2 only
 				
 				//(LCD) blend control register
 				//higher prio bg against lower prio, for alpha / blend / transparency (sprite pixels)
-				REG_BLDCNT = BLDMOD;
+				REG_BLDCNT = gbaSystemGlobal.GBABLDMOD;
 				
 				//window
-				WIN_IN = WININ;
-				WIN_OUT = WINOUT;
+				WIN_IN = gbaSystemGlobal.GBAWININ;
+				WIN_OUT = gbaSystemGlobal.GBAWINOUT;
 				
 				//scrolling
-                bgSetScroll(bg_0_setting,BG0HOFS,BG0VOFS);
-                bgSetScroll(bg_1_setting,BG1HOFS,BG1VOFS);
+                bgSetScroll(bg_0_setting,gbaSystemGlobal.GBABG0HOFS,gbaSystemGlobal.GBABG0VOFS);
+                bgSetScroll(bg_1_setting,gbaSystemGlobal.GBABG1HOFS,gbaSystemGlobal.GBABG1VOFS);
 				
 				//libnds rotscale/affine
 				//bg 2
 				bgSetAffineMatrixScroll (
 					bg_2_setting, 
-					(int)BG2PA, 
-					(int)BG2PB, 
-					(int)BG2PC, 
-					(int)BG2PD, 
-					(int)(BG2X_L | (BG2X_H << 16)), 	//scroll x 
-					(int)(BG2Y_L | (BG2Y_H << 16))		//scroll y
+					(int)gbaSystemGlobal.GBABG2PA, 
+					(int)gbaSystemGlobal.GBABG2PB, 
+					(int)gbaSystemGlobal.GBABG2PC, 
+					(int)gbaSystemGlobal.GBABG2PD, 
+					(int)(gbaSystemGlobal.GBABG2X_L | (gbaSystemGlobal.GBABG2X_H << 16)), 	//scroll x 
+					(int)(gbaSystemGlobal.GBABG2Y_L | (gbaSystemGlobal.GBABG2Y_H << 16))		//scroll y
 				);
 				
 			}
@@ -1581,48 +1523,48 @@ void  CPUUpdateRegister(u32 address, u16 value)
 			{
 				
 				//handled directly BG CNT because engine 0:0 is used
-				REG_BG0CNT = BG0CNT;
-				bgSetControlBits(bg_1_setting,BG1CNT);	//bg 0 only text
-				bgSetControlBits(bg_2_setting,BG2CNT);
-				bgSetControlBits(bg_3_setting,BG3CNT);
+				REG_BG0CNT = gbaSystemGlobal.GBABG0CNT;
+				bgSetControlBits(bg_1_setting,gbaSystemGlobal.GBABG1CNT);	//bg 0 only text
+				bgSetControlBits(bg_2_setting,gbaSystemGlobal.GBABG2CNT);
+				bgSetControlBits(bg_3_setting,gbaSystemGlobal.GBABG3CNT);
 				
 				//libnds rotscale/affine
 				//bg2
 				bgSetAffineMatrixScroll (bg_2_setting, 
-				(int)BG2PA, 
-				(int)BG2PB, 
-				(int)BG2PC, 
-				(int)BG2PD, 
-				(int)(BG2X_L | (BG2X_H << 16)), 	//scroll x 
-				(int)(BG2Y_L | (BG2Y_H << 16))		//scroll y
+				(int)gbaSystemGlobal.GBABG2PA, 
+				(int)gbaSystemGlobal.GBABG2PB, 
+				(int)gbaSystemGlobal.GBABG2PC, 
+				(int)gbaSystemGlobal.GBABG2PD, 
+				(int)(gbaSystemGlobal.GBABG2X_L | (gbaSystemGlobal.GBABG2X_H << 16)), 	//scroll x 
+				(int)(gbaSystemGlobal.GBABG2Y_L | (gbaSystemGlobal.GBABG2Y_H << 16))		//scroll y
 				);
 				
 				//bg3
 				bgSetAffineMatrixScroll (bg_3_setting, 
-				(int)BG3PA, 
-				(int)BG3PB, 
-				(int)BG3PC, 
-				(int)BG3PD, 
-				(int)(BG3X_L | (BG3X_H << 16)), 	//scroll x 
-				(int)(BG3Y_L | (BG3Y_H << 16))		//scroll y
+				(int)gbaSystemGlobal.GBABG3PA, 
+				(int)gbaSystemGlobal.GBABG3PB, 
+				(int)gbaSystemGlobal.GBABG3PC, 
+				(int)gbaSystemGlobal.GBABG3PD, 
+				(int)(gbaSystemGlobal.GBABG3X_L | (gbaSystemGlobal.GBABG3X_H << 16)), 	//scroll x 
+				(int)(gbaSystemGlobal.GBABG3Y_L | (gbaSystemGlobal.GBABG3Y_H << 16))		//scroll y
 				);
 				
 				//(LCD) blend control register
 				//higher prio bg against lower prio, for alpha / blend / transparency (sprite pixels)
-				REG_BLDCNT = BLDMOD;
+				REG_BLDCNT = gbaSystemGlobal.GBABLDMOD;
 				
 				//window
-				WIN_IN = WININ;
-				WIN_OUT = WINOUT;
+				WIN_IN = gbaSystemGlobal.GBAWININ;
+				WIN_OUT = gbaSystemGlobal.GBAWINOUT;
 				
 				//scrolling
 				//bg zero is direct reg access
-				REG_BG0HOFS = BG0HOFS;
-				REG_BG0VOFS = BG0VOFS;
+				REG_BG0HOFS = gbaSystemGlobal.GBABG0HOFS;
+				REG_BG0VOFS = gbaSystemGlobal.GBABG0VOFS;
 				//bgsetscroll
-				bgSetScroll(bg_1_setting,BG1HOFS,BG1VOFS);
-				bgSetScroll(bg_2_setting,BG2HOFS,BG2VOFS);
-				bgSetScroll(bg_3_setting,BG3HOFS,BG3VOFS);
+				bgSetScroll(bg_1_setting,gbaSystemGlobal.GBABG1HOFS,gbaSystemGlobal.GBABG1VOFS);
+				bgSetScroll(bg_2_setting,gbaSystemGlobal.GBABG2HOFS,gbaSystemGlobal.GBABG2VOFS);
+				bgSetScroll(bg_3_setting,gbaSystemGlobal.GBABG3HOFS,gbaSystemGlobal.GBABG3VOFS);
 			}
 			break;
 			
@@ -1658,34 +1600,34 @@ void  CPUUpdateRegister(u32 address, u16 value)
     {		
 		if((value & 7) < 3)
 		{
-			if(value != DISPCNT)
+			if(value != gbaSystemGlobal.GBADISPCNT)
 			{
-				if(!((DISPCNT & 7) < 3))
+				if(!((gbaSystemGlobal.GBADISPCNT & 7) < 3))
 				{
-					//reset BG3HOFS and BG3VOFS
-					REG_BG3HOFS = BG3HOFS;
-					REG_BG3VOFS = BG3VOFS;
+					//reset gbaSystemGlobal.GBABG3HOFS and gbaSystemGlobal.GBABG3VOFS
+					REG_BG3HOFS = gbaSystemGlobal.GBABG3HOFS;
+					REG_BG3VOFS = gbaSystemGlobal.GBABG3VOFS;
 
 					//reset
-					REG_BG3CNT = BG3CNT;
-					REG_BG2CNT = BG2CNT;
-					REG_BLDCNT = BLDMOD;
-					WIN_IN = WININ;
-					WIN_OUT = WINOUT;
+					REG_BG3CNT = gbaSystemGlobal.GBABG3CNT;
+					REG_BG2CNT = gbaSystemGlobal.GBABG2CNT;
+					REG_BLDCNT = gbaSystemGlobal.GBABLDMOD;
+					WIN_IN = gbaSystemGlobal.GBAWININ;
+					WIN_OUT = gbaSystemGlobal.GBAWINOUT;
 
-					REG_BG2PA = BG2PA;
-					REG_BG2PB = BG2PB;
-					REG_BG2PC = BG2PC;
-					REG_BG2PD = BG2PD;
-					REG_BG2X = (BG2X_L | (BG2X_H << 16));
-					REG_BG2Y = (BG2Y_L | (BG2Y_H << 16));
+					REG_BG2PA = gbaSystemGlobal.GBABG2PA;
+					REG_BG2PB = gbaSystemGlobal.GBABG2PB;
+					REG_BG2PC = gbaSystemGlobal.GBABG2PC;
+					REG_BG2PD = gbaSystemGlobal.GBABG2PD;
+					REG_BG2X = (gbaSystemGlobal.GBABG2X_L | (gbaSystemGlobal.GBABG2X_H << 16));
+					REG_BG2Y = (gbaSystemGlobal.GBABG2Y_L | (gbaSystemGlobal.GBABG2Y_H << 16));
 
-					REG_BG3PA = BG3PA;
-					REG_BG3PB = BG3PB;
-					REG_BG3PC = BG3PC;
-					REG_BG3PD = BG3PD;
-					REG_BG3X = (BG3X_L | (BG3X_H << 16));
-					REG_BG3Y = (BG3Y_L | (BG3Y_H << 16));
+					REG_BG3PA = gbaSystemGlobal.GBABG3PA;
+					REG_BG3PB = gbaSystemGlobal.GBABG3PB;
+					REG_BG3PC = gbaSystemGlobal.GBABG3PC;
+					REG_BG3PD = gbaSystemGlobal.GBABG3PD;
+					REG_BG3X = (gbaSystemGlobal.GBABG3X_L | (gbaSystemGlobal.GBABG3X_H << 16));
+					REG_BG3Y = (gbaSystemGlobal.GBABG3Y_L | (gbaSystemGlobal.GBABG3Y_H << 16));
 				}
 
 				u32 dsValue;
@@ -1698,7 +1640,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
 		}
 		else
 		{
-			if((value & 0xFFEF) != (DISPCNT & 0xFFEF))
+			if((value & 0xFFEF) != (gbaSystemGlobal.GBADISPCNT & 0xFFEF))
 			{
 
 				u32 dsValue;
@@ -1707,7 +1649,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
 				dsValue |= (value & (1 << 6)) ? (1 << 4) : 0;	/* obj mapping 1d/2d */
 				dsValue |= (value & (1 << 7)) ? 0 : (1 << 16);	/* forced blank => no display mode (both)*/
 				REG_DISPCNT = (dsValue | BIT(11)); //enable BG3
-				if((DISPCNT & 7) != (value & 7))
+				if((gbaSystemGlobal.GBADISPCNT & 7) != (value & 7))
 				{
 					//coto: adjust the enum definitions to an addressable u32 by the ARMv5 core.
 					//8<<2 = bit 32 (but it is bit 31)
@@ -1723,42 +1665,42 @@ void  CPUUpdateRegister(u32 address, u16 value)
 						//ori: REG_BG3CNT = (u32)BG_MAP_BASE(/*mapBase*/8) | (u32)BG_TILE_BASE(/*tileBase*/8) | (u32)BgSize_B16_256x256;
 						REG_BG3CNT = (u32)BG_MAP_BASE(/*mapBase*/1) | (u32)BG_TILE_BASE(/*tileBase*/2) | (u16)BgSize_B16_256x256;
 					}
-					if((DISPCNT & 7) < 3)
+					if((gbaSystemGlobal.GBADISPCNT & 7) < 3)
 					{
-						//reset BG3HOFS and BG3VOFS
+						//reset gbaSystemGlobal.GBABG3HOFS and gbaSystemGlobal.GBABG3VOFS
 						REG_BG3HOFS = 0;
 						REG_BG3VOFS = 0;
 
 						//BLDCNT(2 enabeled bits)
-						int tempBLDMOD = BLDMOD & ~0x404;
-						tempBLDMOD = tempBLDMOD | ((BLDMOD & 0x404) << 1);
+						int tempBLDMOD = gbaSystemGlobal.GBABLDMOD & ~0x404;
+						tempBLDMOD = tempBLDMOD | ((gbaSystemGlobal.GBABLDMOD & 0x404) << 1);
 						REG_BLDCNT = tempBLDMOD;
 
-						//WINOUT(2 enabeled bits)
-						int tempWINOUT = WINOUT & ~0x404;
-						tempWINOUT = tempWINOUT | ((WINOUT & 0x404) << 1);
+						//gbaSystemGlobal.GBAWINOUT(2 enabeled bits)
+						int tempWINOUT = gbaSystemGlobal.GBAWINOUT & ~0x404;
+						tempWINOUT = tempWINOUT | ((gbaSystemGlobal.GBAWINOUT & 0x404) << 1);
 						WIN_OUT = tempWINOUT;
 
-						//WININ(2 enabeled bits)
-						int tempWININ = WININ & ~0x404;
-						tempWININ = tempWININ | ((WININ & 0x404) << 1);
+						//gbaSystemGlobal.GBAWININ(2 enabeled bits)
+						int tempWININ = gbaSystemGlobal.GBAWININ & ~0x404;
+						tempWININ = tempWININ | ((gbaSystemGlobal.GBAWININ & 0x404) << 1);
 						WIN_IN = tempWININ;
 
 						//swap LCD I/O BG Rotation/Scaling
 
-						REG_BG3PA = BG2PA;
-						REG_BG3PB = BG2PB;
-						REG_BG3PC = BG2PC;
-						REG_BG3PD = BG2PD;
-						REG_BG3X = (BG2X_L | (BG2X_H << 16));
-						REG_BG3Y = (BG2Y_L | (BG2Y_H << 16));
-						REG_BG3CNT = REG_BG3CNT | (BG2CNT & 0x43); //swap BG2CNT (BG Priority and Mosaic) 
+						REG_BG3PA = gbaSystemGlobal.GBABG2PA;
+						REG_BG3PB = gbaSystemGlobal.GBABG2PB;
+						REG_BG3PC = gbaSystemGlobal.GBABG2PC;
+						REG_BG3PD = gbaSystemGlobal.GBABG2PD;
+						REG_BG3X = (gbaSystemGlobal.GBABG2X_L | (gbaSystemGlobal.GBABG2X_H << 16));
+						REG_BG3Y = (gbaSystemGlobal.GBABG2Y_L | (gbaSystemGlobal.GBABG2Y_H << 16));
+						REG_BG3CNT = REG_BG3CNT | (gbaSystemGlobal.GBABG2CNT & 0x43); //swap gbaSystemGlobal.GBABG2CNT (BG Priority and Mosaic) 
 					}
 				}
 			}
 		}
-		DISPCNT = value & 0xFFF7;
-		UPDATE_REG(0x00, DISPCNT);
+		gbaSystemGlobal.GBADISPCNT = value & 0xFFF7;
+		UPDATE_REG(0x00, gbaSystemGlobal.GBADISPCNT);
     }
   
     
@@ -1766,243 +1708,243 @@ void  CPUUpdateRegister(u32 address, u16 value)
     
     #endif
   case 0x04:
-    DISPSTAT = (value & 0xFF38) | (DISPSTAT & 7);
-    UPDATE_REG(0x04, DISPSTAT);
+    gbaSystemGlobal.GBADISPSTAT = (value & 0xFF38) | (gbaSystemGlobal.GBADISPSTAT & 7);
+    UPDATE_REG(0x04, gbaSystemGlobal.GBADISPSTAT);
 
     break;
   case 0x06:
     // not writable in NDS mode bzw not possible todo
     break;
   case 0x08:
-    BG0CNT = (value & 0xDFCF);
-    UPDATE_REG(0x08, BG0CNT);
-	*(u16 *)(0x4000008) = BG0CNT;
+    gbaSystemGlobal.GBABG0CNT = (value & 0xDFCF);
+    UPDATE_REG(0x08, gbaSystemGlobal.GBABG0CNT);
+	*(u16 *)(0x4000008) = gbaSystemGlobal.GBABG0CNT;
     break;
   case 0x0A:
-    BG1CNT = (value & 0xDFCF);
-    UPDATE_REG(0x0A, BG1CNT);
-    *(u16 *)(0x400000A) = BG1CNT;
+    gbaSystemGlobal.GBABG1CNT = (value & 0xDFCF);
+    UPDATE_REG(0x0A, gbaSystemGlobal.GBABG1CNT);
+    *(u16 *)(0x400000A) = gbaSystemGlobal.GBABG1CNT;
 	break;
   case 0x0C:
-    BG2CNT = (value & 0xFFCF);
-    UPDATE_REG(0x0C, BG2CNT);
-	if((DISPCNT & 7) < 3)*(u16 *)(0x400000C) = BG2CNT;
+    gbaSystemGlobal.GBABG2CNT = (value & 0xFFCF);
+    UPDATE_REG(0x0C, gbaSystemGlobal.GBABG2CNT);
+	if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x400000C) = gbaSystemGlobal.GBABG2CNT;
 	else //ichfly some extra handling 
 	{
-		REG_BG3CNT = REG_BG3CNT | (BG2CNT & 0x43);
+		REG_BG3CNT = REG_BG3CNT | (gbaSystemGlobal.GBABG2CNT & 0x43);
 	}
     break;
   case 0x0E:
-    BG3CNT = (value & 0xFFCF);
-    UPDATE_REG(0x0E, BG3CNT);
-	if((DISPCNT & 7) < 3)*(u16 *)(0x400000E) = BG3CNT;
+    gbaSystemGlobal.GBABG3CNT = (value & 0xFFCF);
+    UPDATE_REG(0x0E, gbaSystemGlobal.GBABG3CNT);
+	if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x400000E) = gbaSystemGlobal.GBABG3CNT;
     break;
   case 0x10:
-    BG0HOFS = value & 511;
-    UPDATE_REG(0x10, BG0HOFS);
+    gbaSystemGlobal.GBABG0HOFS = value & 511;
+    UPDATE_REG(0x10, gbaSystemGlobal.GBABG0HOFS);
     *(u16 *)(0x4000010) = value;
 	break;
   case 0x12:
-    BG0VOFS = value & 511;
-    UPDATE_REG(0x12, BG0VOFS);
+    gbaSystemGlobal.GBABG0VOFS = value & 511;
+    UPDATE_REG(0x12, gbaSystemGlobal.GBABG0VOFS);
     *(u16 *)(0x4000012) = value;
 	break;
   case 0x14:
-    BG1HOFS = value & 511;
-    UPDATE_REG(0x14, BG1HOFS);
+    gbaSystemGlobal.GBABG1HOFS = value & 511;
+    UPDATE_REG(0x14, gbaSystemGlobal.GBABG1HOFS);
 	*(u16 *)(0x4000014) = value;
     break;
   case 0x16:
-    BG1VOFS = value & 511;
-    UPDATE_REG(0x16, BG1VOFS);
+    gbaSystemGlobal.GBABG1VOFS = value & 511;
+    UPDATE_REG(0x16, gbaSystemGlobal.GBABG1VOFS);
     *(u16 *)(0x4000016) = value;
 	break;      
   case 0x18:
-    BG2HOFS = value & 511;
-    UPDATE_REG(0x18, BG2HOFS);
+    gbaSystemGlobal.GBABG2HOFS = value & 511;
+    UPDATE_REG(0x18, gbaSystemGlobal.GBABG2HOFS);
 	*(u16 *)(0x4000018) = value;
     break;
   case 0x1A:
-    BG2VOFS = value & 511;
-    UPDATE_REG(0x1A, BG2VOFS);
-    if((DISPCNT & 7) < 3)*(u16 *)(0x400001A) = value; //ichfly only update if it is save
+    gbaSystemGlobal.GBABG2VOFS = value & 511;
+    UPDATE_REG(0x1A, gbaSystemGlobal.GBABG2VOFS);
+    if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x400001A) = value; //ichfly only update if it is save
 	break;
   case 0x1C:
-    BG3HOFS = value & 511;
-    UPDATE_REG(0x1C, BG3HOFS);
-    if((DISPCNT & 7) < 3)*(u16 *)(0x400001C) = value; //ichfly only update if it is save
+    gbaSystemGlobal.GBABG3HOFS = value & 511;
+    UPDATE_REG(0x1C, gbaSystemGlobal.GBABG3HOFS);
+    if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x400001C) = value; //ichfly only update if it is save
 	break;
   case 0x1E:
-    BG3VOFS = value & 511;
-    UPDATE_REG(0x1E, BG3VOFS);
+    gbaSystemGlobal.GBABG3VOFS = value & 511;
+    UPDATE_REG(0x1E, gbaSystemGlobal.GBABG3VOFS);
     *(u16 *)(0x400001E) = value;
 	break;      
   case 0x20:
-    BG2PA = value;
-    UPDATE_REG(0x20, BG2PA);
-    if((DISPCNT & 7) < 3)*(u16 *)(0x4000020) = value;
+    gbaSystemGlobal.GBABG2PA = value;
+    UPDATE_REG(0x20, gbaSystemGlobal.GBABG2PA);
+    if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x4000020) = value;
 	else *(u16 *)(0x4000030) = value;
 	break;
   case 0x22:
-    BG2PB = value;
-    UPDATE_REG(0x22, BG2PB);
-    if((DISPCNT & 7) < 3)*(u16 *)(0x4000022) = value;
+    gbaSystemGlobal.GBABG2PB = value;
+    UPDATE_REG(0x22, gbaSystemGlobal.GBABG2PB);
+    if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x4000022) = value;
 	else *(u16 *)(0x4000032) = value;
 	break;
   case 0x24:
-    BG2PC = value;
-    UPDATE_REG(0x24, BG2PC);
-    if((DISPCNT & 7) < 3)*(u16 *)(0x4000024) = value;
+    gbaSystemGlobal.GBABG2PC = value;
+    UPDATE_REG(0x24, gbaSystemGlobal.GBABG2PC);
+    if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x4000024) = value;
 	else *(u16 *)(0x4000034) = value;
 	break;
   case 0x26:
-    BG2PD = value;
-    UPDATE_REG(0x26, BG2PD);
-	if((DISPCNT & 7) < 3)*(u16 *)(0x4000026) = value;
+    gbaSystemGlobal.GBABG2PD = value;
+    UPDATE_REG(0x26, gbaSystemGlobal.GBABG2PD);
+	if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x4000026) = value;
 	else *(u16 *)(0x4000036) = value;
 	break;
   case 0x28:
-    BG2X_L = value;
-    UPDATE_REG(0x28, BG2X_L);
+    gbaSystemGlobal.GBABG2X_L = value;
+    UPDATE_REG(0x28, gbaSystemGlobal.GBABG2X_L);
     //gfxBG2Changed |= 1;
-	if((DISPCNT & 7) < 3)*(u16 *)(0x4000028) = value;
+	if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x4000028) = value;
 	else *(u16 *)(0x4000038) = value;
     break;
   case 0x2A:
-    BG2X_H = (value & 0xFFF);
-    UPDATE_REG(0x2A, BG2X_H);
+    gbaSystemGlobal.GBABG2X_H = (value & 0xFFF);
+    UPDATE_REG(0x2A, gbaSystemGlobal.GBABG2X_H);
     //gfxBG2Changed |= 1;
-	if((DISPCNT & 7) < 3)*(u16 *)(0x400002A) = value;
+	if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x400002A) = value;
 	else *(u16 *)(0x400003A) = value;
     break;
   case 0x2C:
-    BG2Y_L = value;
-    UPDATE_REG(0x2C, BG2Y_L);
+    gbaSystemGlobal.GBABG2Y_L = value;
+    UPDATE_REG(0x2C, gbaSystemGlobal.GBABG2Y_L);
     //gfxBG2Changed |= 2;
-	if((DISPCNT & 7) < 3)*(u16 *)(0x400002C) = value;
+	if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x400002C) = value;
 	else *(u16 *)(0x400003C) = value;
     break;
   case 0x2E:
-    BG2Y_H = value & 0xFFF;
-    UPDATE_REG(0x2E, BG2Y_H);
+    gbaSystemGlobal.GBABG2Y_H = value & 0xFFF;
+    UPDATE_REG(0x2E, gbaSystemGlobal.GBABG2Y_H);
     //gfxBG2Changed |= 2;
-	if((DISPCNT & 7) < 3)*(u16 *)(0x400002E) = value;
+	if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x400002E) = value;
 	else *(u16 *)(0x400003E) = value;
     break;
   case 0x30:
-    BG3PA = value;
-    UPDATE_REG(0x30, BG3PA);
-    if((DISPCNT & 7) < 3)*(u16 *)(0x4000030) = value;
+    gbaSystemGlobal.GBABG3PA = value;
+    UPDATE_REG(0x30, gbaSystemGlobal.GBABG3PA);
+    if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x4000030) = value;
 	break;
   case 0x32:
-    BG3PB = value;
-    UPDATE_REG(0x32, BG3PB);
-    if((DISPCNT & 7) < 3)*(u16 *)(0x4000032) = value;
+    gbaSystemGlobal.GBABG3PB = value;
+    UPDATE_REG(0x32, gbaSystemGlobal.GBABG3PB);
+    if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x4000032) = value;
 	break;
   case 0x34:
-    BG3PC = value;
-    UPDATE_REG(0x34, BG3PC);
-    if((DISPCNT & 7) < 3)*(u16 *)(0x4000034) = value;
+    gbaSystemGlobal.GBABG3PC = value;
+    UPDATE_REG(0x34, gbaSystemGlobal.GBABG3PC);
+    if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x4000034) = value;
 	break;
   case 0x36:
-    BG3PD = value;
-    UPDATE_REG(0x36, BG3PD);
-    if((DISPCNT & 7) < 3)*(u16 *)(0x4000036) = value;
+    gbaSystemGlobal.GBABG3PD = value;
+    UPDATE_REG(0x36, gbaSystemGlobal.GBABG3PD);
+    if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x4000036) = value;
 	break;
   case 0x38:
-    BG3X_L = value;
-    UPDATE_REG(0x38, BG3X_L);
+    gbaSystemGlobal.GBABG3X_L = value;
+    UPDATE_REG(0x38, gbaSystemGlobal.GBABG3X_L);
     //gfxBG3Changed |= 1;
-    if((DISPCNT & 7) < 3)*(u16 *)(0x4000038) = value;
+    if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x4000038) = value;
 	break;
   case 0x3A:
-    BG3X_H = value & 0xFFF;
-    UPDATE_REG(0x3A, BG3X_H);
+    gbaSystemGlobal.GBABG3X_H = value & 0xFFF;
+    UPDATE_REG(0x3A, gbaSystemGlobal.GBABG3X_H);
     //gfxBG3Changed |= 1;    
-    if((DISPCNT & 7) < 3)*(u16 *)(0x400003A) = value;
+    if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x400003A) = value;
 	break;
   case 0x3C:
-    BG3Y_L = value;
-    UPDATE_REG(0x3C, BG3Y_L);
+    gbaSystemGlobal.GBABG3Y_L = value;
+    UPDATE_REG(0x3C, gbaSystemGlobal.GBABG3Y_L);
     //gfxBG3Changed |= 2;    
-    if((DISPCNT & 7) < 3)*(u16 *)(0x400003C) = value;
+    if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x400003C) = value;
 	break;
   case 0x3E:
-    BG3Y_H = value & 0xFFF;
-    UPDATE_REG(0x3E, BG3Y_H);
+    gbaSystemGlobal.GBABG3Y_H = value & 0xFFF;
+    UPDATE_REG(0x3E, gbaSystemGlobal.GBABG3Y_H);
     //gfxBG3Changed |= 2;    
-    if((DISPCNT & 7) < 3)*(u16 *)(0x400003E) = value;
+    if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x400003E) = value;
 	break;
   case 0x40:
-    WIN0H = value;
-    UPDATE_REG(0x40, WIN0H);
+    gbaSystemGlobal.GBAWIN0H = value;
+    UPDATE_REG(0x40, gbaSystemGlobal.GBAWIN0H);
     //CPUUpdateWindow0();
     *(u16 *)(0x4000040) = value;
 	break;
   case 0x42:
-    WIN1H = value;
-    UPDATE_REG(0x42, WIN1H);
+    gbaSystemGlobal.GBAWIN1H = value;
+    UPDATE_REG(0x42, gbaSystemGlobal.GBAWIN1H);
 	*(u16 *)(0x4000042) = value;
     //CPUUpdateWindow1();    
     break;      
   case 0x44:
-    WIN0V = value;
-    UPDATE_REG(0x44, WIN0V);
+    gbaSystemGlobal.GBAWIN0V = value;
+    UPDATE_REG(0x44, gbaSystemGlobal.GBAWIN0V);
     *(u16 *)(0x4000044) = value;
 	break;
   case 0x46:
-    WIN1V = value;
-    UPDATE_REG(0x46, WIN1V);
+    gbaSystemGlobal.GBAWIN1V = value;
+    UPDATE_REG(0x46, gbaSystemGlobal.GBAWIN1V);
     *(u16 *)(0x4000046) = value;
 	break;
   case 0x48:
-    WININ = value & 0x3F3F;
-    UPDATE_REG(0x48, WININ);
-    if((DISPCNT & 7) < 3)*(u16 *)(0x4000048) = value;
+    gbaSystemGlobal.GBAWININ = value & 0x3F3F;
+    UPDATE_REG(0x48, gbaSystemGlobal.GBAWININ);
+    if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x4000048) = value;
 	else
 	{
-		int tempWININ = WININ & ~0x404;
-		tempWININ = tempWININ | ((WININ & 0x404) << 1);
+		int tempWININ = gbaSystemGlobal.GBAWININ & ~0x404;
+		tempWININ = tempWININ | ((gbaSystemGlobal.GBAWININ & 0x404) << 1);
 		WIN_IN = tempWININ;
 	}
 	break;
   case 0x4A:
-    WINOUT = value & 0x3F3F;
-    UPDATE_REG(0x4A, WINOUT);
-    if((DISPCNT & 7) < 3)*(u16 *)(0x400004A) = value;
+    gbaSystemGlobal.GBAWINOUT = value & 0x3F3F;
+    UPDATE_REG(0x4A, gbaSystemGlobal.GBAWINOUT);
+    if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x400004A) = value;
 	else
 	{
-		int tempWINOUT = WINOUT & ~0x404;
-		tempWINOUT = tempWINOUT | ((WINOUT & 0x404) << 1);
+		int tempWINOUT = gbaSystemGlobal.GBAWINOUT & ~0x404;
+		tempWINOUT = tempWINOUT | ((gbaSystemGlobal.GBAWINOUT & 0x404) << 1);
 		WIN_OUT = tempWINOUT;
 	}
 	break;
   case 0x4C:
-    MOSAIC = value;
-    UPDATE_REG(0x4C, MOSAIC);
+    gbaSystemGlobal.GBAMOSAIC = value;
+    UPDATE_REG(0x4C, gbaSystemGlobal.GBAMOSAIC);
     *(u16 *)(0x400004C) = value;
 	break;
   case 0x50:
-    BLDMOD = value & 0x3FFF;
-    UPDATE_REG(0x50, BLDMOD);
-    //fxOn = ((BLDMOD>>6)&3) != 0;
+    gbaSystemGlobal.GBABLDMOD = value & 0x3FFF;
+    UPDATE_REG(0x50, gbaSystemGlobal.GBABLDMOD);
+    //fxOn = ((gbaSystemGlobal.GBABLDMOD>>6)&3) != 0;
     //CPUUpdateRender();
-	if((DISPCNT & 7) < 3)*(u16 *)(0x4000050) = value;
+	if((gbaSystemGlobal.GBADISPCNT & 7) < 3)*(u16 *)(0x4000050) = value;
 	else
 	{
-		int tempBLDMOD = BLDMOD & ~0x404;
-		tempBLDMOD = tempBLDMOD | ((BLDMOD & 0x404) << 1);
+		int tempBLDMOD = gbaSystemGlobal.GBABLDMOD & ~0x404;
+		tempBLDMOD = tempBLDMOD | ((gbaSystemGlobal.GBABLDMOD & 0x404) << 1);
 		REG_BLDCNT = tempBLDMOD;
 	}
     break;
   case 0x52:
-    COLEV = value & 0x1F1F;
-    UPDATE_REG(0x52, COLEV);
+    gbaSystemGlobal.GBACOLEV = value & 0x1F1F;
+    UPDATE_REG(0x52, gbaSystemGlobal.GBACOLEV);
     *(u16 *)(0x4000052) = value;
 	break;
   case 0x54:
-    COLY = value & 0x1F;
-    UPDATE_REG(0x54, COLY);
+    gbaSystemGlobal.GBACOLY = value & 0x1F;
+    UPDATE_REG(0x54, gbaSystemGlobal.GBACOLY);
 	*(u16 *)(0x4000054) = value;
     break;
 	
@@ -2039,7 +1981,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
         //soundEvent(address&0xFF, value);  //ichfly send sound to arm7
         
         #ifdef soundwriteprint
-            iprintf("ur %04x to %08x\r\n",value,address);
+            printf("ur %04x to %08x\r\n",value,address);
         #endif
         
         //sound command writes
@@ -2055,113 +1997,113 @@ void  CPUUpdateRegister(u32 address, u16 value)
     }
 
   case 0xB0:
-    DM0SAD_L = value;
-    UPDATE_REG(0xB0, DM0SAD_L);
+    gbaSystemGlobal.GBADM0SAD_L = value;
+    UPDATE_REG(0xB0, gbaSystemGlobal.GBADM0SAD_L);
     break;
   case 0xB2:
-    DM0SAD_H = value & 0x07FF;
-    UPDATE_REG(0xB2, DM0SAD_H);
+    gbaSystemGlobal.GBADM0SAD_H = value & 0x07FF;
+    UPDATE_REG(0xB2, gbaSystemGlobal.GBADM0SAD_H);
     break;
   case 0xB4:
-    DM0DAD_L = value;
-    UPDATE_REG(0xB4, DM0DAD_L);
+    gbaSystemGlobal.GBADM0DAD_L = value;
+    UPDATE_REG(0xB4, gbaSystemGlobal.GBADM0DAD_L);
     break;
   case 0xB6:
-    DM0DAD_H = value & 0x07FF;
-    UPDATE_REG(0xB6, DM0DAD_H);
+    gbaSystemGlobal.GBADM0DAD_H = value & 0x07FF;
+    UPDATE_REG(0xB6, gbaSystemGlobal.GBADM0DAD_H);
     break;
   case 0xB8:
-    DM0CNT_L = value & 0x3FFF;
+    gbaSystemGlobal.GBADM0CNT_L = value & 0x3FFF;
     UPDATE_REG(0xB8, 0);
     break;
   case 0xBA:
     {
-      bool start = ((DM0CNT_H ^ value) & 0x8000) ? true : false;
+      bool start = ((gbaSystemGlobal.GBADM0CNT_H ^ value) & 0x8000) ? true : false;
       value &= 0xF7E0;
 
-      DM0CNT_H = value;
-      UPDATE_REG(0xBA, DM0CNT_H);    
+      gbaSystemGlobal.GBADM0CNT_H = value;
+      UPDATE_REG(0xBA, gbaSystemGlobal.GBADM0CNT_H);    
     
       if(start && (value & 0x8000)) {
-        dma0Source = DM0SAD_L | (DM0SAD_H << 16);
-        dma0Dest = DM0DAD_L | (DM0DAD_H << 16);
+        dma0Source = gbaSystemGlobal.GBADM0SAD_L | (gbaSystemGlobal.GBADM0SAD_H << 16);
+        dma0Dest = gbaSystemGlobal.GBADM0DAD_L | (gbaSystemGlobal.GBADM0DAD_H << 16);
         CPUCheckDMA(0, 1);
       }
     }
     break;      
   case 0xBC:
 #ifdef dmawriteprint
-	iprintf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r\n",value,address);
 #endif
 
     //sound command writes
     //execute_arm7_command(0xc0700100,address,value);    
 	
-    DM1SAD_L = value;
-    UPDATE_REG(0xBC, DM1SAD_L);
+    gbaSystemGlobal.GBADM1SAD_L = value;
+    UPDATE_REG(0xBC, gbaSystemGlobal.GBADM1SAD_L);
     break;
   case 0xBE:
 #ifdef dmawriteprint
-	iprintf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r\n",value,address);
 #endif
 
     //sound command writes
     //execute_arm7_command(0xc0700100,address,value);
     
-    DM1SAD_H = value & 0x0FFF;
-    UPDATE_REG(0xBE, DM1SAD_H);
+    gbaSystemGlobal.GBADM1SAD_H = value & 0x0FFF;
+    UPDATE_REG(0xBE, gbaSystemGlobal.GBADM1SAD_H);
     break;
   case 0xC0:
 #ifdef dmawriteprint
-    iprintf("ur %04x to %08x\r\n",value,address);
+    printf("ur %04x to %08x\r\n",value,address);
 #endif
 
     //sound command writes 
     //execute_arm7_command(0xc0700100,address,value);
     
-	DM1DAD_L = value;
-    UPDATE_REG(0xC0, DM1DAD_L);
+	gbaSystemGlobal.GBADM1DAD_L = value;
+    UPDATE_REG(0xC0, gbaSystemGlobal.GBADM1DAD_L);
     break;
   case 0xC2:
 #ifdef dmawriteprint
-	iprintf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r\n",value,address);
 #endif
 
     //sound command writes
     //execute_arm7_command(0xc0700100,address,value);
     
-    DM1DAD_H = value & 0x07FF;
-    UPDATE_REG(0xC2, DM1DAD_H);
+    gbaSystemGlobal.GBADM1DAD_H = value & 0x07FF;
+    UPDATE_REG(0xC2, gbaSystemGlobal.GBADM1DAD_H);
     break;
   case 0xC4:
 #ifdef dmawriteprint
-	iprintf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r\n",value,address);
 #endif
 
     //sound command writes
     //execute_arm7_command(0xc0700100,address,value);
     
-	DM1CNT_L = value & 0x3FFF;
+	gbaSystemGlobal.GBADM1CNT_L = value & 0x3FFF;
     UPDATE_REG(0xC4, 0);
     break;
   case 0xC6:
 #ifdef dmawriteprint
-	iprintf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r\n",value,address);
 #endif
 
     //sound command writes
     //execute_arm7_command(0xc0700100,address,value);
     
     {
-        bool start = ((DM1CNT_H ^ value) & 0x8000) ? true : false;
+        bool start = ((gbaSystemGlobal.GBADM1CNT_H ^ value) & 0x8000) ? true : false;
         value &= 0xF7E0;
       
-        DM1CNT_H = value;
-        UPDATE_REG(0xC6, DM1CNT_H);
+        gbaSystemGlobal.GBADM1CNT_H = value;
+        UPDATE_REG(0xC6, gbaSystemGlobal.GBADM1CNT_H);
       
         if(start && (value & 0x8000)) {
-            dma1Source = DM1SAD_L | (DM1SAD_H << 16);
-            dma1Dest = DM1DAD_L | (DM1DAD_H << 16);
+            dma1Source = gbaSystemGlobal.GBADM1SAD_L | (gbaSystemGlobal.GBADM1SAD_H << 16);
+            dma1Dest = gbaSystemGlobal.GBADM1DAD_L | (gbaSystemGlobal.GBADM1DAD_H << 16);
             CPUCheckDMA(0, 2);
         }
     }
@@ -2169,116 +2111,117 @@ void  CPUUpdateRegister(u32 address, u16 value)
     break;
   case 0xC8:
 #ifdef dmawriteprint
-	iprintf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r\n",value,address);
 #endif
 
     //sound command writes
     //execute_arm7_command(0xc0700100,address,value);
     
-    DM2SAD_L = value;
-    UPDATE_REG(0xC8, DM2SAD_L);
+    gbaSystemGlobal.GBADM2SAD_L = value;
+    UPDATE_REG(0xC8, gbaSystemGlobal.GBADM2SAD_L);
     break;
   case 0xCA:
 #ifdef dmawriteprint
-	iprintf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r\n",value,address);
 #endif
 
     //sound command writes
     //execute_arm7_command(0xc0700100,address,value);
     
-	DM2SAD_H = value & 0x0FFF;
-    UPDATE_REG(0xCA, DM2SAD_H);
+	gbaSystemGlobal.GBADM2SAD_H = value & 0x0FFF;
+    UPDATE_REG(0xCA, gbaSystemGlobal.GBADM2SAD_H);
     break;
   case 0xCC:
 #ifdef dmawriteprint
-	iprintf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r\n",value,address);
 #endif
 
     //sound command writes
     //execute_arm7_command(0xc0700100,address,value);
     
-    DM2DAD_L = value;
-    UPDATE_REG(0xCC, DM2DAD_L);
+    gbaSystemGlobal.GBADM2DAD_L = value;
+    UPDATE_REG(0xCC, gbaSystemGlobal.GBADM2DAD_L);
     break;
   case 0xCE:
 #ifdef dmawriteprint
-	iprintf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r\n",value,address);
 #endif
 
     //sound command writes
     //execute_arm7_command(0xc0700100,address,value);
     
-    DM2DAD_H = value & 0x07FF;
-    UPDATE_REG(0xCE, DM2DAD_H);
+    gbaSystemGlobal.GBADM2DAD_H = value & 0x07FF;
+    UPDATE_REG(0xCE, gbaSystemGlobal.GBADM2DAD_H);
     break;
   case 0xD0:
 #ifdef dmawriteprint
 
-	iprintf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r\n",value,address);
 #endif
 
     //sound command writes
     //execute_arm7_command(0xc0700100,address,value);
     
-    DM2CNT_L = value & 0x3FFF;
+    gbaSystemGlobal.GBADM2CNT_L = value & 0x3FFF;
     UPDATE_REG(0xD0, 0);
     break;
   case 0xD2:
 #ifdef dmawriteprint
 
-	iprintf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r\n",value,address);
 #endif
 
     //sound command writes
     //execute_arm7_command(0xc0700100,address,value);
         
     {
-        bool start = ((DM2CNT_H ^ value) & 0x8000) ? true : false;
+        bool start = ((gbaSystemGlobal.GBADM2CNT_H ^ value) & 0x8000) ? true : false;
         value &= 0xF7E0;
       
-        DM2CNT_H = value;
-        UPDATE_REG(0xD2, DM2CNT_H);
+        gbaSystemGlobal.GBADM2CNT_H = value;
+        UPDATE_REG(0xD2, gbaSystemGlobal.GBADM2CNT_H);
+        UPDATE_REG(0xD2, gbaSystemGlobal.GBADM2CNT_H);
       
         if(start && (value & 0x8000)) {
-            dma2Source = DM2SAD_L | (DM2SAD_H << 16);
-            dma2Dest = DM2DAD_L | (DM2DAD_H << 16);
+            dma2Source = gbaSystemGlobal.GBADM2SAD_L | (gbaSystemGlobal.GBADM2SAD_H << 16);
+            dma2Dest = gbaSystemGlobal.GBADM2DAD_L | (gbaSystemGlobal.GBADM2DAD_H << 16);
             CPUCheckDMA(0, 4);
         }       
     }
     
     break;
   case 0xD4:
-    DM3SAD_L = value;
-    UPDATE_REG(0xD4, DM3SAD_L);
+    gbaSystemGlobal.GBADM3SAD_L = value;
+    UPDATE_REG(0xD4, gbaSystemGlobal.GBADM3SAD_L);
     break;
   case 0xD6:
-    DM3SAD_H = value & 0x0FFF;
-    UPDATE_REG(0xD6, DM3SAD_H);
+    gbaSystemGlobal.GBADM3SAD_H = value & 0x0FFF;
+    UPDATE_REG(0xD6, gbaSystemGlobal.GBADM3SAD_H);
     break;
   case 0xD8:
-    DM3DAD_L = value;
-    UPDATE_REG(0xD8, DM3DAD_L);
+    gbaSystemGlobal.GBADM3DAD_L = value;
+    UPDATE_REG(0xD8, gbaSystemGlobal.GBADM3DAD_L);
     break;
   case 0xDA:
-    DM3DAD_H = value & 0x0FFF;
-    UPDATE_REG(0xDA, DM3DAD_H);
+    gbaSystemGlobal.GBADM3DAD_H = value & 0x0FFF;
+    UPDATE_REG(0xDA, gbaSystemGlobal.GBADM3DAD_H);
     break;
   case 0xDC:
-    DM3CNT_L = value;
+    gbaSystemGlobal.GBADM3CNT_L = value;
     UPDATE_REG(0xDC, 0);
     break;
   case 0xDE:
     {
-        bool start = ((DM3CNT_H ^ value) & 0x8000) ? true : false;
+        bool start = ((gbaSystemGlobal.GBADM3CNT_H ^ value) & 0x8000) ? true : false;
         
         value &= 0xFFE0;
         
-        DM3CNT_H = value;
-        UPDATE_REG(0xDE, DM3CNT_H);
+        gbaSystemGlobal.GBADM3CNT_H = value;
+        UPDATE_REG(0xDE, gbaSystemGlobal.GBADM3CNT_H);
         
         if(start && (value & 0x8000)) {
-            dma3Source = DM3SAD_L | (DM3SAD_H << 16);
-            dma3Dest = DM3DAD_L | (DM3DAD_H << 16);
+            dma3Source = gbaSystemGlobal.GBADM3SAD_L | (gbaSystemGlobal.GBADM3SAD_H << 16);
+            dma3Dest = gbaSystemGlobal.GBADM3DAD_L | (gbaSystemGlobal.GBADM3DAD_H << 16);
             CPUCheckDMA(0,8);
         }
     }
@@ -2286,7 +2229,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
  case 0x100:
     timer0Reload = value;
 #ifdef printsoundtimer
-	iprintf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r\n",value,address);
 #endif
 
     //sound command writes
@@ -2300,7 +2243,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
     //cpuNextEvent = cpuTotalTicks;
 	UPDATE_REG(0x102, value);
 #ifdef printsoundtimer
-	iprintf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r\n",value,address);
 #endif
 
     //sound command writes
@@ -2327,7 +2270,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
 			break;
 		}
 		*(u16 *)(0x4000102) = value;
-		iprintf("big reload0\r\n");//todo 
+		printf("big reload0\r\n");//todo 
 	}
 	else*/
 	{	
@@ -2338,7 +2281,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
   case 0x104:
     timer1Reload = value;
 #ifdef printsoundtimer
-	iprintf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r\n",value,address);
 #endif
 
     //sound command writes
@@ -2348,7 +2291,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
 	break;
   case 0x106:
 #ifdef printsoundtimer
-	iprintf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r\n",value,address);
 #endif
 
     //sound command writes
@@ -2380,7 +2323,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
 			break;
 		}
 		*(u16 *)(0x4000106) = value;
-		iprintf("big reload1\r\n");//todo 
+		printf("big reload1\r\n");//todo 
 	}
 	else*/
 	{	
@@ -2419,7 +2362,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
 			*(u16 *)(0x400010A) = value + 1;
 			break;
 		}
-		iprintf("big reload2\r\n");//todo 
+		printf("big reload2\r\n");//todo 
 		*(u16 *)(0x400010A) = value;
 	}
 	else*/
@@ -2458,7 +2401,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
 			*(u16 *)(0x400010E) = value + 1;
 			break;
 		}
-		iprintf("big reload3\r\n");//todo 
+		printf("big reload3\r\n");//todo 
 		*(u16 *)(0x400010E) = value;
 	}
 	else*/
@@ -2475,31 +2418,31 @@ void  CPUUpdateRegister(u32 address, u16 value)
       value &= 0xff7f;
       if(value & 1 && (value & 0x4000)) {
         UPDATE_REG(0x12a, 0xFF);
-        IF |= 0x80;
-        UPDATE_REG(0x202, IF);
+        GBAIF |= 0x80;
+        UPDATE_REG(0x202, GBAIF);
         value &= 0x7f7f;
       }
     }
     UPDATE_REG(0x128, value);
     break;
   case 0x130:
-    //P1 |= (value & 0x3FF); //ichfly readonly
-    //UPDATE_REG(0x130, P1);
+    //gbaSystemGlobal.GBAP1 |= (value & 0x3FF); //ichfly readonly
+    //UPDATE_REG(0x130, gbaSystemGlobal.GBAP1);
     break;
   case 0x132:
     UPDATE_REG(0x132, value & 0xC3FF);
 	break;
   case 0x200:
-    IE = value & 0x3FFF;
-    UPDATE_REG(0x200, IE);
+    GBAIE = value & 0x3FFF;
+    UPDATE_REG(0x200, GBAIE);
     
-    /*if ((IME & 1) && (IF & IE) && armIrqEnable)
+    /*if ((GBAIME & 1) && (GBAIF & GBAIE) && armIrqEnable)
       cpuNextEvent = cpuTotalTicks;*/
 	
     break;
   case 0x202:
-    //IF = value & 0x3FFF;
-    //UPDATE_REG(0x204, IF);
+    //GBAIF = value & 0x3FFF;
+    //UPDATE_REG(0x204, GBAIF);
     
     break;
   case 0x204:
@@ -2548,9 +2491,9 @@ void  CPUUpdateRegister(u32 address, u16 value)
     }
     break;
   case 0x208:
-    IME = value & 1;
-    UPDATE_REG(0x208, IME);
-	/*if ((IME & 1) && (IF & IE) && armIrqEnable)
+    GBAIME = value & 1;
+    UPDATE_REG(0x208, GBAIME);
+	/*if ((GBAIME & 1) && (GBAIF & GBAIE) && armIrqEnable)
       cpuNextEvent = cpuTotalTicks;*/
     break;
   case 0x300:
@@ -2574,7 +2517,7 @@ u32 lnk_ptr;
 		"sub %[lnk_ptr],%[lnk_ptr],#0x8" 
 		:[lnk_ptr] "=r" (lnk_ptr)
 		);
-iprintf("\n LR callback trace at %x \n", (unsigned int)lnk_ptr);
+printf("\n LR callback trace at %x \n", (unsigned int)lnk_ptr);
 return 0;
 }
 
@@ -2599,8 +2542,7 @@ return CPUReadHalfWord(address+0x2);
 
 //readjoypad
 u32 systemreadjoypad(int which){
-	//scanKeys();
-	u32 res = keysCurrent(); //libnds getkeys
+	u32 res = keysPressed();
 		// disallow L+R or U+D of being pressed at the same time
 		if((res & 48) == 48)
 		res &= ~16;
@@ -2666,27 +2608,27 @@ void updateVC()
 {
 		u32 temp = (REG_VCOUNT&0xff);
 		u32 temp2 = REG_DISPSTAT;
-		//iprintf("Vcountreal: %08x\n",temp);
+		//printf("Vcountreal: %08x\n",temp);
 		//u16 help3;
-		VCOUNT = temp;
-		DISPSTAT &= 0xFFF8; //reset h-blanc and V-Blanc and V-Count Setting
-		//if(help3 == VCOUNT) //else it is a extra long V-Line // ichfly todo it is to slow
+		gbaSystemGlobal.GBAVCOUNT = temp;
+		gbaSystemGlobal.GBADISPSTAT &= 0xFFF8; //reset h-blanc and V-Blanc and V-Count Setting
+		//if(help3 == gbaSystemGlobal.GBAVCOUNT) //else it is a extra long V-Line // ichfly todo it is to slow
 		//{
-			DISPSTAT |= (temp2 & 0x3); //temporary patch get original settings
+			gbaSystemGlobal.GBADISPSTAT |= (temp2 & 0x3); //temporary patch get original settings
 		//}
-		//if(VCOUNT > 160 && VCOUNT != 227)DISPSTAT |= 1;//V-Blanc
-		UPDATE_REG(0x06, VCOUNT);
-		if(VCOUNT == (DISPSTAT >> 8)) //update by V-Count Setting
+		//if(gbaSystemGlobal.GBAVCOUNT > 160 && gbaSystemGlobal.GBAVCOUNT != 227)gbaSystemGlobal.GBADISPSTAT |= 1;//V-Blanc
+		UPDATE_REG(0x06, gbaSystemGlobal.GBAVCOUNT);
+		if(gbaSystemGlobal.GBAVCOUNT == (gbaSystemGlobal.GBADISPSTAT >> 8)) //update by V-Count Setting
 		{
-			DISPSTAT |= 0x4;
-			//if(DISPSTAT & 0x20) {
-			//  IF |= 4;
-			//  UPDATE_REG(0x202, IF);
+			gbaSystemGlobal.GBADISPSTAT |= 0x4;
+			//if(gbaSystemGlobal.GBADISPSTAT & 0x20) {
+			//  GBAIF |= 4;
+			//  UPDATE_REG(0x202, GBAIF);
 			//}
 		}
-		UPDATE_REG(0x04, DISPSTAT);
-		//iprintf("Vcountreal: %08x\n",temp);
-		//iprintf("DISPSTAT: %08x\n",temp2);
+		UPDATE_REG(0x04, gbaSystemGlobal.GBADISPSTAT);
+		//printf("Vcountreal: %08x\n",temp);
+		//printf("gbaSystemGlobal.GBADISPSTAT: %08x\n",temp2);
 }
 */
 
@@ -2699,7 +2641,7 @@ u32 CPUReadMemory(u32 address)
 {
   
 #ifdef printreads
-  iprintf("r32 %08x\n",address);
+  printf("r32 %08x\n",address);
 #endif
   u32 value=0;
   switch(address >> 24) {
@@ -2738,8 +2680,8 @@ u32 CPUReadMemory(u32 address)
     
 	if(address == 0x4000202 || address == 0x4000200)//ichfly update
 	{
-		IF = *(vuint16*)0x04000214; //VBlanc
-		UPDATE_REG(0x202, IF);
+		GBAIF = *(vuint16*)0x04000214; //VBlanc
+		UPDATE_REG(0x202, GBAIF);
 	}
 	
 	
@@ -2750,7 +2692,7 @@ u32 CPUReadMemory(u32 address)
 	}
 	
 	if(address==0x04000006){
-		value = VCOUNT;
+		value = gbaSystemGlobal.GBAVCOUNT;
 		break;
 	}
 	
@@ -2780,8 +2722,8 @@ u32 CPUReadMemory(u32 address)
 		
 		case(0x04000200):
 		case(0x04000202):{
-			IF = *(vuint16*)0x04000214; //VBlanc
-			UPDATE_REG(0x202, IF);
+			GBAIF = *(vuint16*)0x04000214; //VBlanc
+			UPDATE_REG(0x202, GBAIF);
 		}
 		break;
 		
@@ -2793,7 +2735,7 @@ u32 CPUReadMemory(u32 address)
 		
 		case(0x04000006):
 			//vcounthandler();
-			value = VCOUNT;
+			value = gbaSystemGlobal.GBAVCOUNT;
 		break;	
 	}
 	
@@ -2820,7 +2762,7 @@ u32 CPUReadMemory(u32 address)
 	if(address > 0x06020000)goto unreadable;
 #endif
     address = (address & 0x1fffc);
-    if (((DISPCNT & 7) >2) && ((address & 0x1C000) == 0x18000))
+    if (((gbaSystemGlobal.GBADISPCNT & 7) >2) && ((address & 0x1C000) == 0x18000))
     {
         value = 0;
         break;
@@ -2834,8 +2776,8 @@ u32 CPUReadMemory(u32 address)
     /*
     //new: detect source gba addresses here and redirect to nds ppu engine
     if(gba_bg_mode == 0){
-        //u8 bg0mapblock = ((BG0CNT >> 8) & 0x1f); // 2 KBytes each unit
-        //u8 bg0charblock = ((BG0CNT >> 2) & 0x3); // 16 KBytes each unit
+        //u8 bg0mapblock = ((gbaSystemGlobal.GBABG0CNT >> 8) & 0x1f); // 2 KBytes each unit
+        //u8 bg0charblock = ((gbaSystemGlobal.GBABG0CNT >> 2) & 0x3); // 16 KBytes each unit
         
         //u8 * dest_addr = (u8*)bgGetGfxPtr(bg_0_setting) + (u8*)(bg0charblock * (16*1024));
         
@@ -2881,7 +2823,7 @@ u32 CPUReadMemory(u32 address)
 		value = ichfly_readu32(address&0x1FFFFFC);
 	}
 	*/
-    value = cache_read32((int)address & 0x1FFFFFC);
+    value = ichfly_readu32((int)address & 0x1FFFFFC);
     break;
   case 13:
     if(cpuEEPROMEnabled)
@@ -2897,8 +2839,8 @@ u32 CPUReadMemory(u32 address)
   unreadable:
   //while(1);
 #ifdef checkclearaddrrw
-      //iprintf("Illegal word read: %08x at %08x\n", address,reg[15].I);
-	  iprintf("Illegal word read: %08x\n", address);
+      //printf("Illegal word read: %08x at %08x\n", address,reg[15].I);
+	  printf("Illegal word read: %08x\n", address);
 	  REG_IME = IME_DISABLE;
 	  debugDump();
 	  while(1);
@@ -2921,12 +2863,12 @@ __attribute__((section(".itcm")))
 u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is smaler
 {
 #ifdef printreads
-	iprintf("r16 %08x\n",address);
+	printf("r16 %08x\n",address);
 #endif
 #ifdef DEV_VERSION      
   if(address & 1) {
     if(systemVerbose & VERBOSE_UNALIGNED_MEMORY) {
-      iprintf("Unaligned halfword read: %08x at %08x\n", address, armMode ?
+      printf("Unaligned halfword read: %08x at %08x\n", address, armMode ?
           armNextPC - 4 : armNextPC - 2);
     }
   }
@@ -2987,7 +2929,7 @@ u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is sma
     }
 	
 	if(address==0x04000006){
-		value = VCOUNT;
+		value = gbaSystemGlobal.GBAVCOUNT;
 		break;
 	}
 	
@@ -2995,8 +2937,8 @@ u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is sma
     
 	if(address == 0x4000202)//ichfly update
 	{
-		IF = *(vuint16*)0x04000214;
-		UPDATE_REG(0x202, IF);
+		GBAIF = *(vuint16*)0x04000214;
+		UPDATE_REG(0x202, GBAIF);
 	}
 
 	
@@ -3035,8 +2977,8 @@ u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is sma
 		
 		case(0x04000200):
 		case(0x04000202):{
-			IF = *(vuint16*)0x04000214; //VBlanc
-			UPDATE_REG(0x202, IF);
+			GBAIF = *(vuint16*)0x04000214; //VBlanc
+			UPDATE_REG(0x202, GBAIF);
 		}
 		break;
 		
@@ -3048,7 +2990,7 @@ u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is sma
 		
 		case(0x04000006):
 			//vcounthandler();
-			value = VCOUNT;
+			value = gbaSystemGlobal.GBAVCOUNT;
 		break;	
 	}
 	
@@ -3073,7 +3015,7 @@ u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is sma
 	if(address > 0x06020000)goto unreadable;
 #endif
     address = (address & 0x1fffe);
-    if (((DISPCNT & 7) >2) && ((address & 0x1C000) == 0x18000))
+    if (((gbaSystemGlobal.GBADISPCNT & 7) >2) && ((address & 0x1C000) == 0x18000))
     {
         value = 0;
         break;
@@ -3108,13 +3050,13 @@ u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is sma
 				value = ichfly_readu16(address&0x1FFFFFE);
 			}
 			*/
-            value = cache_read16((int)address & 0x1FFFFFE);
+            value = ichfly_readu16((int)address & 0x1FFFFFE);
 		break;
 	}
 	break;
   case 13:
 #ifdef printsaveread
-	  iprintf("%X\n\r",address);
+	  printf("%X\n\r",address);
 #endif
     if(cpuEEPROMEnabled)
       // no need to swap this
@@ -3122,7 +3064,7 @@ u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is sma
     goto unreadable;
   case 14:
 #ifdef printsaveread
-	  iprintf("%X\n\r",address);
+	  printf("%X\n\r",address);
 #endif
     if(cpuFlashEnabled | cpuSramEnabled)
       // no need to swap this
@@ -3132,8 +3074,8 @@ u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is sma
   unreadable:
 
 #ifdef checkclearaddrrw
-      //iprintf("Illegal word read: %08x at %08x\n", address,reg[15].I);
-	  iprintf("Illegal hword read: %08x\n", address);
+      //printf("Illegal word read: %08x at %08x\n", address,reg[15].I);
+	  printf("Illegal hword read: %08x\n", address);
 	  REG_IME = IME_DISABLE;
 	  debugDump();
 	  while(1);
@@ -3171,7 +3113,7 @@ __attribute__((section(".itcm")))
 u8 CPUReadByte(u32 address)
 {
 #ifdef printreads
-iprintf("r8 %02x\n",address);
+printf("r8 %02x\n",address);
 #endif
 
   switch(address >> 24) {
@@ -3214,15 +3156,15 @@ iprintf("r8 %02x\n",address);
 	
 	
 	if(address==0x04000006){
-		return (u8)VCOUNT;
+		return (u8)gbaSystemGlobal.GBAVCOUNT;
 		break;
 	}
 	
     
 	if(address == 0x4000202 || address == 0x4000203)//ichfly update
 	{
-		IF = *(vuint16*)0x04000214; //VBlanc
-		UPDATE_REG(0x202, IF);
+		GBAIF = *(vuint16*)0x04000214; //VBlanc
+		UPDATE_REG(0x202, GBAIF);
 	}
     
     if((address < 0x4000400) && ioReadable[address & 0x3ff])
@@ -3247,8 +3189,8 @@ iprintf("r8 %02x\n",address);
 		
 		case(0x04000202):
 		case(0x04000203):{
-			IF = *(vuint16*)0x04000214; //VBlanc
-			UPDATE_REG(0x202, IF);
+			GBAIF = *(vuint16*)0x04000214; //VBlanc
+			UPDATE_REG(0x202, GBAIF);
 		}
 		break;
 		
@@ -3260,7 +3202,7 @@ iprintf("r8 %02x\n",address);
 		
 		case(0x04000006):
 			//vcounthandler();
-			return (u8)VCOUNT;
+			return (u8)gbaSystemGlobal.GBAVCOUNT;
 		break;	
 	}
 	if((address < 0x4000400) && ioReadable[address & 0x3ff])
@@ -3280,7 +3222,7 @@ iprintf("r8 %02x\n",address);
 	if(address > 0x06020000)goto unreadable;
 #endif
     address = (address & 0x1ffff);
-    if (((DISPCNT & 7) >2) && ((address & 0x1C000) == 0x18000))
+    if (((gbaSystemGlobal.GBADISPCNT & 7) >2) && ((address & 0x1C000) == 0x18000))
         return 0;
     if ((address & 0x18000) == 0x18000)
       address &= 0x17fff;
@@ -3305,20 +3247,20 @@ iprintf("r8 %02x\n",address);
 	}
 	*/
     
-    return cache_read8((int)address & 0x1FFFFFF);
+    return ichfly_readu8((int)address & 0x1FFFFFF);
     
 	break;
 
   case 13:
 #ifdef printsaveread
-	  iprintf("%X\n\r",address);
+	  printf("%X\n\r",address);
 #endif
     if(cpuEEPROMEnabled)
       return eepromRead(address);
     goto unreadable;
   case 14:
 #ifdef printsaveread
-	  iprintf("%X\n\r",address);
+	  printf("%X\n\r",address);
 #endif
     if(cpuSramEnabled | cpuFlashEnabled)
       return flashRead(address);
@@ -3338,8 +3280,8 @@ iprintf("r8 %02x\n",address);
   default:
   unreadable:
 #ifdef checkclearaddrrw
-      //iprintf("Illegal word read: %08x at %08x\n", address,reg[15].I);
-	  iprintf("Illegal byte read: %08x\n", address);
+      //printf("Illegal word read: %08x at %08x\n", address,reg[15].I);
+	  printf("Illegal byte read: %08x\n", address);
 	  REG_IME = IME_DISABLE;
 	  debugDump();
 	  while(1);
@@ -3355,12 +3297,12 @@ __attribute__((section(".itcm")))
 void CPUWriteMemory(u32 address, u32 value) //ichfly not inline is faster because it is smaler
 {
 #ifdef printreads
-    iprintf("w32 %08x to %08x\n",value,address);
+    printf("w32 %08x to %08x\n",value,address);
 #endif		  
 #ifdef DEV_VERSION
   if(address & 3) {
     if(systemVerbose & VERBOSE_UNALIGNED_MEMORY) {
-      iprintf("Unaligned word write: %08x to %08x from %08x\n",
+      printf("Unaligned word write: %08x to %08x from %08x\n",
           value,
           address,
           armMode ? armNextPC - 4 : armNextPC - 2);
@@ -3419,7 +3361,7 @@ void CPUWriteMemory(u32 address, u32 value) //ichfly not inline is faster becaus
 	if(address > 0x06020000)goto unreadable;
 #endif
     address = (address & 0x1fffc);
-    if (((DISPCNT & 7) >2) && ((address & 0x1C000) == 0x18000))
+    if (((gbaSystemGlobal.GBADISPCNT & 7) >2) && ((address & 0x1C000) == 0x18000))
         return;
     if ((address & 0x18000) == 0x18000)
       address &= 0x17fff;
@@ -3446,7 +3388,7 @@ void CPUWriteMemory(u32 address, u32 value) //ichfly not inline is faster becaus
     break;
   case 0x0D:
 #ifdef printsavewrite
-	  	  iprintf("%X %X\n\r",address,value);
+	  	  printf("%X %X\n\r",address,value);
 #endif
     if(cpuEEPROMEnabled) {
       eepromWrite(address, value);
@@ -3455,7 +3397,7 @@ void CPUWriteMemory(u32 address, u32 value) //ichfly not inline is faster becaus
     goto unwritable;
   case 0x0E:
 #ifdef printsavewrite
-	  	  iprintf("%X %X\n\r",address,value);
+	  	  printf("%X %X\n\r",address,value);
 #endif
     if(!eepromInUse | cpuSramEnabled | cpuFlashEnabled) {
       (*cpuSaveGameFunc)(address, (u8)value);
@@ -3465,8 +3407,8 @@ void CPUWriteMemory(u32 address, u32 value) //ichfly not inline is faster becaus
   default:
   unwritable:
 #ifdef checkclearaddrrw
-      //iprintf("Illegal word read: %08x at %08x\n", address,reg[15].I);
-	  iprintf("Illegal word write: %08x to %08x\n",value, address);
+      //printf("Illegal word read: %08x at %08x\n", address,reg[15].I);
+	  printf("Illegal word write: %08x to %08x\n",value, address);
 	  REG_IME = IME_DISABLE;
 	  debugDump();
 	  while(1);
@@ -3480,13 +3422,13 @@ __attribute__((section(".itcm")))
 void CPUWriteHalfWord(u32 address, u16 value)
 {
 #ifdef printreads
-iprintf("w16 %04x to %08x\r\n",value,address);
+printf("w16 %04x to %08x\r\n",value,address);
 #endif
 
 #ifdef DEV_VERSION
   if(address & 1) {
     if(systemVerbose & VERBOSE_UNALIGNED_MEMORY) {
-      iprintf("Unaligned halfword write: %04x to %08x from %08x\n",
+      printf("Unaligned halfword write: %04x to %08x from %08x\n",
           value,
           address,
           armMode ? armNextPC - 4 : armNextPC - 2);
@@ -3543,7 +3485,7 @@ iprintf("w16 %04x to %08x\r\n",value,address);
 	if(address > 0x06020000)goto unwritable;
 #endif
     address = (address & 0x1fffe);
-    if (((DISPCNT & 7) >2) && ((address & 0x1C000) == 0x18000))
+    if (((gbaSystemGlobal.GBADISPCNT & 7) >2) && ((address & 0x1C000) == 0x18000))
         return;
     if ((address & 0x18000) == 0x18000)
       address &= 0x17fff;
@@ -3572,7 +3514,7 @@ iprintf("w16 %04x to %08x\r\n",value,address);
     switch(address){
 		case 0x080000c4: case 0x080000c6: case 0x080000c8:
 			if(!rtcWrite(address, value)){
-				//iprintf("RTC write failed \n");
+				//printf("RTC write failed \n");
 				goto unwritable;
 			}
 		break;
@@ -3580,7 +3522,7 @@ iprintf("w16 %04x to %08x\r\n",value,address);
 	break;
   case 13:
 #ifdef printsavewrite
-	  	  iprintf("%X %X\n\r",address,value);
+	  	  printf("%X %X\n\r",address,value);
 #endif
     if(cpuEEPROMEnabled) {
       eepromWrite(address, (u8)value);
@@ -3589,7 +3531,7 @@ iprintf("w16 %04x to %08x\r\n",value,address);
     goto unwritable;
   case 14:
 #ifdef printsavewrite
-	  	  iprintf("%X %X\n\r",address,value);
+	  	  printf("%X %X\n\r",address,value);
 #endif
     if(!eepromInUse | cpuSramEnabled | cpuFlashEnabled) {
       (*cpuSaveGameFunc)(address, (u8)value);
@@ -3599,8 +3541,8 @@ iprintf("w16 %04x to %08x\r\n",value,address);
   default:
   unwritable:
 #ifdef checkclearaddrrw
-      //iprintf("Illegal word read: %08x at %08x\n", address,reg[15].I);
-	  iprintf("Illegal hword write: %04x to %08x\n",value, address);
+      //printf("Illegal word read: %08x at %08x\n", address,reg[15].I);
+	  printf("Illegal hword write: %04x to %08x\n",value, address);
 	  REG_IME = IME_DISABLE;
 	  debugDump();
 	  while(1);
@@ -3614,7 +3556,7 @@ __attribute__((section(".itcm")))
 void CPUWriteByte(u32 address, u8 b)
 {
 #ifdef printreads
-	iprintf("w8 %02x to %08x\r\n",b,address);
+	printf("w8 %02x to %08x\r\n",b,address);
 #endif
   switch(address >> 24) {
   case 2:
@@ -3717,14 +3659,14 @@ void CPUWriteByte(u32 address, u8 b)
 	if(address > 0x06020000)goto unwritable;
 #endif
     address = (address & 0x1fffe);
-    if (((DISPCNT & 7) >2) && ((address & 0x1C000) == 0x18000))
+    if (((gbaSystemGlobal.GBADISPCNT & 7) >2) && ((address & 0x1C000) == 0x18000))
         return;
     if ((address & 0x18000) == 0x18000)
       address &= 0x17fff;
 
     // no need to switch 
     // byte writes to OBJ VRAM are ignored
-    if ((address) < objTilesAddress[((DISPCNT&7)+1)>>2])
+    if ((address) < objTilesAddress[((gbaSystemGlobal.GBADISPCNT&7)+1)>>2])
     {
 #ifdef BKPT_SUPPORT
       if(freezeVRAM[address])
@@ -3744,7 +3686,7 @@ void CPUWriteByte(u32 address, u8 b)
     break;    
   case 13:
 #ifdef printsavewrite
-	  	  iprintf("%X %X\n\r",address,b);
+	  	  printf("%X %X\n\r",address,b);
 #endif
 
     if(cpuEEPROMEnabled) {
@@ -3754,7 +3696,7 @@ void CPUWriteByte(u32 address, u8 b)
     goto unwritable;
   case 14:
 #ifdef printsavewrite
-	  	  iprintf("%X %X\n\r",address,b);
+	  	  printf("%X %X\n\r",address,b);
 #endif
       if (!(saveType == 5) && (!eepromInUse | cpuSramEnabled | cpuFlashEnabled)) {
 
@@ -3767,8 +3709,8 @@ void CPUWriteByte(u32 address, u8 b)
   default:
   unwritable:
 #ifdef checkclearaddrrw
-      //iprintf("Illegal word read: %08x at %08x\n", address,reg[15].I);
-	  iprintf("Illegal byte write: %02x to %08x\n",b, address);
+      //printf("Illegal word read: %08x at %08x\n", address,reg[15].I);
+	  printf("Illegal byte write: %02x to %08x\n",b, address);
 	  REG_IME = IME_DISABLE;
 	  debugDump();
 	  while(1);

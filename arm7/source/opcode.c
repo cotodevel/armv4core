@@ -1,12 +1,27 @@
-#include <nds.h>
-
-#include "gba_ipc.h"
 #include "opcode.h"
 
-//variables
-int var1=0;
+struct fifo_semaphore FIFO_SEMAPHORE_FLAGS;
+
+//fifo
+u32 buffer_input[16],buffer_output[16];
+
+u32 sendwordipc(uint8 word){
+	//checkreg writereg (add,val) static int REG_IPC_add=0x04000180,REG_IE_add=0x04000210,REG_IF_add=0x04000214;
+	//return stru32inlasm(0x04000180,0x0,	 ((ldru32inlasm(0x04000180)&0xfffff0ff) | (word<<8)) ); //str[addr+index,value]
+	*(u32*)(0x04000180)=((*((u32*)0x04000180)&0xfffff0ff) | (word<<8));
+	return (*(u32*)(0x04000180));
+}
+
+u32 recvwordipc(){
+	return (*(u32*)(0x04000180)&0xf);
+}
+
+void ipcidle(){
+	sendwordipc(0x0);
+}
 
 //counts leading zeroes :)
+inline __attribute__((always_inline))
 u8 clzero(u32 var){
    
     u8 cnt=0;
