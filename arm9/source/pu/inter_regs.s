@@ -324,7 +324,6 @@ irqbiosinst:
 	MOV r0, r0, LSL #0xc
 	LDR R1,=0x3ffc						@IRQ handler
 	add r0,r0,r1
-	adr r2,inter_irq
 	
 	//test: ldr r1,=0xc070c070	@test should make dtcm+0x3ffc jump to garbage
 	
@@ -350,70 +349,6 @@ irqexcepstack:
 	.word	0x00000000	@r14	lr
 	.word	0x00000000	@r15	pc
 	
-.global inter_irq
-inter_irq:				
-
-@new NDS9 BIOS handler
-ldr		r0,=irqexcepstack
-stmia	r0,{r1-r13,r14}
-
-@disable IME
-ldr r12,=0x04000208
-//mov r11,#0
-str r12,[r12]
-
-@ie / if
-ldr r10,=0x04000210
-ldr r9,[r10]
-ldr r8,=0x04000214
-ldr r7,[r8]
-
-and r7,r7,r9 @mask only if set on ie (switch)
-
-//* IRQ handler */
-stmdb sp!,{r0-r12,r14}
-
-	MOV r0,r7,ror #0	// case 0
-		ldrcs r0,=vblank_thread
-		movcs lr,pc
-		bxcs r0
-	
-	MOV r0,r7,ror #1	// case 1
-		ldrcs r0,=hblank_thread
-		movcs lr,pc
-		bxcs r0
-	
-	MOV r0,r7,ror #2	// case 2
-		ldrcs r0,=vcount_thread
-		movcs lr,pc
-		bxcs r0
-	
-ldmia sp!,{r0-r12,r14}
-
-/* IRQ Handler end ,dont modify anything else */
-
-@bios flag mix
-MRC P15, 0 ,r0, c9,c1,0 			@TCM Data TCM Base and Virtual Size
-MOV r0, r0, LSR #0xC
-MOV r0, r0, LSL #0xC
-
-ldr r1,=0x3ff8						@dtcm+0x3ff8 = BIOS Interrupt Flags - Check bits (ARM9)
-ldr r6,[r0,r1]
-
-orr r7,r7,r6						@if = r7 / bios f = r6
-
-str r7,[r8] 						@serve IF
-str r7,[r0,r1]
-
-@enable IME
-mov r11,#1
-str r11,[r12]
-
-ldr		r0,=irqexcepstack
-ldmia	r0,{r1-r13,r14}
-
-bx r14 @back to callback
-
 @-------------------------- vector variables
 
 .global exceptrstC

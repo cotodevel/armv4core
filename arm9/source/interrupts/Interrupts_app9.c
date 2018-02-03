@@ -24,6 +24,7 @@ USA
 #include "dsregs_asm.h"
 #include "main.h"
 #include "keypadTGDS.h"
+#include "supervisor.h"
 
 
 //User Handler Definitions
@@ -67,6 +68,7 @@ void VblankUser(){
 	else{
 		getsIPCSharedTGDSSpecific()->frameCounter9 = 0;
 	}
+	vblank_thread();
 }
 
 #ifdef ARM9

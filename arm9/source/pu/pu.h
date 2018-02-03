@@ -208,9 +208,6 @@ extern u32 exceptundef(u32 undef);	//undefined vector
 extern u32 exceptirq(u32 nds_iemask,u32 nds_ifmask,u32 sp_ptr);
 extern u32 swicaller(u32 arg);
 
-//exception tests
-extern u32 inter_irq();
-
 extern u32 __attribute__((section(".dtcm"))) curr_exception[]; //inter_regs.s
 
 //extern void __attribute__((section(".dtcm"))) (*exHandler)();
