@@ -116,8 +116,8 @@ u32 __attribute__ ((hot)) gbacpu_refreshvcount(){
 		UPDATE_REG(0x04, gba.GBADISPSTAT);		//UPDATE_REG(0x04, gba->DISPSTAT);
 
 		if(gba.GBADISPSTAT & 0x20) {
-			gbavirt_ifmasking |= 4;
-			UPDATE_REG(0x202, gbavirt_ifmasking);		 //UPDATE_REG(0x202, gba->GBAIF);
+			GBAIF |= 4;
+			UPDATE_REG(0x202, GBAIF);		 //UPDATE_REG(0x202, gba->GBAIF);
 		}
 	} 
 	else {
@@ -290,8 +290,8 @@ u32 cpuloop(int ticks){
 						gba.GBADISPSTAT |= 2;
 						UPDATE_REG(0x04 , gba.GBADISPSTAT);	//UPDATE_REG(0x04, gba.GBADISPSTAT);
 						if(gba.GBADISPSTAT & 16) {
-							gbavirt_ifmasking |= 2;	//GBAIF |= 2;
-							UPDATE_REG(0x202, gbavirt_ifmasking);	//UPDATE_REG(0x202, GBAIF);
+							GBAIF |= 2;	//GBAIF |= 2;
+							UPDATE_REG(0x202, GBAIF);	//UPDATE_REG(0x202, GBAIF);
 						}
 					}
 					if(gba.GBAVCOUNT >= 228){ //Reaching last line
@@ -326,14 +326,14 @@ u32 cpuloop(int ticks){
 								u16 p1 = (0x3FF ^ gba.GBAP1) & 0x3FF;
 								if(P1CNT & 0x8000) {
 									if(p1 == (P1CNT & 0x3FF)) {
-										gbavirt_ifmasking |= 0x1000;
-										UPDATE_REG(0x202 , gbavirt_ifmasking);	//UPDATE_REG(0x202, GBAIF);
+										GBAIF |= 0x1000;
+										UPDATE_REG(0x202 , GBAIF);	//UPDATE_REG(0x202, GBAIF);
 									}
 								} 
 								else {
 									if(p1 & P1CNT) {
-										gbavirt_ifmasking |= 0x1000;
-										UPDATE_REG(0x202 , gbavirt_ifmasking);	//UPDATE_REG(0x202, GBAIF);
+										GBAIF |= 0x1000;
+										UPDATE_REG(0x202 , GBAIF);	//UPDATE_REG(0x202, GBAIF);
 									}
 								}
 							}
@@ -342,8 +342,8 @@ u32 cpuloop(int ticks){
 							gba.GBADISPSTAT &= 0xFFFD;
 							UPDATE_REG(0x04 , gba.GBADISPSTAT);		//UPDATE_REG(0x04, gba.GBADISPSTAT);
 							if(gba.GBADISPSTAT & 0x0008) {
-								gbavirt_ifmasking |= 1;
-								UPDATE_REG(0x202 , gbavirt_ifmasking);	//UPDATE_REG(0x202, GBAIF);
+								GBAIF |= 1;
+								UPDATE_REG(0x202 , GBAIF);	//UPDATE_REG(0x202, GBAIF);
 							}
 							
 							//CPUCheckDMA(1, 0x0f); //add later
@@ -360,8 +360,8 @@ u32 cpuloop(int ticks){
 						gba.lcdticks += 224;
 							//CPUCheckDMA(2, 0x0f); //add later
 						if(gba.GBADISPSTAT & 16) {
-							gbavirt_ifmasking |= 2;
-							UPDATE_REG(0x202 , gbavirt_ifmasking);	//UPDATE_REG(0x202, GBAIF);
+							GBAIF |= 2;
+							UPDATE_REG(0x202 , GBAIF);	//UPDATE_REG(0x202, GBAIF);
 						}
 					}
 				}
@@ -375,8 +375,8 @@ u32 cpuloop(int ticks){
 						timeroverflow |= 1;
 						//soundTimerOverflow(0);
 						if(gba.GBATM0CNT & 0x40) {
-							gbavirt_ifmasking |= 0x08;
-							UPDATE_REG(0x202 , gbavirt_ifmasking);	//UPDATE_REG(0x202, GBAIF);
+							GBAIF |= 0x08;
+							UPDATE_REG(0x202 , GBAIF);	//UPDATE_REG(0x202, GBAIF);
 						}
 					}
 					gba.GBATM0D = 0xFFFF - (gba.timer0ticks >> gba.timer0clockreload);
@@ -391,8 +391,8 @@ u32 cpuloop(int ticks){
 								timeroverflow |= 2;
 								//soundTimerOverflow(1);
 								if(gba.GBATM1CNT & 0x40) {
-									gbavirt_ifmasking |= 0x10;
-									UPDATE_REG(0x202 , gbavirt_ifmasking);	//UPDATE_REG(0x202, GBAIF);
+									GBAIF |= 0x10;
+									UPDATE_REG(0x202 , GBAIF);	//UPDATE_REG(0x202, GBAIF);
 								}
 							}
 							UPDATE_REG(0x104 , gba.GBATM1D);	//UPDATE_REG(0x104, gbaSystemGlobal.GBATM1D);
@@ -405,8 +405,8 @@ u32 cpuloop(int ticks){
 							timeroverflow |= 2; 
 							//soundTimerOverflow(1);
 							if(gba.GBATM1CNT & 0x40) {
-								gbavirt_ifmasking |= 0x10;
-								UPDATE_REG(0x202 , gbavirt_ifmasking);	//UPDATE_REG(0x202, GBAIF);
+								GBAIF |= 0x10;
+								UPDATE_REG(0x202 , GBAIF);	//UPDATE_REG(0x202, GBAIF);
 							}
 						}
 						gba.GBATM1D = 0xFFFF - (gba.timer1ticks >> gba.timer1clockreload);
@@ -421,8 +421,8 @@ u32 cpuloop(int ticks){
 								gba.GBATM2D += gba.timer2reload;
 								timeroverflow |= 4;
 								if(gba.GBATM2CNT & 0x40) {
-									gbavirt_ifmasking |= 0x20;
-									UPDATE_REG(0x202 , gbavirt_ifmasking);// UPDATE_REG(0x202, GBAIF);
+									GBAIF |= 0x20;
+									UPDATE_REG(0x202 , GBAIF);// UPDATE_REG(0x202, GBAIF);
 								}
 							}
 							UPDATE_REG(0x108 , gba.GBATM2D);// UPDATE_REG(0x108, gbaSystemGlobal.GBATM2D);
@@ -434,8 +434,8 @@ u32 cpuloop(int ticks){
 							gba.timer2ticks += (0x10000 - gba.timer2reload) << gba.timer2clockreload;
 							timeroverflow |= 4; 
 							if(gba.GBATM2CNT & 0x40) {
-								gbavirt_ifmasking |= 0x20;
-								UPDATE_REG(0x202 , gbavirt_ifmasking);	//UPDATE_REG(0x202, GBAIF);
+								GBAIF |= 0x20;
+								UPDATE_REG(0x202 , GBAIF);	//UPDATE_REG(0x202, GBAIF);
 							}
 						}
 						gba.GBATM2D = 0xFFFF - (gba.timer2ticks >> gba.timer2clockreload);
@@ -449,8 +449,8 @@ u32 cpuloop(int ticks){
 							if(gba.GBATM3D == 0) {
 								gba.GBATM3D += gba.timer3reload;
 								if(gba.GBATM3CNT & 0x40) {
-									gbavirt_ifmasking |= 0x40;
-									UPDATE_REG(0x202 , gbavirt_ifmasking);	//UPDATE_REG(0x202, GBAIF);
+									GBAIF |= 0x40;
+									UPDATE_REG(0x202 , GBAIF);	//UPDATE_REG(0x202, GBAIF);
 								}
 							}
 							UPDATE_REG(0x10c , gba.GBATM3D);	//UPDATE_REG(0x10C, gbaSystemGlobal.GBATM3D);
@@ -461,8 +461,8 @@ u32 cpuloop(int ticks){
 						if(gba.timer3ticks <= 0) {
 							gba.timer3ticks += (0x10000 - gba.timer3reload) << gba.timer3clockreload; 
 							if(gba.GBATM3CNT & 0x40) {
-								gbavirt_ifmasking |= 0x40;
-								UPDATE_REG(0x202 , gbavirt_ifmasking);	//UPDATE_REG(0x202, GBAIF);
+								GBAIF |= 0x40;
+								UPDATE_REG(0x202 , GBAIF);	//UPDATE_REG(0x202, GBAIF);
 							}
 						}
 						gba.GBATM3D = 0xFFFF - (gba.timer3ticks >> gba.timer3clockreload);
@@ -487,8 +487,8 @@ u32 cpuloop(int ticks){
 				goto updateLoop;
 			}
 			
-			if(gbavirt_ifmasking && (gbavirt_imemasking & 1) && gba.armirqenable){
-				int res = gbavirt_ifmasking & gbavirt_iemasking;
+			if(GBAIF && (GBAIME & 1) && gba.armirqenable){
+				int res = GBAIF & GBAIE;
 				if(gba.stopstate)
 					res &= 0x3080;
 				if(res) {
@@ -978,14 +978,14 @@ switch(address){
 	break;
 
 	case 0x200:
-		gbavirt_iemasking = (value & 0x3FFF);
-		UPDATE_REG(0x200 , gbavirt_iemasking);	//UPDATE_REG(0x200, gba->GBAIE);
-		if ((gbavirt_imemasking & 1) && (gbavirt_ifmasking & gbavirt_iemasking) && (i_flag==true))
+		GBAIE = (value & 0x3FFF);
+		UPDATE_REG(0x200 , GBAIE);	//UPDATE_REG(0x200, gba->GBAIE);
+		if ((GBAIME & 1) && (GBAIF & GBAIE) && (i_flag==true))
 			gba.cpunextevent = cputotalticks;	//ori: gba.cpunextevent = gba.cputotalticks; //acknowledge cycle & program flow
 	break;
 	case 0x202:
-		gbavirt_ifmasking ^= (value & gbavirt_ifmasking);
-		UPDATE_REG(0x202 , gbavirt_ifmasking);	//UPDATE_REG(0x202, gba.GBAIF);
+		GBAIF ^= (value & GBAIF);
+		UPDATE_REG(0x202 , GBAIF);	//UPDATE_REG(0x202, gba.GBAIF);
     break;
 	case 0x204:{
 		gba.memorywait[0x0e] = gba.memorywaitseq[0x0e] = gamepakramwaitstate[value & 3];
@@ -1023,9 +1023,9 @@ switch(address){
 	}
     break;
 	case 0x208:
-		gbavirt_imemasking = value & 1;
-		UPDATE_REG(0x208 , gbavirt_imemasking); //UPDATE_REG(0x208, gba->GBAIME);
-		if ((gbavirt_imemasking & 1) && (gbavirt_ifmasking & gbavirt_iemasking) && (i_flag==true))
+		GBAIME = value & 1;
+		UPDATE_REG(0x208 , GBAIME); //UPDATE_REG(0x208, gba->GBAIME);
+		if ((GBAIME & 1) && (GBAIF & GBAIE) && (i_flag==true))
 			gba.cpunextevent = cputotalticks;	//ori: gba.cpunextevent = gba.cputotalticks;
     break;
 	case 0x300:

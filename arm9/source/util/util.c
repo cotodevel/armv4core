@@ -729,9 +729,9 @@ gba->GBATM2CNT   = 0x0000;
 gba->GBATM3D     = 0x0000;
 gba->GBATM3CNT   = 0x0000;
 gba->GBAP1       = 0x03FF;
-gbavirt_iemasking=0x0000;			//  gba->IE       = 0x0000;
-gbavirt_ifmasking=0x0000;			//  gba->IF       = 0x0000;
-gbavirt_imemasking=0x0000;			// gba->IME      = 0x0000;
+GBAIE=0x0000;			//  gba->IE       = 0x0000;
+GBAIF=0x0000;			//  gba->IF       = 0x0000;
+GBAIME=0x0000;			// gba->IME      = 0x0000;
 
 cpu_updateregisters(0x00, gba->GBADISPCNT);	//UPDATE_REG(0x00, gba->GBADISPCNT);
 cpu_updateregisters(0x06, gba->GBAVCOUNT);	//UPDATE_REG(0x06, gba->VCOUNT);

@@ -619,32 +619,6 @@ gbachunk:
 cputotalticks:
 	.word 0x00000000
 
-@virtual environment Interruptable Bits
-.global	gbavirt_ifmasking			@IF GBA
-gbavirt_ifmasking:
-	.word 0x00000000
-
-.global	gbavirt_iemasking			@IE GBA
-gbavirt_iemasking:
-	.word 0x00000000
-
-.global	gbavirt_imemasking			@IME GBA
-gbavirt_imemasking:
-	.word 0x00000000
-
-@nds hardware Interruptable Bits
-.global	nds_ifmasking			@IF GBA
-nds_ifmasking:
-	.word 0x00000000
-
-.global	nds_iemasking			@IE GBA
-nds_iemasking:
-	.word 0x00000000
-
-.global	nds_imemasking			@IME GBA
-nds_imemasking:
-	.word 0x00000000
-
 @-- destroyable regs (for virtual stack opcodes)
 .global dummyreg
 dummyreg:

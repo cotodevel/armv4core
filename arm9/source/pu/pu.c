@@ -415,208 +415,144 @@ return 0;
 
 //NDS hardware IRQ process (it is triggered in BIOS NDS9 IRQ) also checks GBA IRQs
 
-u32 exceptirq(u32 nds_iemask,u32 nds_ifmask,u32 sp_ptr){
+//returns: excluded served IF
+u32 exceptirq(u32 ndsIE,u32 ndsIF,u32 sp_ptr){
 
-//cback_entry(sp_ptr); //save LR ori
+	//process callbacks (IEregister & IFregister)
+	switch(ndsIF & ndsIE){
+		case(1<<0):	//LCD V-Blank
+			vblank_thread();
+		break;
+		case(1<<1):	//LCD H-Blank
+		break;
+		case(1<<2)://LCD V-Counter Match
+			
+		break;
+		case(1<<3)://Timer 0 Overflow
+			
+		break;
+		case(1<<4)://Timer 1 Overflow
+			
+		break;
+		case(1<<5)://Timer 2 Overflow
+			
+		break;
+		case(1<<6)://Timer 3 Overflow
+		
+		break;
+		/*//unused
+		case(1<<7)://NDS7 only: SIO/RCNT/RTC (Real Time Clock)
+		break;
+		*/
+		case(1<<8):// DMA 0
+		break;
+		case(1<<9):// DMA 1
+			
+		break;
+		case(1<<10)://DMA 2
+			
+		break;
+		case(1<<11)://DMA 3
+			
+		break;
+		case(1<<12)://Keypad
+			
+		break;
+		case(1<<13)://GBA-Slot (external IRQ source)
+			
+		break;
+		/*
+		case(1<<14): //unused
+		break;
+		
+		case(1<<15): //unused
+		break;
+		*/
+		case(1<<16): //IPC Sync
+			//recvwordipc();
+		break;
+		case(1<<17): //IPC Send FIFO Empty
+		
+		break;
+		case(1<<18): //IPC Recv FIFO Not Empty
+		break;
+		case(1<<19): // NDS-Slot Game Card Data Transfer Completion
+			//printf("irq cart!");
+		break;
+		case(1<<20): //NDS-Slot Game Card IREQ_MC
+		
+		break;
+		case(1<<21): //NDS9 only: Geometry Command FIFO
+		
+		break;
+		/*
+		//unused
+		case(1<<22): //NDS7 only: Screens unfolding
+		break;
+		//unused
+		case(1<<23): //NDS7 only: SPI bus
+		break;
+		//unused
+		case(1<<24): //NDS7 only: Wifi
+		break;
+		*/
+		default:	//nothing
+		break;
+	}
 
-//1/2 NDS IRQ
-//printf("NDS IRQ stack pointer: %x! \n",(unsigned int) sp_ptr);
-//while(1);
 
-//printf("NDS IRQ \n!");
+	//printf("GBA IRQ request! \n");
+	//2/2 GBA IRQ
+	//process callbacks (IEregister & IFregister)
+	switch(ndsIF & ndsIE){
+		case(1<<0):	//LCD V-Blank
+			ndsIF&=~(1<<0);
+		break;
+		case(1<<1):	//LCD H-Blank
+			ndsIF&=~(1<<1);
+		break;
+		case(1<<2)://LCD V-Counter Match
+			ndsIF&=~(1<<2);
+		break;
+		case(1<<3)://Timer 0 Overflow
+			ndsIF&=~(1<<3);
+		break;
+		case(1<<4)://Timer 1 Overflow
+			ndsIF&=~(1<<4);
+		break;
+		case(1<<5)://Timer 2 Overflow
+			ndsIF&=~(1<<5);
+		break;
+		case(1<<6)://Timer 3 Overflow
+			ndsIF&=~(1<<6);
+		break;
+		case(1<<7)://Serial IO / SIO Comms
+			ndsIF&=~(1<<7);
+		break;
+		case(1<<8):// DMA 0
+			ndsIF&=~(1<<8);
+		break;
+		case(1<<9):// DMA 1
+			ndsIF&=~(1<<9);
+		break;
+		case(1<<10)://DMA 2
+			ndsIF&=~(1<<10);
+		break;
+		case(1<<11)://DMA 3
+			ndsIF&=~(1<<11);
+		break;
+		case(1<<12)://Keypad
+			ndsIF&=~(1<<12);
+		break;
+		case(1<<13)://GBA-Slot (external IRQ source)
+			ndsIF&=~(1<<13);
+		break;
+		default:	//nothing
+		break;	
+	}
 
-//process callbacks (IEregister & IFregister)
-switch((nds_iemasking=nds_iemask) & (nds_ifmasking=nds_ifmask)){
-	case(1<<0):	//LCD V-Blank
-		vblank_thread();
-	break;
-	
-	case(1<<1):	//LCD H-Blank
-	
-	break;
-	
-	case(1<<2)://LCD V-Counter Match
-		
-	break;
-	
-	case(1<<3)://Timer 0 Overflow
-		
-	break;
-	
-	case(1<<4)://Timer 1 Overflow
-		
-	break;
-	
-	case(1<<5)://Timer 2 Overflow
-		
-	break;
-	
-	case(1<<6)://Timer 3 Overflow
-	
-	break;
-	
-	/*//unused
-	case(1<<7)://NDS7 only: SIO/RCNT/RTC (Real Time Clock)
-	break;
-	*/
-	
-	case(1<<8):// DMA 0
-		
-	break;
-	
-	case(1<<9):// DMA 1
-		
-	break;
-	
-	case(1<<10)://DMA 2
-		
-	break;
-	
-	case(1<<11)://DMA 3
-		
-	break;
-	
-	case(1<<12)://Keypad
-		
-	break;
-	
-	case(1<<13)://GBA-Slot (external IRQ source)
-		
-	break;
-	
-	/*
-	case(1<<14): //unused
-	break;
-	
-	case(1<<15): //unused
-	break;
-	*/
-	
-	case(1<<16): //IPC Sync
-		//recvwordipc();
-	break;
-	
-	case(1<<17): //IPC Send FIFO Empty
-	
-	break;
-	
-	case(1<<18): //IPC Recv FIFO Not Empty
-	break;
-	
-	case(1<<19): // NDS-Slot Game Card Data Transfer Completion
-		//printf("irq cart!");
-	break;
-	
-	case(1<<20): //NDS-Slot Game Card IREQ_MC
-	
-	break;
-	
-	case(1<<21): //NDS9 only: Geometry Command FIFO
-	
-	break;
-	
-	/*
-	//unused
-	case(1<<22): //NDS7 only: Screens unfolding
-	break;
-	
-	//unused
-	case(1<<23): //NDS7 only: SPI bus
-	break;
-	
-	//unused
-	case(1<<24): //NDS7 only: Wifi
-	break;
-	*/
-	
-	default:	//nothing
-	break;
+return ndsIF;
 }
-
-
-//printf("GBA IRQ request! \n");
-//2/2 GBA IRQ
-//process callbacks (IEregister & IFregister)
-switch(gbavirt_iemasking & gbavirt_ifmasking){
-	case(1<<0):	//LCD V-Blank
-		
-		gbavirt_ifmasking&=~(1<<0);
-	break;
-	
-	case(1<<1):	//LCD H-Blank
-	
-		gbavirt_ifmasking&=~(1<<1);
-	break;
-	
-	case(1<<2)://LCD V-Counter Match
-		
-		gbavirt_ifmasking&=~(1<<2);
-	break;
-	
-	case(1<<3)://Timer 0 Overflow
-		
-		gbavirt_ifmasking&=~(1<<3);
-	break;
-	
-	case(1<<4)://Timer 1 Overflow
-		
-		gbavirt_ifmasking&=~(1<<4);
-	break;
-	
-	case(1<<5)://Timer 2 Overflow
-		
-		gbavirt_ifmasking&=~(1<<5);
-	break;
-	
-	case(1<<6)://Timer 3 Overflow
-	
-		gbavirt_ifmasking&=~(1<<6);
-	break;
-	
-	case(1<<7)://Serial IO / SIO Comms
-		
-		gbavirt_ifmasking&=~(1<<7);
-	break;
-	
-	case(1<<8):// DMA 0
-		
-		gbavirt_ifmasking&=~(1<<8);
-	break;
-	
-	case(1<<9):// DMA 1
-		
-		gbavirt_ifmasking&=~(1<<9);
-	break;
-	
-	case(1<<10)://DMA 2
-		
-		gbavirt_ifmasking&=~(1<<10);
-	break;
-	
-	case(1<<11)://DMA 3
-		
-		gbavirt_ifmasking&=~(1<<11);
-	break;
-	
-	case(1<<12)://Keypad
-		
-		gbavirt_ifmasking&=~(1<<12);
-	break;
-	
-	case(1<<13)://GBA-Slot (external IRQ source)
-		
-		gbavirt_ifmasking&=~(1<<13);
-	break;
-	
-	default:	//nothing
-	break;
-}
-
-//cback_exit(sp_ptr); //restore LR
-
-return nds_ifmasking;
-}
-
 
 //bios handler, does not work with MPU vectors set to 0x00000000
 void gbhandler(){

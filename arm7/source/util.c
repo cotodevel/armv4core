@@ -5,16 +5,6 @@
 #include "util.h"
 #include "opcode.h"
 
-//hardware environment Interruptable Bits for ARM7
-//IF
-u32  nds_ifmasking;
-
-//IE
-u32  nds_iemasking;
-
-//IME
-u32  nds_imemasking;
-
 // returns unary(decimal) ammount of bits using the Hamming Weight approach 
 //8 bit depth Lookuptable 
 //	0	1	2	3	4	5	6	7	8	9	a	b	c	d	e	f
@@ -38,15 +28,15 @@ u8 lutu32bitcnt(u32 x){
 //u32 divswiarr[0x3];
 
 //IO processing with callbacks
-u32 process_interrupts(u32 nds_ifmasking){
+u32 process_interrupts(u32 ndsIF){
 
 //IME is cleared before this 
 
 //process callbacks (IEregister & IFregister)
-switch(*(u32*)(0x04000210) & nds_ifmasking){
+switch(*(u32*)(0x04000210) & ndsIF){
 	case(1<<0): //LCD V-BLANK				
 		//video_render((u32*)(u8*)gba.vidram);
-		//nds_ifmasking=stru32inlasm(0x04000214,0x0, 1<<0);
+		//ndsIF=stru32inlasm(0x04000214,0x0, 1<<0);
 		sendwordipc(0xe);
 	break;
 	
@@ -149,6 +139,6 @@ switch(*(u32*)(0x04000210) & nds_ifmasking){
 	break;
 }
 
-return nds_ifmasking;
+return ndsIF;
 }
 

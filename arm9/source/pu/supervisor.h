@@ -137,27 +137,6 @@ extern u32  __attribute__((section(".dtcm"))) call_adrstack[0x10];
 //CPUtotalticker
 extern u32  __attribute__((section(".dtcm"))) cputotalticks;
 
-//IF
-extern u32  __attribute__((section(".dtcm"))) gbavirt_ifmasking;
-
-//gbaSystemGlobal.GBAIE
-extern u32  __attribute__((section(".dtcm"))) gbavirt_iemasking;
-
-//IME
-extern u32  __attribute__((section(".dtcm"))) gbavirt_imemasking;
-
-//hardware environment Interruptable Bits for ARM9
-//IF
-extern u32  __attribute__((section(".dtcm"))) nds_ifmasking;
-
-//gbaSystemGlobal.GBAIE
-extern u32  __attribute__((section(".dtcm"))) nds_iemasking;
-
-//IME
-extern u32  __attribute__((section(".dtcm"))) nds_imemasking;
-
-//thread vectors (for ASM irq)
-
 #ifdef __cplusplus
 extern "C" {
 #endif

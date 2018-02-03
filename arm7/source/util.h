@@ -18,15 +18,6 @@ extern "C" {
 extern u8 lutu16bitcnt(u16 x);
 extern u8 lutu32bitcnt(u32 x);
 
-//hardware environment Interruptable Bits for ARM7
-//IF
-extern u32	 nds_ifmasking;
-
-//IE
-extern u32	 nds_iemasking;
-
-//IME
-extern u32 	 nds_imemasking;
 
 //CPSR from asm (hardware) cpu NZCV
 extern u32 	 cpsrasm;
