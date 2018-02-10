@@ -128,12 +128,6 @@ export DIRS_ARM9_HEADER = include/	\
 			source/armstorm/ \
 			../common/
 
-#cleanup default C/C++/ASM flags
-export CFLAGS	=''
-export CPPFLAGS	=''
-export CPPFLAGS	=''
-export ASFLAGS	=''
-
 # Build Target(s)	(both processors here)
 all: $(EXECUTABLE_FNAME)
 #all:	debug
