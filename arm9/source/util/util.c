@@ -4,7 +4,7 @@
 #include "dsregs_asm.h"
 
 
-#include "util.h"
+#include "Util.h"
 #include "opcode.h"
 #include "main.h"
 

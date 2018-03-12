@@ -13,7 +13,7 @@
 #include "pu.h"
 #include "supervisor.h"
 #include "opcode.h"
-#include "util.h"
+#include "Util.h"
 #include "buffer.h"
 #include "translator.h"
 

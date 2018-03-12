@@ -16,7 +16,7 @@
 #include <ctype.h>
 
 //GBASystem struct declaration
-#include "util.h"
+#include "Util.h"
 
 #ifdef __cplusplus
 extern "C" {

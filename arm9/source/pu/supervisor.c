@@ -18,7 +18,7 @@
 
 #include "pu.h"
 #include "opcode.h"
-#include "util.h"
+#include "Util.h"
 #include "buffer.h"
 #include "translator.h"
 #include "bios.h"
@@ -3140,7 +3140,7 @@ disthumbcode(0xbdf0); //pop {r4-r7,pc}
 //5.7 STR/LDR
 //disarmcode(0xe7b21004); //ldr r1,[r2,r4]!
 //disarmcode(0xe7a21004); //str r1,[r2,r4]!
-//disarmcode(0xe59f1150);	//ldr r1,=0x3007ffc (pokémon sapp compiler) (pc+0x150)
+//disarmcode(0xe59f1150);	//ldr r1,=0x3007ffc (pok\E9mon sapp compiler) (pc+0x150)
 //disarmcode(0xe59f1148);	//ldr r1,=0x8000381
 
 //disarmcode(0xe59f103c);	//ldr r1,=0x3007ffc (own compiler)

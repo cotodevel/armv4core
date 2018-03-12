@@ -36,7 +36,7 @@
 #include "xenofunzip.h"
 #include "gbaemu4ds_fat_ext.h"
 
-#include "util.h"
+#include "Util.h"
 #include <time.h>
 
 //Shared memory region static object

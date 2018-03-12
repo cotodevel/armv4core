@@ -81,7 +81,7 @@ USA
 
 //tools.
 #include "util/opcode.h"
-#include "util/util.h"
+#include "util/Util.h"
 #include "util/buffer.h"
 #include "util/translator.h"
 #include "bios.h"

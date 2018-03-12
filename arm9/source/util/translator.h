@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>//BRK(); SBRK();
-#include "util.h"
+#include "Util.h"
 #include "opcode.h"
 #include "pu.h"
 #include "supervisor.h"

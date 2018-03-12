@@ -45,7 +45,7 @@
 #include "supervisor.h"
 #include "pu.h"
 #include "opcode.h"
-#include "util.h"
+#include "Util.h"
 #include "buffer.h"
 #include "translator.h"
 #include "gba.arm.core.h"
