@@ -1,3 +1,7 @@
+06/04/2018:
+Micro$oft has acquired github, you can find updates from this software at: https://coto88.bitbucket.io/
+Have a good day.
+
 This is the Toolchain Generic DS gbaARMHook project:
 
 Compile Toolchain: To compile this project you will need to follow the steps at https://github.com/cotodevel/ToolchainGenericDS: Then simply extract the project somewhere.
