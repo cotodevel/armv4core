@@ -87,7 +87,7 @@ export DIRS_ARM9_HEADER = include/	\
 			source/util/ \
 			source/armstorm/ \
 			../common/	\
-			../$(PosIndCodeDIR_FILENAME)/$(DIR_ARM7)/include/
+			../$(PosIndCodeDIR_FILENAME)/$(DIR_ARM9)/include/
 # Build Target(s)	(both processors here)
 all: $(EXECUTABLE_FNAME)
 #all:	debug
