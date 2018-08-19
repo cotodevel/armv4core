@@ -14,7 +14,7 @@
 #include <sys/dir.h>
 #include <fcntl.h>
 
-#include "guiTGDS.h"
+#include "consoleTGDS.h"
 #include "nds_cp15_misc.h"
 #include "dldi.h"
 #include "fsfatlayerTGDSLegacy.h"
@@ -25,7 +25,6 @@
 #include "memoryHandleTGDS.h"
 #include "reent.h"
 #include "sys/types.h"
-#include "consoleTGDS.h"
 #include "utilsTGDS.h"
 #include "devoptab_devices.h"
 #include "posixHandleTGDS.h"
