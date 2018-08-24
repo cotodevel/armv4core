@@ -9,7 +9,7 @@
 #include "dsregs_asm.h"
 
 //filesystem
-#include "fsfatlayerTGDSLegacy.h"
+#include "fsfatlayerTGDS.h"
 #include "fileHandleTGDS.h"
 #include "InterruptsARMCores_h.h"
 #include "specific_shared.h"
