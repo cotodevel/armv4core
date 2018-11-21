@@ -463,161 +463,165 @@ char patchpath[255 * 2];
 
 int main(int _argc, sint8 **_argv) {
 
-IRQInit();
-bool project_specific_console = false;	//set default console or custom console: default console
-GUI_init(project_specific_console);
-GUI_clear();
+	IRQInit();
+	bool project_specific_console = false;	//set default console or custom console: default console
+	GUI_init(project_specific_console);
+	GUI_clear();
 
-sint32 fwlanguage = (sint32)getLanguage();
+	sint32 fwlanguage = (sint32)getLanguage();
 
-int ret=FS_init();
-if (ret == 0)
-{
-	printf("FS Init ok.");
-}
-else if(ret == -1)
-{
-	printf("FS Init error.");
-}
+	printf("     ");
+	printf("     ");
 
-biospath[0] = 0;
-savepath[0] = 0;
-patchpath[0] = 0;
-
-// GBA EMU INIT//
-//show gbadata printf("\x1b[21;1H
-strcat(temppath,(char*)"/gba/rs-pzs.gba");
-//printgbainfo (temppath);
-
-//debugging is enabled at startup
-isdebugemu_defined();
-
-/******************************************************** GBA EMU INIT CODE *********************************************************************/
-bool extram = false; //enabled for dsi
-
-printf("CPULoadRom...");
-bool failed = !CPULoadRom(temppath,extram);
-if(failed)
-{
-    printf("failed");
-	while(1);
-}
-printf("OK\n");
-
-
-useBios = false;
-printf("CPUInit\n");
-CPUInit(biospath, useBios,false);
-
-printf("CPUReset\n");
-bios_cpureset();
-
-printf("BIOS_RegisterRamReset\n");
-bios_registerramreset(0xFF);
-
-printf("arm7init\n");
-//execute_arm7_command(0xc0700100,0x1FFFFFFF,gba_frame_line);
-
-printf("irqinit\n");
-//IEBACKUP = 0;
-
-//bios calls (flush) destroyed sp13 for usr mode
-exRegs[0xd]=gbavirtreg_r13usr[0];
-  
-//Set CPSR virtualized bits & perform USR/SYS CPU mode change. & set stacks
-updatecpuflags(1,cpsrvirt,0x10);
-
-
-//old entrypoint: gba map cant reach this ... so
-//exRegs[0xf] = (u32)&gba_setup;
-
-//new entrypoint: execute ROP only if we use real GBA ROM
-gba_entrypoint = (u32)0x08000000;
-
-//re enable when opcodes are implemented
-#ifndef ROMTEST
-u8* gba_stack_src =(u8*)0x03000000;
-
-//new
-u32 * PATCH_BOOTCODE_PTR = (u32*)&gba_setup;
-//required if buffer from within a destructable function
-static u8 somebuf[32*1024];
-u32 rom_pool_end = 0x03007f00;  //the last ARM disassembled opcode (top) from our function.
-int PATCH_BOOTCODE_SIZE = 0;
-PATCH_BOOTCODE_SIZE = extract_word(PATCH_BOOTCODE_PTR,(PATCH_BOOTCODE_PTR[0]),(u32*)&somebuf[0],rom_pool_end,32);
-
-//printf("payload 1st op:%x / payload size: %d \n",(PATCH_BOOTCODE_PTR[0]),PATCH_BOOTCODE_SIZE);
-nds_2_gba_copy((u8*)&somebuf[0],gba_stack_src,PATCH_BOOTCODE_SIZE*4);
-
-//printf("gba read @ %x:%x \n",(u32)(u8*)gba_src,CPUReadMemory((u32)(u8*)gba_src));
-printf("nds payload set correctly! payload size: %d\n",(int)PATCH_BOOTCODE_SIZE*4);
-
-exRegs[0xe]=(u32)gba_entrypoint;
-exRegs[0xf]=(u32)(u8*)gba_stack_src;
-
-//int size_dumped = ram2file_nds((const char*)"fat:/armv4dump.bin",(u8*)&puzzle_original[0],puzzle_original_size);
-
-//re enable when opcodes are implemented
-#else
-    //jump to homebrew rom : But rom is mapped to 0x08000000 because branch relative precalculated offsets are from 0x08000000 base.
-    
-	//so you cant recompile payloads that use branch relocated addresses from a map different than 0x08000000 (if you plan to stream them from that map)
-	//so: rom is set at 0x08000000 and streamed instead ROP approach
-	
-	//nds_2_gba_copy(rom,gba_src,puzzle_original_size);
-    //printf("nds gba homebrew set correctly @ %x! payload size: %d\n",gba_src,puzzle_original_size);
-
-    exRegs[0xe]=(u32)gba_entrypoint;
-    exRegs[0xf]=(u32)gba_entrypoint;
-//re enable when opcodes are implemented
-#endif
-
-#ifdef SPINLOCK_CODE
-//spinlock code
-
-//spinlock_createproc(u8 process_id,u8 status,u32cback_ptr new_callback);
-spinlock_createproc(0,0,(u32cback_ptr) vblank_thread);
-spinlock_createproc(1,1,(u32cback_ptr) 0);
-spinlock_createproc(2,1,(u32cback_ptr) 0);
-spinlock_createproc(3,1,(u32cback_ptr) 0);
-spinlock_createproc(4,1,(u32cback_ptr) 0);
-spinlock_createproc(5,1,(u32cback_ptr) 0);
-spinlock_createproc(6,1,(u32cback_ptr) 0);
-spinlock_createproc(7,1,(u32cback_ptr) 0);
-spinlock_createproc(8,1,(u32cback_ptr) 0);
-spinlock_createproc(9,1,(u32cback_ptr) 0);
-
-#endif
-
-nopinlasm();
-nopinlasm();
-nopinlasm();
-nopinlasm();
-nopinlasm();
-nopinlasm();
-nopinlasm();
-nopinlasm();
-nopinlasm();
-nopinlasm();
-nopinlasm();
-nopinlasm();
-nopinlasm();
-nopinlasm();
-nopinlasm();
-nopinlasm();
-
-while (1)
-{
-	if (keysPressed() & KEY_A){
-		printf("test:%d",rand()&0xff);
+	int ret=FS_init();
+	if (ret == 0)
+	{
+		printf("FS Init ok.");
 	}
-	
-	if (keysPressed() & KEY_B){
-		GUI_clear();
+	else if(ret == -1)
+	{
+		printf("FS Init error.");
 	}
-	
-	IRQVBlankWait();
-}
+
+	biospath[0] = 0;
+	savepath[0] = 0;
+	patchpath[0] = 0;
+
+	// GBA EMU INIT//
+	//show gbadata printf("\x1b[21;1H
+	strcat(temppath,(char*)"/gba/rs-pzs.gba");
+	//printgbainfo (temppath);
+
+	//debugging is enabled at startup
+	isdebugemu_defined();
+
+	/******************************************************** GBA EMU INIT CODE *********************************************************************/
+	bool extram = false; //enabled for dsi
+
+	printf("CPULoadRom...");
+	bool failed = !CPULoadRom(temppath,extram);
+	if(failed)
+	{
+		printf("failed");
+		while(1);
+	}
+	printf("OK\n");
+
+
+	useBios = false;
+	printf("CPUInit\n");
+	CPUInit(biospath, useBios,false);
+
+	printf("CPUReset\n");
+	bios_cpureset();
+
+	printf("BIOS_RegisterRamReset\n");
+	bios_registerramreset(0xFF);
+
+	printf("arm7init\n");
+	//execute_arm7_command(0xc0700100,0x1FFFFFFF,gba_frame_line);
+
+	printf("irqinit\n");
+	//IEBACKUP = 0;
+
+	//bios calls (flush) destroyed sp13 for usr mode
+	exRegs[0xd]=gbavirtreg_r13usr[0];
+	  
+	//Set CPSR virtualized bits & perform USR/SYS CPU mode change. & set stacks
+	updatecpuflags(1,cpsrvirt,0x10);
+
+
+	//old entrypoint: gba map cant reach this ... so
+	//exRegs[0xf] = (u32)&gba_setup;
+
+	//new entrypoint: execute ROP only if we use real GBA ROM
+	gba_entrypoint = (u32)0x08000000;
+
+	//re enable when opcodes are implemented
+	#ifndef ROMTEST
+	u8* gba_stack_src =(u8*)0x03000000;
+
+	//new
+	u32 * PATCH_BOOTCODE_PTR = (u32*)&gba_setup;
+	//required if buffer from within a destructable function
+	static u8 somebuf[32*1024];
+	u32 rom_pool_end = 0x03007f00;  //the last ARM disassembled opcode (top) from our function.
+	int PATCH_BOOTCODE_SIZE = 0;
+	PATCH_BOOTCODE_SIZE = extract_word(PATCH_BOOTCODE_PTR,(PATCH_BOOTCODE_PTR[0]),(u32*)&somebuf[0],rom_pool_end,32);
+
+	//printf("payload 1st op:%x / payload size: %d \n",(PATCH_BOOTCODE_PTR[0]),PATCH_BOOTCODE_SIZE);
+	nds_2_gba_copy((u8*)&somebuf[0],gba_stack_src,PATCH_BOOTCODE_SIZE*4);
+
+	//printf("gba read @ %x:%x \n",(u32)(u8*)gba_src,CPUReadMemory((u32)(u8*)gba_src));
+	printf("nds payload set correctly! payload size: %d\n",(int)PATCH_BOOTCODE_SIZE*4);
+
+	exRegs[0xe]=(u32)gba_entrypoint;
+	exRegs[0xf]=(u32)(u8*)gba_stack_src;
+
+	//int size_dumped = ram2file_nds((const char*)"fat:/armv4dump.bin",(u8*)&puzzle_original[0],puzzle_original_size);
+
+	//re enable when opcodes are implemented
+	#else
+		//jump to homebrew rom : But rom is mapped to 0x08000000 because branch relative precalculated offsets are from 0x08000000 base.
+		
+		//so you cant recompile payloads that use branch relocated addresses from a map different than 0x08000000 (if you plan to stream them from that map)
+		//so: rom is set at 0x08000000 and streamed instead ROP approach
+		
+		//nds_2_gba_copy(rom,gba_src,puzzle_original_size);
+		//printf("nds gba homebrew set correctly @ %x! payload size: %d\n",gba_src,puzzle_original_size);
+
+		exRegs[0xe]=(u32)gba_entrypoint;
+		exRegs[0xf]=(u32)gba_entrypoint;
+	//re enable when opcodes are implemented
+	#endif
+
+	#ifdef SPINLOCK_CODE
+	//spinlock code
+
+	//spinlock_createproc(u8 process_id,u8 status,u32cback_ptr new_callback);
+	spinlock_createproc(0,0,(u32cback_ptr) vblank_thread);
+	spinlock_createproc(1,1,(u32cback_ptr) 0);
+	spinlock_createproc(2,1,(u32cback_ptr) 0);
+	spinlock_createproc(3,1,(u32cback_ptr) 0);
+	spinlock_createproc(4,1,(u32cback_ptr) 0);
+	spinlock_createproc(5,1,(u32cback_ptr) 0);
+	spinlock_createproc(6,1,(u32cback_ptr) 0);
+	spinlock_createproc(7,1,(u32cback_ptr) 0);
+	spinlock_createproc(8,1,(u32cback_ptr) 0);
+	spinlock_createproc(9,1,(u32cback_ptr) 0);
+
+	#endif
+
+	nopinlasm();
+	nopinlasm();
+	nopinlasm();
+	nopinlasm();
+	nopinlasm();
+	nopinlasm();
+	nopinlasm();
+	nopinlasm();
+	nopinlasm();
+	nopinlasm();
+	nopinlasm();
+	nopinlasm();
+	nopinlasm();
+	nopinlasm();
+	nopinlasm();
+	nopinlasm();
+
+	while (1)
+	{
+		scanKeys();
+		if (keysPressed() & KEY_A){
+			printf("test:%d",rand()&0xff);
+		}
+		
+		if (keysPressed() & KEY_B){
+			GUI_clear();
+		}
+		
+		IRQVBlankWait();
+	}
 	
 	return 0;
 }
