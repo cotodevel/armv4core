@@ -62,12 +62,6 @@ void HblankUser(){
 __attribute__((section(".itcm")))
 #endif
 void VblankUser(){
-	if(getsIPCSharedTGDSSpecific()->frameCounter7 < 60){
-		getsIPCSharedTGDSSpecific()->frameCounter7++;
-	}
-	else{
-		getsIPCSharedTGDSSpecific()->frameCounter7 = 0;
-	}
 }
 
 #ifdef ARM9

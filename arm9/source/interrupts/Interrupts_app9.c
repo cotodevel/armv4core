@@ -62,12 +62,6 @@ void HblankUser(){
 __attribute__((section(".itcm")))
 #endif
 void VblankUser(){
-	if(getsIPCSharedTGDSSpecific()->frameCounter9 < 60){
-		getsIPCSharedTGDSSpecific()->frameCounter9++;
-	}
-	else{
-		getsIPCSharedTGDSSpecific()->frameCounter9 = 0;
-	}
 	vblank_thread();
 }
 

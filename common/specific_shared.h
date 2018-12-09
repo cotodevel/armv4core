@@ -49,8 +49,6 @@ struct gbaheader_t{
 };
 
 struct sIPCSharedTGDSSpecific{
-	uint32 frameCounter7;	//VBLANK counter7
-	uint32 frameCounter9;	//VBLANK counter9
 	uint32 * IPC_ADDR;
     uint8 * ROM;   		//pointer to ROM page
     int rom_size;   	//rom total size
