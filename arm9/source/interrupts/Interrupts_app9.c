@@ -19,7 +19,7 @@ USA
 */
 
 #include "InterruptsARMCores_h.h"
-#include "specific_shared.h"
+#include "ipcfifoTGDSUser.h"
 #include "consoleTGDS.h"
 #include "dsregs_asm.h"
 #include "main.h"
