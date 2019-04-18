@@ -33,10 +33,8 @@ ldr r0,=0x123
 ldr r0,[r0,#0x10]
 str r0,[r0]
 str r0,[r0,#0x10]
-stmia r0!,{r1-r12}^
-ldmia r0!,{r1-r12}^
-@b gba_setup    @works
-@bx =r0
+stmia r0!,{r1-r12}
+ldmia r0!,{r1-r12}
 LDCEQL p2,c3,[R5,#24]!
 STCEQL p2,c3,[R5,#24]!
 CDP p1,10,c1,c2,c3
@@ -129,7 +127,7 @@ mov r10,#0
 mov r11,#0
 mov r12,#0
 
-ldr pc,=#(0x08000000-4)             @entrypoint - 4 because prefetch
+ldr pc,=(0x08000000-4)             @entrypoint - 4 because prefetch
 
 .pool       @we need the #imm fetches close
 @@@@@@@@@@@@@@@@@@@@@@@payload to setup stacks in gba mode end@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
