@@ -47,7 +47,7 @@ DIR_SRC			=	$(DIRS_ARM9_SRC)
 #--gc-sections: allows relocatable sections linked (already) to be included, otherwise unused sections are discarded.
 #check arm9.map "Discarded input sections" to see --gc-sections in action.
 LDFLAGS	=	-specs=gbands_arm9_ld.specs	-Wl,--gc-sections,-Map,$(MAPFILE)
-LIBRARIES =	-l$(TARGET_LIBRARY_NAME_9)	-lstdc++	-lcnano9	-lgcc
+LIBRARIES =	-l$(TARGET_LIBRARY_NAME_9) -lstdc++	-lcnano9			-lgcc
 
 ################################################################################################
 
@@ -80,7 +80,7 @@ $(OBJDIR)/%.o : %.c
 #Do C++ (CXX) Compile now!
 $(OBJDIR)/%.o : %.cpp
 	-@echo 'C++ Compile start: $@'
-	$(CXX)	$(CPP_FLAGS)	$(DIRLIBS_HDR)	$(DIRLIBS_SRC)	-nostdinc	$(DIRLIBS_PROHIBITED)	-o $@ -c $<
+	$(CPP)	$(CPP_FLAGS)	$(DIRLIBS_HDR)	$(DIRLIBS_SRC)	$(DIRLIBS_PROHIBITED)	-o $@ -c $<
 	-@echo 'C Compile End: $@'
 
 #Coto: Special "exception" rule. Fixes tricky projects such as SnemulDS's opcodes2.s where GCC AS is used, while compatibility with .S is required for newer projects.
