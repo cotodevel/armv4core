@@ -96,7 +96,7 @@ int i=0,temp=0,m=0;
 //removed because code was fugly
 //char string search
 if (type==0){
-	//iprintf("char string search!");
+	//printf("char string search!");
 	/*
 	//m=0;
 	for(i=0;i<size;i++){
@@ -157,8 +157,8 @@ if (type==0){
 }
 //hex search
 else if (type==32){
-	//iprintf("hex search!");
-	//iprintf("hex to look: %x",(unsigned int)word);
+	//printf("hex search!");
+	//printf("hex to look: %x",(unsigned int)word);
 	int ret_val = 128*4;    //retries
     
     for(i=0;i<ret_val/4;i++){
@@ -167,7 +167,7 @@ else if (type==32){
 		}
         /*
 		if(temp>0) {
-            iprintf("found %x match!",word);
+            printf("found %x match!",word);
             while(1==1);
         }
         */
