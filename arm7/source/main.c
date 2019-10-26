@@ -17,24 +17,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301
 USA
 */
 
-
-#include <string.h>
 #include "main.h"
-#include "InterruptsARMCores_h.h"
-#include "interrupts.h"
-
-#include "ipcfifoTGDS.h"
-#include "ipcfifoTGDSUser.h"
-
-#include "wifi_arm7.h"
-#include "usrsettingsTGDS.h"
-#include "timerTGDS.h"
 #include "biosTGDS.h"
-#include "spiTGDS.h"
-#include "dmaIO.h"
-#include "CPUARMTGDS.h"
-
-bool isArm7ClosedLid = false;
 
 //---------------------------------------------------------------------------------
 int main(int _argc, sint8 **_argv) {
@@ -43,17 +27,8 @@ int main(int _argc, sint8 **_argv) {
 	installWifiFIFO();		
 	/*			TGDS 1.5 Standard ARM7 Init code end	*/
 	
-	powerON(POWER_SOUND);
-	REG_SOUNDCNT = SOUND_ENABLE | SOUND_VOL(0x7F);
-	
     while (1) {
-		if(isArm7ClosedLid == false){
-			if((REG_KEYXY & KEY_HINGE) == KEY_HINGE){
-				SendFIFOWords(FIFO_IRQ_LIDHASCLOSED_SIGNAL, 0);
-				screenLidHasClosedhandlerUser();
-				isArm7ClosedLid = true;
-			}
-		}
+		handleARM7SVC();	/* Do not remove, handles TGDS services */
 		IRQVBlankWait();
 	}
    

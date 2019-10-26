@@ -39,7 +39,6 @@
 #include <time.h>
 
 //Shared memory region static object
-#include "clock.h"
 #include "clockTGDS.h"
 
 enum RTCSTATE { IDLE, COMMAND, DATA, READDATA };

@@ -16,9 +16,6 @@
 
 //NDS7 clock
 #include <time.h> 
-#include "clock.h"
-#include "gba_ipc.h"
-
 
 //emu clock
 #include "RTC.h"

@@ -28,14 +28,8 @@ USA
 extern "C" {
 #endif
 
-extern bool vblank_gba_period;
-extern u8* soundbuffA;
-extern u8* soundbuffB;
+extern int main(int _argc, sint8 **_argv);
 
-extern u8 DMA_A_TIMERSEL;
-extern u8 DMA_B_TIMERSEL;
-
-extern bool isArm7ClosedLid;
 #ifdef __cplusplus
 }
 #endif

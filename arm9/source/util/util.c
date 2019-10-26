@@ -42,8 +42,7 @@ u32 gba_entrypoint = 0;
 
 //VA + ( DTCMTOP - (stack_size)*4) - dtcm_reservedcode[end_of_usedDTCMstorage] (we use for the emu)  in a loop of CACHE_LINE size
 
-// Declare the externs
-//extern struct gbaheader_t gbaheader;
+struct gbaheader_t gbaheader;
 
 // returns unary(decimal) ammount of bits using the Hamming Weight approach 
 
