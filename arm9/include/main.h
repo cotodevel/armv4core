@@ -1,29 +1,15 @@
+#ifndef __main_h__
+#define __main_h__
+
 #include "typedefsTGDS.h"
 #include "dsregs.h"
 #include "dsregs_asm.h"
 
-//filesystem
-#include "fatfslayerTGDS.h"
-#include "fileHandleTGDS.h"
-#include "InterruptsARMCores_h.h"
-#include "ipcfifoTGDSUser.h"
-#include "ff.h"
-#include "reent.h"
-#include "sys/types.h"
-#include "consoleTGDS.h"
-#include "utilsTGDS.h"
-#include "devoptab_devices.h"
-#include "posixHandleTGDS.h"
-#include "xenofunzip.h"
+#define CLUSTER_FREE	0x00000000
+#define	CLUSTER_EOF		0x0FFFFFFF
+#define CLUSTER_FIRST	0x00000002
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>//BRK(); SBRK();
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <ctype.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {

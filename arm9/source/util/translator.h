@@ -14,6 +14,12 @@
 #include "pu.h"
 #include "supervisor.h"
 
+#endif
+
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 /*
  GBA Memory Map
 
@@ -41,52 +47,45 @@ External Memory (Game Pak)
   0E010000-0FFFFFFF   Not used
 */
 
-
 extern struct GBASystem gba;
 
 //address whitelist to be patched
-extern u32  __attribute__((section(".dtcm"))) addrpatches[0x10];
+extern u32  addrpatches[0x10];
 
 //new redirected patched addresses (requires init first after initemu() as pointers are generated there)
-extern u32  __attribute__((section(".dtcm"))) addrfixes[0x10];
+extern u32  addrfixes[0x10];
 
 //CPU flags will live on the DTCM , so they're accessible
-extern u32 __attribute__((section("dtcm"))) cpsrasm;	//gba hardware cpsr from asm opcodes
-extern u32 __attribute__((section("dtcm"))) cpsrvirt;	//gba virtualized cpsr for environment
-
-extern u8 __attribute__((section("dtcm"))) z_flag;
-extern u8 __attribute__((section("dtcm"))) n_flag;
-extern u8 __attribute__((section("dtcm"))) c_flag;
-extern u8 __attribute__((section("dtcm"))) v_flag;
-extern u8 __attribute__((section("dtcm"))) i_flag;
-extern u8 __attribute__((section("dtcm"))) f_flag;
+extern u32 cpsrasm;	//gba hardware cpsr from asm opcodes
+extern u32 cpsrvirt;	//gba virtualized cpsr for environment
+extern u8 z_flag;
+extern u8 n_flag;
+extern u8 c_flag;
+extern u8 v_flag;
+extern u8 i_flag;
+extern u8 f_flag;
 
 //inmediate flag set for ARM opcode (5.4 ARM)
-extern u8 __attribute__((section("dtcm"))) immop_arm;
+extern u8 immop_arm;
 	
 //set/alter condition codes for ARM opcode (5.4 ARM)
-extern u8 __attribute__((section("dtcm"))) setcond_arm;
+extern u8 setcond_arm;
 
 	
 //SPSR == the last mode Interrupt, Fast interrupt, the old CPU flags (old stack [mode] && old CPU [mode]) 
-extern u32 __attribute__((section("dtcm"))) spsr_svc;
-extern u32 __attribute__((section("dtcm"))) spsr_irq;
-extern u32 __attribute__((section("dtcm"))) spsr_abt;
-extern u32 __attribute__((section("dtcm"))) spsr_und;
-extern u32 __attribute__((section("dtcm"))) spsr_fiq;
-extern u32 __attribute__((section("dtcm"))) spsr_usr;	//well, there's no spsr for user but for compatibility
-extern u32 __attribute__((section("dtcm"))) spsr_sys;
-extern u32 __attribute__((section("dtcm"))) spsr_last; //this one for any cpu<mode> SPSR handle
+extern u32 spsr_svc;
+extern u32 spsr_irq;
+extern u32 spsr_abt;
+extern u32 spsr_und;
+extern u32 spsr_fiq;
+extern u32 spsr_usr;	//well, there's no spsr for user but for compatibility
+extern u32 spsr_sys;
+extern u32 spsr_last; //this one for any cpu<mode> SPSR handle
 
 
-extern u8 __attribute__((section("dtcm"))) armstate;	//0 arm / 1 thumb
-extern u8 __attribute__((section("dtcm"))) armirqstate;//0 disabled / 1 enabled
-extern u8 __attribute__((section("dtcm"))) armswistate;//0 disabled / 1 enabled
-
-
-#ifdef __cplusplus
-extern "C"{
-#endif
+extern u8 armstate;	//0 arm / 1 thumb
+extern u8 armirqstate;//0 disabled / 1 enabled
+extern u8 armswistate;//0 disabled / 1 enabled
 
 //u32  addresslookup(u32 srcaddr, u32 blacklist[], u32 whitelist[]);
 u32 updatecpuflags(u8 mode, u32 cpsr, u32 cpumode); //updatecpuflags(mode,cpsr,cpumode); mode: 0 = hardware asm cpsr update / 1 = virtual CPU mode change,  CPSR , change to CPU mode
@@ -157,4 +156,3 @@ u8	ldru8extasm(u32 x1,u8 y1);
 }
 #endif
 
-#endif

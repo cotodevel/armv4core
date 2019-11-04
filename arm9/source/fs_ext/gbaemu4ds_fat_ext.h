@@ -5,6 +5,10 @@
 #include "dsregs.h"
 #include "dsregs_asm.h"
 
+#include "fatfslayerTGDS.h"
+
+/*
+
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
@@ -17,7 +21,6 @@
 #include "consoleTGDS.h"
 #include "nds_cp15_misc.h"
 #include "dldi.h"
-#include "fatfslayerTGDS.h"
 #include "fileHandleTGDS.h"
 #include "InterruptsARMCores_h.h"
 #include "ipcfifoTGDSUser.h"
@@ -28,6 +31,7 @@
 #include "devoptab_devices.h"
 #include "posixHandleTGDS.h"
 #include "xenofunzip.h"
+*/
 
 //functions taken from ichflysettings.h from gbaemu4ds
 #define arm9advsound			//gbaemu4ds sound
@@ -37,9 +41,6 @@
 #define chucksizeinsec 1 //1,2,4,8
 #define buffslots 255
 #define chucksize 0x200*chucksizeinsec
-
-
-//#define MAXPATHLEN (sint32)(256)
 
 #endif
 
@@ -54,12 +55,6 @@ extern int ichflyfilestreamsize;
 extern u32 *sectortabel;
 extern void * lastopen;
 extern void * lastopenlocked;
-
-/*
-PARTITION* partitionlocked;
-FN_MEDIUM_READSECTORS	readSectorslocked;
-*/
-
 extern int PosixStructFDLastLoadFile;	//Coto: a StructFD non-posix file descriptor having the handle for the FILE * opened at the time the sector table map was generated.
 										//TGDS uses this to access the fatfs level file attributes
 extern u32 current_pointer;

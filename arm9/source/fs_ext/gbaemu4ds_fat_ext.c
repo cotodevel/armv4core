@@ -1,7 +1,13 @@
 #include "gbaemu4ds_fat_ext.h"
+
 #include "typedefsTGDS.h"
 #include "dsregs.h"
 #include "dsregs_asm.h"
+
+#include "dldi.h"
+#include "buffer.h"
+
+/*
 
 #include <stdio.h>
 #include <string.h>
@@ -13,7 +19,6 @@
 #include <fcntl.h>
 
 #include "nds_cp15_misc.h"
-#include "dldi.h"
 #include "fatfslayerTGDS.h"
 #include "fileHandleTGDS.h"
 #include "InterruptsARMCores_h.h"
@@ -27,7 +32,7 @@
 #include "posixHandleTGDS.h"
 #include "xenofunzip.h"
 
-#include "buffer.h"
+*/
 
 
 FILE* ichflyfilestream;

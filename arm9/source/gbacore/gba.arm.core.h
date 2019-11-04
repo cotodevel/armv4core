@@ -18,6 +18,8 @@
 //GBASystem struct declaration
 #include "Util.h"
 
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -350,4 +352,3 @@ extern struct GBASystem gbaSystemGlobal;
 }
 #endif
 
-#endif
