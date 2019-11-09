@@ -39,6 +39,7 @@ USA
 
 #include "bios.h"
 
+#include "TGDSNDSLogo.h"
 
 /* THUMB DISASSEMBLER (little endian) */ //format { 0xc5, 0xc0-- };
 unsigned char buf[1*2]; //buffer for 16 thumb instructions
@@ -238,7 +239,7 @@ char patchpath[255 * 2];
 int main(int _argc, sint8 **_argv) {
 
 	/*			TGDS 1.5 Standard ARM9 Init code start	*/
-	bool project_specific_console = false;	//set default console or custom console: default console
+	bool project_specific_console = true;	//set default console or custom console: custom console
 	GUI_init(project_specific_console);
 	GUI_clear();
 
@@ -258,6 +259,10 @@ int main(int _argc, sint8 **_argv) {
 	}
 	//switch_dswnifi_mode(dswifi_idlemode);	//causes freezes.
 	/*			TGDS 1.5 Standard ARM9 Init code end	*/
+	
+	//show TGDS logo
+	initFBModeSubEngine0x06200000();
+	renderFBMode3SubEngine((u16*)&TGDSLogoNDSSize[0], (int)TGDSLOGONDSSIZE_WIDTH,(int)TGDSLOGONDSSIZE_HEIGHT);
 	
 	biospath[0] = 0;
 	savepath[0] = 0;
