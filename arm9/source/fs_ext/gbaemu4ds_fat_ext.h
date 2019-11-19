@@ -21,7 +21,6 @@
 #include "consoleTGDS.h"
 #include "nds_cp15_misc.h"
 #include "dldi.h"
-#include "fileHandleTGDS.h"
 #include "InterruptsARMCores_h.h"
 #include "ipcfifoTGDSUser.h"
 #include "ff.h"
