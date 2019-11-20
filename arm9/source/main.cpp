@@ -39,7 +39,7 @@ USA
 
 #include "bios.h"
 
-#include "TGDSNDSLogo.h"
+#include "TGDSLogoLZSSCompressed.h"
 
 /* THUMB DISASSEMBLER (little endian) */ //format { 0xc5, 0xc0-- };
 unsigned char buf[1*2]; //buffer for 16 thumb instructions
@@ -260,9 +260,8 @@ int main(int _argc, sint8 **_argv) {
 	//switch_dswnifi_mode(dswifi_idlemode);	//causes freezes.
 	/*			TGDS 1.5 Standard ARM9 Init code end	*/
 	
-	//show TGDS logo
-	initFBModeSubEngine0x06200000();
-	renderFBMode3SubEngine((u16*)&TGDSLogoNDSSize[0], (int)TGDSLOGONDSSIZE_WIDTH,(int)TGDSLOGONDSSIZE_HEIGHT);
+	//render TGDSLogo from a LZSS compressed file
+	RenderTGDSLogoSubEngine((uint8*)&TGDSLogoLZSSCompressed[0], TGDSLogoLZSSCompressed_size);
 	
 	biospath[0] = 0;
 	savepath[0] = 0;
