@@ -47,7 +47,7 @@ u32 current_pointer = 0;
 u32 allocedfild[buffslots];
 u8* greatownfilebuffer;
 
-//DLDI Interface @ io_dldi_data->ioInterface.readSectors(sector, count, buff)
+//DLDI Interface @ _dldi_start.ioInterface.readSectors(sector, count, buff)
 
 //part of fatfile.c
 void generatefilemap(FILE * f, int size)	//FILE * f is already open at this point.
@@ -185,7 +185,7 @@ u8 ichfly_readu8(unsigned int pos) //need lockup
 	asd = greatownfilebuffer + current_pointer * chucksize;
 	sectortabel[mappoffset*2] = (u32)asd;
 
-	io_dldi_data->ioInterface.readSectors(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);	//readSectorslocked(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);
+	_dldi_start.ioInterface.readSectors(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);	//readSectorslocked(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);
 #ifdef countpagefalts
 pagefehler++;
 #endif
@@ -210,7 +210,7 @@ u16 ichfly_readu16(unsigned int pos) //need lockup
 	asd = greatownfilebuffer + current_pointer * chucksize;
 	sectortabel[mappoffset*2] = (u32)asd;
 	
-	io_dldi_data->ioInterface.readSectors(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);	//readSectorslocked(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);
+	_dldi_start.ioInterface.readSectors(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);	//readSectorslocked(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);
 #ifdef countpagefalts
 pagefehler++;
 #endif
@@ -235,7 +235,7 @@ u32 ichfly_readu32(unsigned int pos) //need lockup
 	asd = greatownfilebuffer + current_pointer * chucksize;
 	sectortabel[mappoffset*2] = (u32)asd;
 
-	io_dldi_data->ioInterface.readSectors(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);	//readSectorslocked(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);
+	_dldi_start.ioInterface.readSectors(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);	//readSectorslocked(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);
 #ifdef countpagefalts
 pagefehler++;
 #endif
@@ -283,7 +283,7 @@ void ichfly_readdma_rom(u32 pos,u8 *ptr,u32 c,int readal) //need lockup only ali
 			asd = (u32*)(greatownfilebuffer + current_pointer * chucksize);
 			sectortabel[mappoffset*2] = (u32)asd;
 
-			io_dldi_data->ioInterface.readSectors(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);	//readSectorslocked(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);
+			_dldi_start.ioInterface.readSectors(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);	//readSectorslocked(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);
 			#ifdef countpagefalts
 pagefehler++;
 #endif
@@ -333,7 +333,7 @@ pagefehler++;
 			asd = (u16*)(greatownfilebuffer + current_pointer * chucksize);
 			sectortabel[mappoffset*2] = (u32)asd;
 
-			io_dldi_data->ioInterface.readSectors(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);	//readSectorslocked(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);
+			_dldi_start.ioInterface.readSectors(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);	//readSectorslocked(sectortabel[mappoffset*2 + 1], chucksizeinsec, asd);
 			#ifdef countpagefalts
 pagefehler++;
 #endif
