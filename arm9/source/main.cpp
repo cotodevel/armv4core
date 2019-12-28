@@ -22,7 +22,7 @@ USA
 #include "translator.h"
 #include "opcode.h"
 #include "keypadTGDS.h"
-
+#include "biosTGDS.h"
 
 //disassembler (thumb)
 
@@ -400,6 +400,7 @@ int main(int _argc, sint8 **_argv) {
 			GUI_clear();
 		}
 		
+		handleARM9SVC();	/* Do not remove, handles TGDS services */
 		IRQVBlankWait();
 	}
 	
