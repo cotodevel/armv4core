@@ -260,6 +260,8 @@ int main(int _argc, sint8 **_argv) {
 	//switch_dswnifi_mode(dswifi_idlemode);	//causes freezes.
 	/*			TGDS 1.5 Standard ARM9 Init code end	*/
 	
+	printf("Available heap memory: %d", getMaxRam());
+	
 	//render TGDSLogo from a LZSS compressed file
 	RenderTGDSLogoSubEngine((uint8*)&TGDSLogoLZSSCompressed[0], TGDSLogoLZSSCompressed_size);
 	
