@@ -244,7 +244,8 @@ int main(int _argc, sint8 **_argv) {
 	GUI_clear();
 
 	sint32 fwlanguage = (sint32)getLanguage();
-
+	
+	clrscr();
 	printf("     ");
 	printf("     ");
 
