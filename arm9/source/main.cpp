@@ -23,6 +23,7 @@ USA
 #include "opcode.h"
 #include "keypadTGDS.h"
 #include "biosTGDS.h"
+#include "dldi.h"
 
 //disassembler (thumb)
 
@@ -248,7 +249,8 @@ int main(int _argc, sint8 **_argv) {
 	clrscr();
 	printf("     ");
 	printf("     ");
-
+	
+	setDLDIARM7Address((u32 *)TGDSDLDI_ARM7_ADDRESS);	//Required by ARM7DLDI!
 	int ret=FS_init();
 	if (ret == 0)
 	{

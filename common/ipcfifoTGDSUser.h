@@ -61,6 +61,13 @@ struct sIPCSharedTGDSSpecific{
 
 
 //#define testGBAEMU4DSFSCode	//enable for generating a file you can later test in any emu, that file is created (you pick from the list) is using the same gbaemu4ds streaming driver.
+
+#ifdef ARM9
+//Used by ARM9. Required internally by ARM7
+#define TGDSDLDI_ARM7_ADDRESS (u32)(0x06000000)
+#endif
+
+
 #endif
 
 #ifdef __cplusplus
