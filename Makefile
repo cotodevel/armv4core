@@ -60,15 +60,15 @@ export TARGET_LIBRARY_FILE_9	=	lib$(TARGET_LIBRARY_NAME_9).a
 export DIRS_ARM7_SRC = source/	\
 			source/interrupts/	\
 			../common/	\
-			../common/templateCode/source	\
-			../common/templateCode/data	
+			../common/templateCode/source/	\
+			../common/templateCode/data/arm7/	
 			
 export DIRS_ARM7_HEADER = source/	\
 			source/interrupts/	\
 			include/	\
 			../common/	\
-			../common/templateCode/source	\
-			../common/templateCode/data	\
+			../common/templateCode/source/	\
+			../common/templateCode/data/arm7/	\
 			build/	\
 			../$(PosIndCodeDIR_FILENAME)/$(DIR_ARM7)/include/
 #####################################################ARM9#####################################################
@@ -84,8 +84,8 @@ export DIRS_ARM9_SRC = data/	\
 			source/util/ \
 			source/armstorm/ \
 			../common/	\
-			../common/templateCode/source	\
-			../common/templateCode/data	
+			../common/templateCode/source/	\
+			../common/templateCode/data/arm9/	
 
 export DIRS_ARM9_HEADER = data/	\
 			build/	\
@@ -100,8 +100,8 @@ export DIRS_ARM9_HEADER = data/	\
 			source/util/ \
 			source/armstorm/ \
 			../common/	\
-			../common/templateCode/source	\
-			../common/templateCode/data	\
+			../common/templateCode/source/	\
+			../common/templateCode/data/arm9/		\
 			build/	\
 			../$(PosIndCodeDIR_FILENAME)/$(DIR_ARM9)/include/
 # Build Target(s)	(both processors here)
