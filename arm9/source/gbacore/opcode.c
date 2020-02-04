@@ -9,7 +9,7 @@ inline __attribute__((always_inline))
 u32 ldru32inlasm(u32 x1){
 u32 y1;
 __asm__ volatile(
-				"ldr %[y1],[%[x1]]""\n\t"
+				"ldr %[y1],[%[x1]]""\t"
 				:[y1]  "=r" (y1) // = write only (value+=value) / + read/write with output / & output only reg
 				:[x1]  "r" (x1) //1st arg takes rw, 2nd and later ro
 				); 
@@ -19,7 +19,7 @@ return y1;
 u16 ldru16inlasm(u32 x1){
 u16 y1;
 __asm__ volatile(
-				"ldrh %[y1],[%[x1]]""\n\t"
+				"ldrh %[y1],[%[x1]]""\t"
 				:[y1]  "=r" (y1) // = write only (value+=value) / + read/write with output / & output only reg
 				:[x1]  "r" (x1) //1st arg takes rw, 2nd and later ro
 				); 
@@ -29,7 +29,7 @@ return y1;
 u8 ldru8inlasm(u32 x1){
 u8 y1;
 __asm__ volatile(
-				"ldrb %[y1],[%[x1]]""\n\t"
+				"ldrb %[y1],[%[x1]]""\t"
 				:[y1]  "=r" (y1) // = write only (value+=value) / + read/write with output / & output only reg
 				:[x1]  "r" (x1) //1st arg takes rw, 2nd and later ro
 				); 
@@ -40,8 +40,8 @@ inline __attribute__((always_inline))
 u8 stru8inlasm(u32 x1,u32 x2,u8 y1){
 u8 out;
 __asm__ volatile(
-				"strb %[y1],[%[x1],%[x2]]""\n\t"
-				"ldr %[out],[%[x1],%[x2]]""\n\t"
+				"strb %[y1],[%[x1],%[x2]]""\t"
+				"ldr %[out],[%[x1],%[x2]]""\t"
 				
 				:[out]  "=r" (out) // = write only (value+=value) / + read/write with output / & output only reg
 				:[x1]  "r" (x1),[x2]  "r" (x2),[y1]  "r" (y1) //1st arg takes rw, 2nd and later ro
@@ -53,8 +53,8 @@ inline __attribute__((always_inline))
 u16 stru16inlasm(u32 x1,u32 x2,u16 y1){
 u16 out;
 __asm__ volatile(
-				"strh %[y1],[%[x1],%[x2]]""\n\t"
-				"ldr %[out],[%[x1],%[x2]]""\n\t"
+				"strh %[y1],[%[x1],%[x2]]""\t"
+				"ldr %[out],[%[x1],%[x2]]""\t"
 				
 				:[out]  "=r" (out) // = write only (value+=value) / + read/write with output / & output only reg
 				:[x1]  "r" (x1),[x2]  "r" (x2),[y1]  "r" (y1) //1st arg takes rw, 2nd and later ro
@@ -66,8 +66,8 @@ inline __attribute__((always_inline))
 u32 stru32inlasm(u32 x1,u32 x2,u32 y1){
 u32 out;
 __asm__ volatile(
-				"str %[y1],[%[x1],%[x2]]""\n\t"
-				"ldr %[out],[%[x1],%[x2]]""\n\t"
+				"str %[y1],[%[x1],%[x2]]""\t"
+				"ldr %[out],[%[x1],%[x2]]""\t"
 				
 				:[out]  "=r" (out) // = write only (value+=value) / + read/write with output / & output only reg
 				:[x1]  "r" (x1),[x2]  "r" (x2),[y1]  "r" (y1) //1st arg takes rw, 2nd and later ro
@@ -79,7 +79,7 @@ return out;
 inline __attribute__((always_inline))
 u32 nopinlasm(){
 __asm__ volatile(
-				"nop""\n\t"
+				"nop""\t"
 				: 	// = write only (value+=value) / + read/write with output / & output only reg
 				:	//1st arg takes rw, 2nd and later ro
 				:
@@ -106,7 +106,7 @@ if (type==0){
 			if  ( (( ( buffer[i]>>(k*8) )&0xff ) == (word[j]) ) ){ //j gets actual pos, does not always begin from 0
 				temp++;
 				//debug
-				//printf(" %x_i - k(%d)\n",( ( buffer[i]>>(k*8) )&0xff ),k);
+				//printf(" %x_i - k(%d)",( ( buffer[i]>>(k*8) )&0xff ),k);
 				//j=strlen(word);
 				m++; //increase word segment only til reach top
 			}
@@ -136,7 +136,7 @@ if (type==0){
 			
 				//ori: while( ( ( buffer[i]>>(k*8) )&0xff ) != delimiter){
 				while( (u32)( ( buffer[i]>>(k*8) )&0xff ) != delimiter){
-				printf(" %x_i - k(%d)\n",(unsigned int)( ( buffer[i]>>(k*8) )&0xff ), (int)k);
+				printf(" %x_i - k(%d)",(unsigned int)( ( buffer[i]>>(k*8) )&0xff ), (int)k);
 				
 				//ori: *(buffer_out+m)=( ( buffer[i]>>(k*8) )&0xff );
 				buffer_out[m]=( ( buffer[i]>>(k*8) ) );
@@ -345,7 +345,7 @@ void arm_alu_opcode(u32 arm_opcode){
                         
                         //bit[11]---bit[7] #Imm used opc rm,#Imm
                         #ifdef DEBUGEMU
-                            printf("(5.5) LSL Rm(%x),#Imm[%x] \n",(unsigned int)(rm),(unsigned int)(imm8));
+                            printf("(5.5) LSL Rm(%x),#Imm[%x] ",(unsigned int)(rm),(unsigned int)(imm8));
                         #endif
                     }
                     break;
@@ -369,7 +369,7 @@ void arm_alu_opcode(u32 arm_opcode){
                         
                         //bit[11]---bit[7] #Imm used opc rm,#Imm
                         #ifdef DEBUGEMU
-                            printf("(5.6) LSR Rm(%x),#Imm[%x] \n",(unsigned int)(rm),(unsigned int)(imm8));
+                            printf("(5.6) LSR Rm(%x),#Imm[%x] ",(unsigned int)(rm),(unsigned int)(imm8));
                         #endif
                     }
                     break;
@@ -390,7 +390,7 @@ void arm_alu_opcode(u32 arm_opcode){
                         }
                         //bit[11]---bit[7] #Imm used opc rm,#Imm
                         #ifdef DEBUGEMU
-                            printf("(5.3) ASR Rm(%x),#Imm[%x] \n",(unsigned int)(rm),(unsigned int)(imm8));
+                            printf("(5.3) ASR Rm(%x),#Imm[%x] ",(unsigned int)(rm),(unsigned int)(imm8));
                         #endif
                         
                     }
@@ -410,7 +410,7 @@ void arm_alu_opcode(u32 arm_opcode){
                         }
                         //bit[11]---bit[7] #Imm used opc rm,#Imm
                         #ifdef DEBUGEMU
-                            printf("(5.10) ROR Rm(%x),#Imm[%x] \n",(unsigned int)(rm),(unsigned int)(imm8));
+                            printf("(5.10) ROR Rm(%x),#Imm[%x] ",(unsigned int)(rm),(unsigned int)(imm8));
                         #endif
                     }
                     break;
@@ -437,7 +437,7 @@ void arm_alu_opcode(u32 arm_opcode){
                 switch((shift_operation>>1)&0x3){                        
                     case(0x0):{
                         #ifdef DEBUGEMU
-                            printf("(5.5) LSL Rm(%x),Rs(%x)[%x] \n",(unsigned int)(rm),(unsigned int)(rs),(unsigned int)pc_offset_rs);
+                            printf("(5.5) LSL Rm(%x),Rs(%x)[%x] ",(unsigned int)(rm),(unsigned int)(rs),(unsigned int)pc_offset_rs);
                         #endif
                         //least signif byte (rs) used opc rm,rs
                         scr_reg=lslasm(pc_offset_rm,pc_offset_rs);
@@ -445,7 +445,7 @@ void arm_alu_opcode(u32 arm_opcode){
                     break;
                     case(0x1):{
                         #ifdef DEBUGEMU
-                            printf("(5.6) LSR Rm(%x),Rs(%x)[%x] \n",(unsigned int)(rm),(unsigned int)(rs),(unsigned int)pc_offset_rs);
+                            printf("(5.6) LSR Rm(%x),Rs(%x)[%x] ",(unsigned int)(rm),(unsigned int)(rs),(unsigned int)pc_offset_rs);
                         #endif
                         //least signif byte (rs) used opc rm,rs
                         scr_reg=lsrasm(pc_offset_rm,pc_offset_rs);
@@ -453,7 +453,7 @@ void arm_alu_opcode(u32 arm_opcode){
                     break;
                     case(0x2):{
                         #ifdef DEBUGEMU
-                            printf("(5.3) ASR Rm(%x),Rs(%x)[%x] \n",(unsigned int)(rm),(unsigned int)(rs),(unsigned int)pc_offset_rs);
+                            printf("(5.3) ASR Rm(%x),Rs(%x)[%x] ",(unsigned int)(rm),(unsigned int)(rs),(unsigned int)pc_offset_rs);
                         #endif
                         //least signif byte (rs) used opc rm,rs
                         scr_reg=asrasm(pc_offset_rm,pc_offset_rs);
@@ -461,7 +461,7 @@ void arm_alu_opcode(u32 arm_opcode){
                     break;
                     case(0x3):{
                         #ifdef DEBUGEMU
-                            printf("(5.10) ROR Rm(%x),Rs(%x)[%x] \n",(unsigned int)(rm),(unsigned int)(rs),(unsigned int)pc_offset_rs);
+                            printf("(5.10) ROR Rm(%x),Rs(%x)[%x] ",(unsigned int)(rm),(unsigned int)(rs),(unsigned int)pc_offset_rs);
                         #endif
                         //least signif byte (rs) used opc rm,rs
                         scr_reg=rorasm(pc_offset_rm,pc_offset_rs);
@@ -482,7 +482,7 @@ void arm_alu_opcode(u32 arm_opcode){
         case(0b00000000):{
             exRegs[rd]=andasm(pc_offset_rn,scr_reg);
             #ifdef DEBUGEMU
-                printf("(4.10) AND Rd(%d),Rn(%d),BarrelShiftedValue(%x) \n",(int)(rd),(int)(rn),(int)(scr_reg));
+                printf("(4.10) AND Rd(%d),Rn(%d),BarrelShiftedValue(%x) ",(int)(rd),(int)(rn),(int)(scr_reg));
             #endif
         }
         break;
@@ -490,7 +490,7 @@ void arm_alu_opcode(u32 arm_opcode){
         case(0b00000001):{
             exRegs[rd]=eorasm(pc_offset_rn,scr_reg);
             #ifdef DEBUGEMU
-                printf("(4.10) EOR Rd(%d),Rn(%d),BarrelShiftedValue(%x) \n",(int)(rd),(int)(rn),(int)(scr_reg));
+                printf("(4.10) EOR Rd(%d),Rn(%d),BarrelShiftedValue(%x) ",(int)(rd),(int)(rn),(int)(scr_reg));
             #endif
         }
         break;
@@ -498,7 +498,7 @@ void arm_alu_opcode(u32 arm_opcode){
         case(0b00000010):{
             exRegs[rd]=subasm(pc_offset_rn,scr_reg);
             #ifdef DEBUGEMU
-                printf("(4.10) SUB Rd(%d),Rn(%d),BarrelShiftedValue(%x) \n",(int)(rd),(int)(rn),(int)(scr_reg));
+                printf("(4.10) SUB Rd(%d),Rn(%d),BarrelShiftedValue(%x) ",(int)(rd),(int)(rn),(int)(scr_reg));
             #endif
         }
         break;
@@ -506,7 +506,7 @@ void arm_alu_opcode(u32 arm_opcode){
         case(0b00000011):{
             exRegs[rd]=rsbasm(pc_offset_rn,scr_reg);
             #ifdef DEBUGEMU
-                printf("(4.10) RSB Rd(%d),Rn(%d),BarrelShiftedValue(%x) \n",(int)(rd),(int)(rn),(int)(scr_reg));
+                printf("(4.10) RSB Rd(%d),Rn(%d),BarrelShiftedValue(%x) ",(int)(rd),(int)(rn),(int)(scr_reg));
             #endif
         }
         break;
@@ -514,7 +514,7 @@ void arm_alu_opcode(u32 arm_opcode){
         case(0b00000100):{
             exRegs[rd]=addasm(pc_offset_rn,scr_reg);
             #ifdef DEBUGEMU
-                printf("(4.10) ADD Rd(%d),Rn(%d),BarrelShiftedValue(%x) \n",(int)(rd),(int)(rn),(int)(scr_reg));
+                printf("(4.10) ADD Rd(%d),Rn(%d),BarrelShiftedValue(%x) ",(int)(rd),(int)(rn),(int)(scr_reg));
             #endif
         }
         break;
@@ -522,7 +522,7 @@ void arm_alu_opcode(u32 arm_opcode){
         case(0b00000101):{
             exRegs[rd]=adcasm(pc_offset_rn,scr_reg);    
             #ifdef DEBUGEMU
-                printf("(4.10) ADC Rd(%d),Rn(%d),BarrelShiftedValue(%x) \n",(int)(rd),(int)(rn),(int)(scr_reg));
+                printf("(4.10) ADC Rd(%d),Rn(%d),BarrelShiftedValue(%x) ",(int)(rd),(int)(rn),(int)(scr_reg));
             #endif
         }
         break;
@@ -530,7 +530,7 @@ void arm_alu_opcode(u32 arm_opcode){
         case(0b00000110):{
             exRegs[rd]=sbcasm(pc_offset_rn,scr_reg);    
             #ifdef DEBUGEMU
-                printf("(4.10) SBC Rd(%d),Rn(%d),BarrelShiftedValue(%x) \n",(int)(rd),(int)(rn),(int)(scr_reg));
+                printf("(4.10) SBC Rd(%d),Rn(%d),BarrelShiftedValue(%x) ",(int)(rd),(int)(rn),(int)(scr_reg));
             #endif
         }
         break;
@@ -538,7 +538,7 @@ void arm_alu_opcode(u32 arm_opcode){
         case(0b00000111):{
             exRegs[rd]=rscasm(pc_offset_rn,scr_reg);    
             #ifdef DEBUGEMU
-                printf("(4.10) RSC Rd(%d),Rn(%d),BarrelShiftedValue(%x) \n",(int)(rd),(int)(rn),(int)(scr_reg));
+                printf("(4.10) RSC Rd(%d),Rn(%d),BarrelShiftedValue(%x) ",(int)(rd),(int)(rn),(int)(scr_reg));
             #endif
         }
         break;
@@ -546,7 +546,7 @@ void arm_alu_opcode(u32 arm_opcode){
         case(0b00001000):{
             tstasm(pc_offset_rn,scr_reg);    
             #ifdef DEBUGEMU
-                printf("(4.10) TST Rn(%d),BarrelShiftedValue(%x) \n",(int)(rn),(int)(scr_reg));
+                printf("(4.10) TST Rn(%d),BarrelShiftedValue(%x) ",(int)(rn),(int)(scr_reg));
             #endif
         }
         break;
@@ -554,7 +554,7 @@ void arm_alu_opcode(u32 arm_opcode){
         case(0b00001001):{
             teqasm(pc_offset_rn,scr_reg);    
             #ifdef DEBUGEMU
-                printf("(4.10) TEQ Rn(%d),BarrelShiftedValue(%x) \n",(int)(rn),(int)(scr_reg));
+                printf("(4.10) TEQ Rn(%d),BarrelShiftedValue(%x) ",(int)(rn),(int)(scr_reg));
             #endif
         }
         break;
@@ -562,7 +562,7 @@ void arm_alu_opcode(u32 arm_opcode){
         case(0b00001010):{
             cmpasm(pc_offset_rn,scr_reg);    
             #ifdef DEBUGEMU
-                printf("(4.10) CMP Rn(%d),BarrelShiftedValue(%x) \n",(int)(rn),(int)(scr_reg));
+                printf("(4.10) CMP Rn(%d),BarrelShiftedValue(%x) ",(int)(rn),(int)(scr_reg));
             #endif
         }
         break;
@@ -570,7 +570,7 @@ void arm_alu_opcode(u32 arm_opcode){
         case(0b00001011):{
             cmnasm(pc_offset_rn,scr_reg);    
             #ifdef DEBUGEMU
-                printf("(4.10) CMN Rn(%d),BarrelShiftedValue(%x) \n",(int)(rn),(int)(scr_reg));
+                printf("(4.10) CMN Rn(%d),BarrelShiftedValue(%x) ",(int)(rn),(int)(scr_reg));
             #endif
         }
         break;
@@ -578,7 +578,7 @@ void arm_alu_opcode(u32 arm_opcode){
         case(0b00001100):{
             exRegs[rd]=orrasm(pc_offset_rn,scr_reg);    
             #ifdef DEBUGEMU
-                printf("(4.10) ORR Rd(%d),Rn(%d),BarrelShiftedValue(%x) \n",(int)(rd),(int)(rn),(int)(scr_reg));
+                printf("(4.10) ORR Rd(%d),Rn(%d),BarrelShiftedValue(%x) ",(int)(rd),(int)(rn),(int)(scr_reg));
             #endif
         }
         break;
@@ -591,7 +591,7 @@ void arm_alu_opcode(u32 arm_opcode){
                 exRegs[rd]=movasm(scr_reg);
             }
             #ifdef DEBUGEMU
-                printf("(4.10) MOV Rd(%d),Rm+BarrelShiftedValue(%x) \n",(int)(rd),(int)(scr_reg));
+                printf("(4.10) MOV Rd(%d),Rm+BarrelShiftedValue(%x) ",(int)(rd),(int)(scr_reg));
             #endif
         }
         break;
@@ -599,7 +599,7 @@ void arm_alu_opcode(u32 arm_opcode){
         case(0b00001110):{
             exRegs[rd]=bicasm(pc_offset_rn,scr_reg);    
             #ifdef DEBUGEMU
-                printf("(4.10) BIC Rd(%d),Rn(%d),BarrelShiftedValue(%x) \n",(int)(rd),(int)(rn),(int)(scr_reg));
+                printf("(4.10) BIC Rd(%d),Rn(%d),BarrelShiftedValue(%x) ",(int)(rd),(int)(rn),(int)(scr_reg));
             #endif
         }
         break;
@@ -607,7 +607,7 @@ void arm_alu_opcode(u32 arm_opcode){
         case(0b00001111):{
             exRegs[rd]=mvnasm(scr_reg);
             #ifdef DEBUGEMU
-                printf("(4.10) MVN Rd(%d),Rm+BarrelShiftedValue(%x) \n",(int)(rd),(int)(scr_reg));
+                printf("(4.10) MVN Rd(%d),Rm+BarrelShiftedValue(%x) ",(int)(rd),(int)(scr_reg));
             #endif
         }
         break;

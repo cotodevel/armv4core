@@ -312,7 +312,7 @@ pagefehler++;
 			if(currsize > c) currsize = c;
 
 			u16* asd = (u16*)(sectortabel[mappoffset*2]);
-			//printf("%X %X %X %X %X %X\n\r",sectoroffset,mappoffset,currsize,pos,c,chucksize);
+			//printf("%X %X %X %X %X %X\r",sectoroffset,mappoffset,currsize,pos,c,chucksize);
 			if(asd != (u16*)0x0)//found exit here
 			{
 				int i = 0; //copy

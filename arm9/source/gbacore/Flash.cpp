@@ -101,7 +101,7 @@ void flashReset()
 
 void flashSetSize(int size)
 {
-  //  log("Setting flash size to %d\n", size);
+  //  log("Setting flash size to %d", size);
   if(size == 0x10000) {
     flashDeviceID = 0x1b;
     flashManufacturerID = 0x32;
@@ -118,8 +118,8 @@ void flashSetSize(int size)
 
 u8 flashRead(u32 address)
 {
-  //  log("Reading %08x from %08x\n", address, reg[15].I);
-  //  log("Current read state is %d\n", flashReadState);
+  //  log("Reading %08x from %08x", address, reg[15].I);
+  //  log("Current read state is %d", flashReadState);
   address &= 0xFFFF;
 
   switch(flashReadState) {
@@ -145,7 +145,7 @@ u8 flashRead(u32 address)
 
 void flashSaveDecide(u32 address, u8 byte)
 {
-  //  log("Deciding save type %08x\n", address);
+  //  log("Deciding save type %08x", address);
   if(address == 0x0e005555) {
     saveType = 2;
     cpuSaveGameFunc = flashWrite;
@@ -166,8 +166,8 @@ void flashDelayedWrite(u32 address, u8 byte)
 
 void flashWrite(u32 address, u8 byte)
 {
-  //  log("Writing %02x at %08x\n", byte, address);
-  //  log("Current state is %d\n", flashState);
+  //  log("Writing %02x at %08x", byte, address);
+  //  log("Current state is %d", flashState);
   address &= 0xFFFF;
   switch(flashState) {
   case FLASH_READ_ARRAY:

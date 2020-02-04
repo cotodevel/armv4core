@@ -74,81 +74,46 @@ u8 saveram[512*1024]; //sram 512K
 //gba vars
 //volatile u16 gbaSystemGlobal.GBADISPCNT;
 
-__attribute__((section(".dtcm")))
 memoryMap map[256];
-__attribute__((section(".dtcm")))
 bool ioReadable[0x400];
-__attribute__((section(".dtcm")))
 bool N_FLAG = 0;
-__attribute__((section(".dtcm")))
 bool C_FLAG = 0;
-__attribute__((section(".dtcm")))
 bool Z_FLAG = 0;
-__attribute__((section(".dtcm")))
 bool V_FLAG = 0;
-__attribute__((section(".dtcm")))
 
-__attribute__((section(".dtcm")))
 bool armState = true;               //true = ARM / false = thumb
-__attribute__((section(".dtcm")))
 bool armIrqEnable = true;
-__attribute__((section(".dtcm")))
 u32 armNextPC = 0x00000000;
-__attribute__((section(".dtcm")))
 int armMode = 0x1f;
-__attribute__((section(".dtcm")))
 u32 stop = 0x08000568;              //stop address
-__attribute__((section(".dtcm")))
 int saveType = 0;
-__attribute__((section(".dtcm")))
 bool useBios = false;
-__attribute__((section(".dtcm")))
 bool skipBios = false;
-__attribute__((section(".dtcm")))
 int frameSkip = 1;
-__attribute__((section(".dtcm")))
 bool speedup = false;
-__attribute__((section(".dtcm")))
 bool synchronize = true;
-__attribute__((section(".dtcm")))
 bool cpuDisableSfx = false;
-__attribute__((section(".dtcm")))
 bool cpuIsMultiBoot = false;
-__attribute__((section(".dtcm")))
 bool parseDebug = true;
-__attribute__((section(".dtcm")))
 int layerSettings = 0xff00;
-__attribute__((section(".dtcm")))
 int layerEnable = 0xff00;
-__attribute__((section(".dtcm")))
 bool speedHack = false;
-__attribute__((section(".dtcm")))
 int cpuSaveType = 0;
-__attribute__((section(".dtcm")))
 bool cheatsEnabled = true;
-__attribute__((section(".dtcm")))
 bool mirroringEnable = false;
 
-__attribute__((section(".dtcm")))
 u8 *bios = (uint8*)gbabios; 
-
-__attribute__((section(".dtcm")))
 u8 *internalRAM = (u8*)gbaintram; 
-__attribute__((section(".dtcm")))
 u8 *workRAM = (u8*)gbawram;
 
-__attribute__((section(".dtcm")))
 //u8 *paletteRAM = (u8*)palram;
 u8 *paletteRAM = (u8*)0x05000000;
 
-__attribute__((section(".dtcm")))
 u8 *vram = (u8*)0x06000000;
 
-__attribute__((section(".dtcm")))
 //u8 *oam = (u8*)gbaoam;
 u8 *oam = (u8*)0x07000000;
 
-__attribute__((section(".dtcm")))
 u8 ioMem[0x400];
 
 /*
@@ -233,57 +198,33 @@ u16 GBAIF       = 0x0000;
 u16 GBAIME      = 0x0000;
 
 //gba arm core variables
-__attribute__((section(".dtcm")))
 int SWITicks = 0;
-__attribute__((section(".dtcm")))
 int IRQTicks = 0;
 
-__attribute__((section(".dtcm")))
 int layerEnableDelay = 0;
-__attribute__((section(".dtcm")))
 bool busPrefetch = false;
-__attribute__((section(".dtcm")))
 bool busPrefetchEnable = false;
-__attribute__((section(".dtcm")))
 u32 busPrefetchCount = 0;
-__attribute__((section(".dtcm")))
 int cpuDmaTicksToUpdate = 0;
-__attribute__((section(".dtcm")))
 int cpuDmaCount = 0;
-__attribute__((section(".dtcm")))
 bool cpuDmaHack = false;
-__attribute__((section(".dtcm")))
 u32 cpuDmaLast = 0;
-__attribute__((section(".dtcm")))
 int dummyAddress = 0;
-__attribute__((section(".dtcm")))
 bool cpuBreakLoop = false;
-__attribute__((section(".dtcm")))
 int cpuNextEvent = 0;
 
-__attribute__((section(".dtcm")))
 int gbaSaveType = 0; // used to remember the save type on reset
-__attribute__((section(".dtcm")))
 bool intState = false;
-__attribute__((section(".dtcm")))
 bool stopState = false;
-__attribute__((section(".dtcm")))
 bool holdState = false;
-__attribute__((section(".dtcm")))
 int holdType = 0;
-__attribute__((section(".dtcm")))
 bool cpuSramEnabled = true;
-__attribute__((section(".dtcm")))
 bool cpuFlashEnabled = true;
-__attribute__((section(".dtcm")))
 bool cpuEEPROMEnabled = true;
-__attribute__((section(".dtcm")))
 bool cpuEEPROMSensorEnabled = false;
 
-__attribute__((section(".dtcm")))
 u32 cpuPrefetch[2];
 
-__attribute__((section(".dtcm")))
 int cpuTotalTicks = 0;                  //cycle count for each opcode processed
 #ifdef PROFILING
 int profilingTicks = 0;
@@ -291,92 +232,53 @@ int profilingTicksReload = 0;
 static profile_segment *profilSegment = NULL;
 #endif
 
-__attribute__((section(".dtcm")))
 int lcdTicks = (useBios && !skipBios) ? 1008 : 208;
-__attribute__((section(".dtcm")))
 u8 timerOnOffDelay = 0;
-__attribute__((section(".dtcm")))
 u16 timer0Value = 0;
-__attribute__((section(".dtcm")))
 bool timer0On = false;
-__attribute__((section(".dtcm")))
 int timer0Ticks = 0;
-__attribute__((section(".dtcm")))
 int timer0Reload = 0;
-__attribute__((section(".dtcm")))
 int timer0ClockReload  = 0;
-__attribute__((section(".dtcm")))
 u16 timer1Value = 0;
-__attribute__((section(".dtcm")))
 bool timer1On = false;
-__attribute__((section(".dtcm")))
 int timer1Ticks = 0;
-__attribute__((section(".dtcm")))
 int timer1Reload = 0;
-__attribute__((section(".dtcm")))
 int timer1ClockReload  = 0;
-__attribute__((section(".dtcm")))
 u16 timer2Value = 0;
-__attribute__((section(".dtcm")))
 bool timer2On = false;
-__attribute__((section(".dtcm")))
 int timer2Ticks = 0;
-__attribute__((section(".dtcm")))
 int timer2Reload = 0;
-__attribute__((section(".dtcm")))
 int timer2ClockReload  = 0;
-__attribute__((section(".dtcm")))
 u16 timer3Value = 0;
-__attribute__((section(".dtcm")))
 bool timer3On = false;
-__attribute__((section(".dtcm")))
 int timer3Ticks = 0;
-__attribute__((section(".dtcm")))
 int timer3Reload = 0;
-__attribute__((section(".dtcm")))
 int timer3ClockReload  = 0;
-__attribute__((section(".dtcm")))
 u32 dma0Source = 0;
-__attribute__((section(".dtcm")))
 u32 dma0Dest = 0;
-__attribute__((section(".dtcm")))
 u32 dma1Source = 0;
-__attribute__((section(".dtcm")))
 u32 dma1Dest = 0;
-__attribute__((section(".dtcm")))
 u32 dma2Source = 0;
-__attribute__((section(".dtcm")))
 u32 dma2Dest = 0;
-__attribute__((section(".dtcm")))
 u32 dma3Source = 0;
-__attribute__((section(".dtcm")))
 u32 dma3Dest = 0;
 
 void (*cpuSaveGameFunc)(u32,u8) = flashSaveDecide;
 //void (*renderLine)() = mode0RenderLine;
-__attribute__((section(".dtcm")))
 bool fxOn = false;
-__attribute__((section(".dtcm")))
 bool windowOn = false;
-__attribute__((section(".dtcm")))
 int frameCount = 0;
-__attribute__((section(".dtcm")))
 char buffer[1024];
 
 FILE *out = NULL;
 
 //u32 lastTime = 0;
-__attribute__((section(".dtcm")))
 int count = 0;
 
-__attribute__((section(".dtcm")))
 int capture = 0;
-__attribute__((section(".dtcm")))
 int capturePrevious = 0;
-__attribute__((section(".dtcm")))
 int captureNumber = 0;
 
-__attribute__((section(".dtcm")))
 int TIMER_TICKS[4] = {
   0,
   6,
@@ -384,29 +286,22 @@ int TIMER_TICKS[4] = {
   10
 };
 
-__attribute__((section(".dtcm")))
 u32  objTilesAddress [3] = {0x010000, 0x014000, 0x014000};
-__attribute__((section(".dtcm")))
 u8 gamepakRamWaitState[4] = { 4, 3, 2, 8 };
-__attribute__((section(".dtcm")))
 u8 gamepakWaitState[4] =  { 4, 3, 2, 8 };
-__attribute__((section(".dtcm")))
 u8 gamepakWaitState0[2] = { 2, 1 };
-__attribute__((section(".dtcm")))
 u8 gamepakWaitState1[2] = { 4, 1 };
-__attribute__((section(".dtcm")))
 u8 gamepakWaitState2[2] = { 8, 1 };
 
-__attribute__((section(".dtcm")))
 u8 memoryWait[16] =
   { 0, 0, 2, 0, 0, 0, 0, 0, 4, 4, 4, 4, 4, 4, 4, 0 };
-__attribute__((section(".dtcm")))
+
 u8 memoryWait32[16] =
   { 0, 0, 5, 0, 0, 1, 1, 0, 7, 7, 9, 9, 13, 13, 4, 0 };
-__attribute__((section(".dtcm")))
+
 u8 memoryWaitSeq[16] =
   { 0, 0, 2, 0, 0, 0, 0, 0, 2, 2, 4, 4, 8, 8, 4, 0 };
-__attribute__((section(".dtcm")))
+
 u8 memoryWaitSeq32[16] =
   { 0, 0, 5, 0, 0, 1, 1, 0, 5, 5, 9, 9, 17, 17, 4, 0 };
 
@@ -417,9 +312,8 @@ u8 memoryWaitSeq32[16] =
 //const u8 videoMemoryWait[16] =
 //  {0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-__attribute__((section(".dtcm")))
 u8 biosProtected[4];
-__attribute__((section(".dtcm")))
+
 u32 myROM[173] = {
 0xEA000006,
 0xEA000093,
@@ -596,13 +490,10 @@ u32 myROM[173] = {
 0x03007FE0
 };
 
-__attribute__((section(".dtcm"))) 
 u8 cpuBitsSet[256];
-__attribute__((section(".dtcm"))) 
+
 u8 cpuLowestBitSet[256];
 
-
-__attribute__((section(".dtcm")))
 int romSize = 0x200000; //test normal 0x2000000 current 1/10 oh no only 2.4 MB
 
 int hblank_ticks = 0;
@@ -616,212 +507,211 @@ u32 __attribute__ ((hot)) ndsvcounter(){
 
 
 //CPULoop-> processes registers from various mem and generate threads for each one
-u32 __attribute__ ((hot)) cpu_calculate(){
+__attribute__ ((hot)) u32 cpu_calculate(){
 	int clockticks=0; //actual CPU ticking (heartbeat)
+	
+	//***********************(CPU prefetch cycle lapsus)********************************/
+	// variable used by the CPU core
+	cpuBreakLoop = false;
+	
+	//cause spammed cpu_xxxreads: any broken PC address, will abuse cpureads.
+	#ifdef PREFETCH_ENABLED
+		//prefetch part
+		//cpsr is set in updatecpuflags. //armNextPC->fetchnextpc module
+		u32 fetchnextpc=armnextpc(rom);
+	
+		//idles in this state because swi idle and CPU enabled
+		if(!holdState && !SWITicks) {
+			if ((fetchnextpc & 0x0803FFFF) == 0x08020000) //armNextPC
+				gba.busprefetchcount=0x100;
+		}
+	#endif
+	
+	/////////////////////////(CPU prefetch cycle lapsus end)///////////////////////////
+	
+	/* nds has that on lcd hardware
+	if(gba.soundticks < lcdTicks){
+		gba.soundticks+=lcdTicks; //element thread is set to zero when thread is executed.
+	}
+	*/
+	if (SWITicks < lcdTicks){
+		SWITicks+=lcdTicks;
+	}
 		
-		//***********************(CPU prefetch cycle lapsus)********************************/
-		// variable used by the CPU core
-		cpuBreakLoop = false;
+	if (IRQTicks < lcdTicks){
+		IRQTicks+=lcdTicks;
+	}
+	
+	////////////////////////////////////////THREADS//////////////////////////////////////////
+	
+	//swi acknowledges main clock
+	if (SWITicks){
+		SWITicks-=cpuTotalTicks;
+		if (SWITicks<0)
+			SWITicks = 0;
+	}
 		
-		//cause spammed cpu_xxxreads: any broken PC address, will abuse cpureads.
-		#ifdef PREFETCH_ENABLED
+	//irq acknowledges main clock
+	if (IRQTicks){
+		IRQTicks -= cpuTotalTicks;
+		if (IRQTicks<0)
+			IRQTicks = 0;
+	}
+	
+	cpuTotalTicks = (cpuTotalTicks - cpuNextEvent);	//delta thread time post prefetch
+	
+	//LCD execute
+	lcdTicks -= cpuTotalTicks;
+	
+	///////////////////////////////////// Interrupt thread //////////////////////////////////////
+	if(GBAIF && (GBAIME & 1) && armIrqEnable){
+		int res = GBAIF & GBAIE;
+		if(stopState)
+			res &= 0x3080;
+		if(res) {
 		
-			//prefetch part
-			//cpsr is set in updatecpuflags. //armNextPC->fetchnextpc module
-			u32 fetchnextpc=armnextpc(rom);
-		
-			//idles in this state because swi idle and CPU enabled
-			if(!holdState && !SWITicks) {
-				if ((fetchnextpc & 0x0803FFFF) == 0x08020000) //armNextPC
-					gba.busprefetchcount=0x100;
+			if (intState){
+				if (!IRQTicks){
+					cpuirq(0x12); //CPUInterrupt();
+					intState = false;
+					holdState = false;
+					stopState = false;
+					holdType = 0;
+				}
 			}
-		#endif
-		
-		/////////////////////////(CPU prefetch cycle lapsus end)///////////////////////////
-        
-        /* nds has that on lcd hardware
-        if(gba.soundticks < lcdTicks){
-            gba.soundticks+=lcdTicks; //element thread is set to zero when thread is executed.
-        }
-        */
-        if (SWITicks < lcdTicks){
-            SWITicks+=lcdTicks;
-        }
-            
-        if (IRQTicks < lcdTicks){
-            IRQTicks+=lcdTicks;
-        }
-        
-        ////////////////////////////////////////THREADS//////////////////////////////////////////
-		
-        //swi acknowledges main clock
-		if (SWITicks){
-			SWITicks-=cpuTotalTicks;
-			if (SWITicks<0)
-				SWITicks = 0;
-		}
-			
-		//irq acknowledges main clock
-		if (IRQTicks){
-			IRQTicks -= cpuTotalTicks;
-			if (IRQTicks<0)
-				IRQTicks = 0;
-		}
-		
-        cpuTotalTicks = (cpuTotalTicks - cpuNextEvent);	//delta thread time post prefetch
-		
-		//LCD execute
-		lcdTicks -= cpuTotalTicks;
-		
-		///////////////////////////////////// Interrupt thread //////////////////////////////////////
-		if(GBAIF && (GBAIME & 1) && armIrqEnable){
-			int res = GBAIF & GBAIE;
-			if(stopState)
-				res &= 0x3080;
-			if(res) {
-            
-				if (intState){
-					if (!IRQTicks){
-						cpuirq(0x12); //CPUInterrupt();
-						intState = false;
-						holdState = false;
-						stopState = false;
-						holdType = 0;
-					}
+			else{
+				if (!holdState){
+					intState = true;
+					IRQTicks=7;
+				if (cpuNextEvent> IRQTicks)
+					cpuNextEvent = IRQTicks;
 				}
 				else{
-					if (!holdState){
-						intState = true;
-						IRQTicks=7;
-					if (cpuNextEvent> IRQTicks)
-						cpuNextEvent = IRQTicks;
-					}
-					else{
-						cpuirq(0x12); //CPUInterrupt();
-						holdState = false;
-						stopState = false;
-						holdType = 0;
-					}
+					cpuirq(0x12); //CPUInterrupt();
+					holdState = false;
+					stopState = false;
+					holdType = 0;
 				}
-				// Stops the SWI Ticks emulation if an IRQ is executed
-				//(to avoid problems with nested IRQ/SWI)
-				if (SWITicks)
-					SWITicks = 0;
 			}
+			// Stops the SWI Ticks emulation if an IRQ is executed
+			//(to avoid problems with nested IRQ/SWI)
+			if (SWITicks)
+				SWITicks = 0;
 		}
+	}
+	
+	
+	/////////////////////////////////VBLANK/HBLANK THREAD/////////////////////////////////////////////////////////
+	//not this one
+	
+	if(gbaSystemGlobal.GBADISPSTAT & 2) { //HBLANK period
+		//draw
+		//gbavideorender((u32)gba.vidram, (u32)hblankdelta);
+	
+		// if in H-Blank, leave it and move to drawing mode (deadzone ticks even while hblank is 0)
+		lcdTicks += 1008;
 		
+		//last (visible) vertical line
+		if(gbaSystemGlobal.GBAVCOUNT == 160) {
+			frameCount++;	//framecount
+			u32 joy = 0;	// update joystick information
 		
-		/////////////////////////////////VBLANK/HBLANK THREAD/////////////////////////////////////////////////////////
-		//not this one
-		
-		if(gbaSystemGlobal.GBADISPSTAT & 2) { //HBLANK period
-			//draw
-			//gbavideorender((u32)gba.vidram, (u32)hblankdelta);
-		
-			// if in H-Blank, leave it and move to drawing mode (deadzone ticks even while hblank is 0)
-			lcdTicks += 1008;
-			
-			//last (visible) vertical line
-			if(gbaSystemGlobal.GBAVCOUNT == 160) {
-				frameCount++;	//framecount
-				u32 joy = 0;	// update joystick information
-			
-				joy = systemreadjoypad(-1);
-				gbaSystemGlobal.GBAP1 = 0x03FF ^ (joy & 0x3FF);
-				if(cpuEEPROMSensorEnabled){
-					//systemUpdateMotionSensor(); //
-				}
-				UPDATE_REG(0x130 , gbaSystemGlobal.GBAP1);	//UPDATE_REG(0x130, gbaSystemGlobal.GBAP1);
-				u16 P1CNT =	CPUReadHalfWord(((u32)ioMem[0x132]));	//u16 P1CNT = READ16LE(((u16 *)&ioMem[0x132]));
-				// this seems wrong, but there are cases where the game
-				// can enter the stop state without requesting an IRQ from
-				// the joypad.
-				if((P1CNT & 0x4000) || stopState) {
-					u16 p1 = (0x3FF ^ gbaSystemGlobal.GBAP1) & 0x3FF;
-					if(P1CNT & 0x8000) {
-						if(p1 == (P1CNT & 0x3FF)) {
-							GBAIF |= 0x1000;
-							UPDATE_REG(0x202 , GBAIF);	
-						}
-					} 
-					else {
-						if(p1 & P1CNT) {
-							GBAIF |= 0x1000;
-							UPDATE_REG(0x202 , GBAIF);
-						}
+			joy = systemreadjoypad(-1);
+			gbaSystemGlobal.GBAP1 = 0x03FF ^ (joy & 0x3FF);
+			if(cpuEEPROMSensorEnabled){
+				//systemUpdateMotionSensor(); //
+			}
+			UPDATE_REG(0x130 , gbaSystemGlobal.GBAP1);	//UPDATE_REG(0x130, gbaSystemGlobal.GBAP1);
+			u16 P1CNT =	CPUReadHalfWord(((u32)ioMem[0x132]));	//u16 P1CNT = READ16LE(((u16 *)&ioMem[0x132]));
+			// this seems wrong, but there are cases where the game
+			// can enter the stop state without requesting an IRQ from
+			// the joypad.
+			if((P1CNT & 0x4000) || stopState) {
+				u16 p1 = (0x3FF ^ gbaSystemGlobal.GBAP1) & 0x3FF;
+				if(P1CNT & 0x8000) {
+					if(p1 == (P1CNT & 0x3FF)) {
+						GBAIF |= 0x1000;
+						UPDATE_REG(0x202 , GBAIF);	
+					}
+				} 
+				else {
+					if(p1 & P1CNT) {
+						GBAIF |= 0x1000;
+						UPDATE_REG(0x202 , GBAIF);
 					}
 				}
-				
-				gbaSystemGlobal.GBADISPSTAT |= 1; 			//V-BLANK flag set (period 160..226)
-				gbaSystemGlobal.GBADISPSTAT &= 0xFFFD;		//UNSET V-COUNTER FLAG
-				//UPDATE_REG(0x04 , gbaSystemGlobal.GBADISPSTAT);
-				
-				if(gbaSystemGlobal.GBADISPSTAT & 0x0008) {
-					GBAIF |= 1;
-					UPDATE_REG(0x202 , GBAIF);
-				}
-				
-				//CPUCheckDMA(1, 0x0f); 	//DMA is HBLANK period now
 			}
 			
-			//Reaching last (non-visible) line
-			else if(gbaSystemGlobal.GBAVCOUNT >= 228){ 	
-				gbaSystemGlobal.GBADISPSTAT &= 0xFFFC;
-				gbaSystemGlobal.GBAVCOUNT = 0;
+			gbaSystemGlobal.GBADISPSTAT |= 1; 			//V-BLANK flag set (period 160..226)
+			gbaSystemGlobal.GBADISPSTAT &= 0xFFFD;		//UNSET V-COUNTER FLAG
+			//UPDATE_REG(0x04 , gbaSystemGlobal.GBADISPSTAT);
+			
+			if(gbaSystemGlobal.GBADISPSTAT & 0x0008) {
+				GBAIF |= 1;
+				UPDATE_REG(0x202 , GBAIF);
 			}
 			
-			
-			if(hblank_ticks>=240){
-				gbaSystemGlobal.GBADISPSTAT &= 0xFFFD; //(unset) toggle HBLANK flag only when entering/exiting VCOUNTer
-				hblank_ticks=0;
-			}
+			//CPUCheckDMA(1, 0x0f); 	//DMA is HBLANK period now
 		}
 		
-		//Entering H-Blank (gbaSystemGlobal.GBAVCOUNT time) 
-		//note: (can't set gbaSystemGlobal.GBAVCOUNT ticking on HBLANK because this is always HBLANK time on NDS interrupts (stuck gbaSystemGlobal.GBAVCOUNT from 0x04000006)
-		else{
-			
-			gbaSystemGlobal.GBADISPSTAT |= 2;					//(set) toggle HBLANK flag only when entering/exiting VCOUNTer
-			lcdTicks += 224;
-			gbaSystemGlobal.GBAVCOUNT=ndsvcounter();
-			//gba.gbaSystemGlobal.GBAVCOUNT++; 					//vcount method read from hardware from now on
-			
-			//CPUCheckDMA(2, 0x0f); 	//DMA is HBLANK period now
-			
-			if(gbaSystemGlobal.GBADISPSTAT & 16) {
-				GBAIF |= 2;
-				UPDATE_REG(0x202 , GBAIF);	//UPDATE_REG(0x202, GBAIF);
-			}
-			
-			//////////////////////////////////////VCOUNTER Thread ////////////////////////////////////////////////////////////
-			if( (gbaSystemGlobal.GBAVCOUNT) == (gbaSystemGlobal.GBADISPSTAT >> 8) ) { //V-Count Setting (LYC) == gbaSystemGlobal.GBAVCOUNT = IRQ VBLANK
-				gbaSystemGlobal.GBADISPSTAT |= 4;
-				
-				if(gbaSystemGlobal.GBADISPSTAT & 0x20) {
-					GBAIF |= 4;
-					UPDATE_REG(0x202, GBAIF);		 //UPDATE_REG(0x202, gba->GBAIF);
-				}
-			}
-			else {
-				gbaSystemGlobal.GBADISPSTAT &= 0xFFFB;
-				//UPDATE_REG(0x4, gba->gbaSystemGlobal.GBADISPSTAT);
-			}		
+		//Reaching last (non-visible) line
+		else if(gbaSystemGlobal.GBAVCOUNT >= 228){ 	
+			gbaSystemGlobal.GBADISPSTAT &= 0xFFFC;
+			gbaSystemGlobal.GBAVCOUNT = 0;
 		}
 		
-		/*
-		if((gba.layerenabledelay) >0){
-			gba.layerenabledelay--;
-			if (gba.layerenabledelay==1)
-				gba.layerenable = gba.layersettings & gba.gbaSystemGlobal.GBADISPCNT;
+		
+		if(hblank_ticks>=240){
+			gbaSystemGlobal.GBADISPSTAT &= 0xFFFD; //(unset) toggle HBLANK flag only when entering/exiting VCOUNTer
+			hblank_ticks=0;
 		}
-		*/
+	}
+	
+	//Entering H-Blank (gbaSystemGlobal.GBAVCOUNT time) 
+	//note: (can't set gbaSystemGlobal.GBAVCOUNT ticking on HBLANK because this is always HBLANK time on NDS interrupts (stuck gbaSystemGlobal.GBAVCOUNT from 0x04000006)
+	else{
 		
-		UPDATE_REG(0x04, gbaSystemGlobal.GBADISPSTAT);	
-		UPDATE_REG(0x06, gbaSystemGlobal.GBAVCOUNT);
+		gbaSystemGlobal.GBADISPSTAT |= 2;					//(set) toggle HBLANK flag only when entering/exiting VCOUNTer
+		lcdTicks += 224;
+		gbaSystemGlobal.GBAVCOUNT=ndsvcounter();
+		//gba.gbaSystemGlobal.GBAVCOUNT++; 					//vcount method read from hardware from now on
 		
-		//**********************************DMA THREAD runs on blank irq*************************************/
+		//CPUCheckDMA(2, 0x0f); 	//DMA is HBLANK period now
 		
-return 0;
+		if(gbaSystemGlobal.GBADISPSTAT & 16) {
+			GBAIF |= 2;
+			UPDATE_REG(0x202 , GBAIF);	//UPDATE_REG(0x202, GBAIF);
+		}
+		
+		//////////////////////////////////////VCOUNTER Thread ////////////////////////////////////////////////////////////
+		if( (gbaSystemGlobal.GBAVCOUNT) == (gbaSystemGlobal.GBADISPSTAT >> 8) ) { //V-Count Setting (LYC) == gbaSystemGlobal.GBAVCOUNT = IRQ VBLANK
+			gbaSystemGlobal.GBADISPSTAT |= 4;
+			
+			if(gbaSystemGlobal.GBADISPSTAT & 0x20) {
+				GBAIF |= 4;
+				UPDATE_REG(0x202, GBAIF);		 //UPDATE_REG(0x202, gba->GBAIF);
+			}
+		}
+		else {
+			gbaSystemGlobal.GBADISPSTAT &= 0xFFFB;
+			//UPDATE_REG(0x4, gba->gbaSystemGlobal.GBADISPSTAT);
+		}		
+	}
+	
+	/*
+	if((gba.layerenabledelay) >0){
+		gba.layerenabledelay--;
+		if (gba.layerenabledelay==1)
+			gba.layerenable = gba.layersettings & gba.gbaSystemGlobal.GBADISPCNT;
+	}
+	*/
+	
+	UPDATE_REG(0x04, gbaSystemGlobal.GBADISPSTAT);	
+	UPDATE_REG(0x06, gbaSystemGlobal.GBAVCOUNT);
+	
+	//**********************************DMA THREAD runs on blank irq*************************************/
+	
+	return 0;
 }
 
 u32 __attribute__ ((hot)) cpu_fdexecute(){
@@ -840,7 +730,7 @@ u32 __attribute__ ((hot)) cpu_fdexecute(){
 		u32 new_instr=armfetchpc_arm(exRegs[0xf]&0xfffffffe); 
 		#ifdef DEBUGEMU
 			printf("/******ARM******/");
-			printf("\n rom:%x [%x]\n",(unsigned int)exRegs[0xf],(unsigned int)new_instr);
+			printf(" rom:%x [%x]",(unsigned int)exRegs[0xf],(unsigned int)new_instr);
 		#endif
 		disarmcode(new_instr);
 		
@@ -851,7 +741,7 @@ u32 __attribute__ ((hot)) cpu_fdexecute(){
 		u16 new_instr=armfetchpc_thumb((exRegs[0xf])&0xfffffffe);
 		#ifdef DEBUGEMU
 			printf("/******THUMB******/");
-			printf("\n rom:%x [%x]\n",(unsigned int)exRegs[0xf],(unsigned int)new_instr);
+			printf(" rom:%x [%x]",(unsigned int)exRegs[0xf],(unsigned int)new_instr);
 		#endif
 		disthumbcode(new_instr);
 		
@@ -860,7 +750,7 @@ u32 __attribute__ ((hot)) cpu_fdexecute(){
 
 /*
 if(rom==0x081e2b31){
-	printf("opcode for PC:(%x) [%x] \n",(unsigned int)rom,(unsigned int)armfetchpc_thumb((rom&0xfffffffe)));
+	printf("opcode for PC:(%x) [%x] ",(unsigned int)rom,(unsigned int)armfetchpc_thumb((rom&0xfffffffe)));
 	while(1);
 }
 */
@@ -923,7 +813,7 @@ u32 __attribute__ ((hot)) swi_virt(u32 swinum){
         case 0x02:
         {
             #ifdef DEV_VERSION
-                printf("Halt: GBAIE %x\n",(unsigned int)GBAIE);
+                printf("Halt: GBAIE %x",(unsigned int)GBAIE);
             #endif
             //holdState = true;
             //holdType = -1;
@@ -936,7 +826,7 @@ u32 __attribute__ ((hot)) swi_virt(u32 swinum){
         case 0x03:
         {
             #ifdef DEV_VERSION
-                printf("Stop\n");
+                printf("Stop");
             #endif
 			//holdState = true;
 			//holdType = -1;
@@ -953,7 +843,7 @@ u32 __attribute__ ((hot)) swi_virt(u32 swinum){
         case 0x04:
         {
             #ifdef DEV_VERSION
-            printf("IntrWait: 0x%08x,0x%08x\n",(unsigned int)R[0],(unsigned int)R[1]);      
+            printf("IntrWait: 0x%08x,0x%08x",(unsigned int)R[0],(unsigned int)R[1]);      
             #endif
             
             //gba4ds_swiIntrWait(R[0],R[1]);
@@ -964,7 +854,7 @@ u32 __attribute__ ((hot)) swi_virt(u32 swinum){
         case 0x05:
         {
             #ifdef DEV_VERSION
-                //printf("VBlankIntrWait: 0x%08X 0x%08X\n",REG_IE,anytimejmpfilter);
+                //printf("VBlankIntrWait: 0x%08X 0x%08X",REG_IE,anytimejmpfilter);
                 //VblankHandler(); //todo
             #endif
             //if((REG_DISPSTAT & DISP_IN_VBLANK)) while((REG_DISPSTAT & DISP_IN_VBLANK)); //workaround
@@ -1047,7 +937,7 @@ u32 __attribute__ ((hot)) swi_virt(u32 swinum){
         case 0x19:
         {
             //#ifdef DEV_VERSION
-            printf("SoundBiasSet: 0x%08x \n",(unsigned int)exRegs[0]);
+            printf("SoundBiasSet: 0x%08x ",(unsigned int)exRegs[0]);
             //#endif    
             //if(reg[0].I) //ichfly sound todo
             //systemSoundPause(); //ichfly sound todo
@@ -1094,33 +984,31 @@ return 0;
 }
 
 //current CPU mode working set of registers
-u32  __attribute__((section(".dtcm"))) exRegs[0x10]; //placeholder for actual CPU mode registers
+u32	exRegs[0x10]; //placeholder for actual CPU mode registers
 
 //r13, r14 for each mode (sp and lr)
-u32  __attribute__((section(".dtcm"))) gbavirtreg_r13usr[0x1];
-u32  __attribute__((section(".dtcm"))) gbavirtreg_r14usr[0x1];
-u32  __attribute__((section(".dtcm"))) gbavirtreg_r13fiq[0x1];
-u32  __attribute__((section(".dtcm"))) gbavirtreg_r14fiq[0x1];
-u32  __attribute__((section(".dtcm"))) gbavirtreg_r13irq[0x1];
-u32  __attribute__((section(".dtcm"))) gbavirtreg_r14irq[0x1];
-u32  __attribute__((section(".dtcm"))) gbavirtreg_r13svc[0x1];
-u32  __attribute__((section(".dtcm"))) gbavirtreg_r14svc[0x1];
-u32  __attribute__((section(".dtcm"))) gbavirtreg_r14abt[0x1];
-u32  __attribute__((section(".dtcm"))) gbavirtreg_r13abt[0x1];
-u32  __attribute__((section(".dtcm"))) gbavirtreg_r14und[0x1];
-u32  __attribute__((section(".dtcm"))) gbavirtreg_r13und[0x1];
-//u32  __attribute__((section(".dtcm"))) gbavirtreg_r14sys[0x1]; //stack shared with usr
-//u32  __attribute__((section(".dtcm"))) gbavirtreg_r14sys[0x1];
+u32 gbavirtreg_r13usr[0x1];
+u32 gbavirtreg_r14usr[0x1];
+u32 gbavirtreg_r13fiq[0x1];
+u32 gbavirtreg_r14fiq[0x1];
+u32 gbavirtreg_r13irq[0x1];
+u32 gbavirtreg_r14irq[0x1];
+u32 gbavirtreg_r13svc[0x1];
+u32 gbavirtreg_r14svc[0x1];
+u32 gbavirtreg_r14abt[0x1];
+u32 gbavirtreg_r13abt[0x1];
+u32 gbavirtreg_r14und[0x1];
+u32 gbavirtreg_r13und[0x1];
+//u32 gbavirtreg_r14sys[0x1]; //stack shared with usr
+//u32 gbavirtreg_r14sys[0x1];
 
 //original registers used by any PSR_MODE that do belong to FIQ r8-r12
-u32  __attribute__((section(".dtcm"))) gbavirtreg_fiq[0x5];
+u32  gbavirtreg_fiq[0x5];
 
 //original registers used by any PSR_MODE that do not belong to FIQ r8-r12
-u32  __attribute__((section(".dtcm"))) gbavirtreg_nonfiq[0x5];
-u32  __attribute__((section(".dtcm"))) gbavirtreg_cpu[0x10];
+u32  gbavirtreg_nonfiq[0x5];
+u32  gbavirtreg_cpu[0x10];
 
-__attribute__((section(".itcm")))
-__attribute__ ((hot))
 void doDMA(u32 &s, u32 &d, u32 si, u32 di, u32 c, int transfer32) 
 {
 
@@ -1167,7 +1055,6 @@ void doDMA(u32 &s, u32 &d, u32 si, u32 di, u32 c, int transfer32)
 }
 
 __attribute__ ((aligned (4)))
-__attribute__((section(".itcm")))
 __attribute__ ((hot))
 void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
 {
@@ -1201,7 +1088,7 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
         int count = (gbaSystemGlobal.GBADM0CNT_L ? gbaSystemGlobal.GBADM0CNT_L : 0x4000) << 1;
         if(gbaSystemGlobal.GBADM0CNT_H & 0x0400)
           count <<= 1;
-        printf("DMA0: s=%08x d=%08x c=%04x count=%08x\n", dma0Source, dma0Dest, 
+        printf("DMA0: s=%08x d=%08x c=%04x count=%08x", dma0Source, dma0Dest, 
             gbaSystemGlobal.GBADM0CNT_H,
             count);
       }
@@ -1256,7 +1143,7 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
       if(reason == 3) {
 #ifdef DEV_VERSION
         if(systemVerbose & VERBOSE_DMA1) {
-          printf("DMA1: s=%08x d=%08x c=%04x count=%08x\n", dma1Source, dma1Dest,
+          printf("DMA1: s=%08x d=%08x c=%04x count=%08x", dma1Source, dma1Dest,
               gbaSystemGlobal.GBADM1CNT_H,
               16);
         }
@@ -1269,7 +1156,7 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
           int count = (gbaSystemGlobal.GBADM1CNT_L ? gbaSystemGlobal.GBADM1CNT_L : 0x4000) << 1;
           if(gbaSystemGlobal.GBADM1CNT_H & 0x0400)
             count <<= 1;
-          printf("DMA1: s=%08x d=%08x c=%04x count=%08x\n", dma1Source, dma1Dest,
+          printf("DMA1: s=%08x d=%08x c=%04x count=%08x", dma1Source, dma1Dest,
               gbaSystemGlobal.GBADM1CNT_H,
               count);
         }
@@ -1326,7 +1213,7 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
 #ifdef DEV_VERSION
         if(systemVerbose & VERBOSE_DMA2) {
           int count = (4) << 2;
-          printf("DMA2: s=%08x d=%08x c=%04x count=%08x\n", dma2Source, dma2Dest,
+          printf("DMA2: s=%08x d=%08x c=%04x count=%08x", dma2Source, dma2Dest,
               gbaSystemGlobal.GBADM2CNT_H,
               count);
         }
@@ -1339,7 +1226,7 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
           int count = (gbaSystemGlobal.GBADM2CNT_L ? gbaSystemGlobal.GBADM2CNT_L : 0x4000) << 1;
           if(gbaSystemGlobal.GBADM2CNT_H & 0x0400)
             count <<= 1;
-          printf("DMA2: s=%08x d=%08x c=%04x count=%08x\n", dma2Source, dma2Dest,
+          printf("DMA2: s=%08x d=%08x c=%04x count=%08x", dma2Source, dma2Dest,
               gbaSystemGlobal.GBADM2CNT_H,
               count);
         }
@@ -1397,7 +1284,7 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
         int count = (gbaSystemGlobal.GBADM3CNT_L ? gbaSystemGlobal.GBADM3CNT_L : 0x10000) << 1;
         if(gbaSystemGlobal.GBADM3CNT_H & 0x0400)
           count <<= 1;
-        printf("DMA3: s=%08x d=%08x c=%04x count=%08x\n", dma3Source, dma3Dest,
+        printf("DMA3: s=%08x d=%08x c=%04x count=%08x", dma3Source, dma3Dest,
             gbaSystemGlobal.GBADM3CNT_H,
             count);
       }
@@ -1424,7 +1311,6 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
 }
 
 //IO opcodes
-__attribute__((section(".itcm")))
 __attribute__ ((hot))
 void  CPUUpdateRegister(u32 address, u16 value)
 {
@@ -1590,8 +1476,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
     
     //ori bg code
     #else
-    case 0:
-    
+    case 0:    
     {		
 		if((value & 7) < 3)
 		{
@@ -1976,7 +1861,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
         //soundEvent(address&0xFF, value);  //ichfly send sound to arm7
         
         #ifdef soundwriteprint
-            printf("ur %04x to %08x\r\n",value,address);
+            printf("ur %04x to %08x\r",value,address);
         #endif
         
         //sound command writes
@@ -2028,7 +1913,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
     break;      
   case 0xBC:
 #ifdef dmawriteprint
-	printf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r",value,address);
 #endif
 
     //sound command writes
@@ -2039,7 +1924,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
     break;
   case 0xBE:
 #ifdef dmawriteprint
-	printf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r",value,address);
 #endif
 
     //sound command writes
@@ -2050,7 +1935,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
     break;
   case 0xC0:
 #ifdef dmawriteprint
-    printf("ur %04x to %08x\r\n",value,address);
+    printf("ur %04x to %08x\r",value,address);
 #endif
 
     //sound command writes 
@@ -2061,7 +1946,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
     break;
   case 0xC2:
 #ifdef dmawriteprint
-	printf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r",value,address);
 #endif
 
     //sound command writes
@@ -2072,7 +1957,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
     break;
   case 0xC4:
 #ifdef dmawriteprint
-	printf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r",value,address);
 #endif
 
     //sound command writes
@@ -2083,7 +1968,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
     break;
   case 0xC6:
 #ifdef dmawriteprint
-	printf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r",value,address);
 #endif
 
     //sound command writes
@@ -2106,7 +1991,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
     break;
   case 0xC8:
 #ifdef dmawriteprint
-	printf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r",value,address);
 #endif
 
     //sound command writes
@@ -2117,7 +2002,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
     break;
   case 0xCA:
 #ifdef dmawriteprint
-	printf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r",value,address);
 #endif
 
     //sound command writes
@@ -2128,7 +2013,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
     break;
   case 0xCC:
 #ifdef dmawriteprint
-	printf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r",value,address);
 #endif
 
     //sound command writes
@@ -2139,7 +2024,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
     break;
   case 0xCE:
 #ifdef dmawriteprint
-	printf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r",value,address);
 #endif
 
     //sound command writes
@@ -2151,7 +2036,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
   case 0xD0:
 #ifdef dmawriteprint
 
-	printf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r",value,address);
 #endif
 
     //sound command writes
@@ -2163,7 +2048,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
   case 0xD2:
 #ifdef dmawriteprint
 
-	printf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r",value,address);
 #endif
 
     //sound command writes
@@ -2224,7 +2109,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
  case 0x100:
     timer0Reload = value;
 #ifdef printsoundtimer
-	printf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r",value,address);
 #endif
 
     //sound command writes
@@ -2238,7 +2123,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
     //cpuNextEvent = cpuTotalTicks;
 	UPDATE_REG(0x102, value);
 #ifdef printsoundtimer
-	printf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r",value,address);
 #endif
 
     //sound command writes
@@ -2265,7 +2150,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
 			break;
 		}
 		*(u16 *)(0x4000102) = value;
-		printf("big reload0\r\n");//todo 
+		printf("big reload0\r");//todo 
 	}
 	else*/
 	{	
@@ -2276,7 +2161,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
   case 0x104:
     timer1Reload = value;
 #ifdef printsoundtimer
-	printf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r",value,address);
 #endif
 
     //sound command writes
@@ -2286,7 +2171,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
 	break;
   case 0x106:
 #ifdef printsoundtimer
-	printf("ur %04x to %08x\r\n",value,address);
+	printf("ur %04x to %08x\r",value,address);
 #endif
 
     //sound command writes
@@ -2318,7 +2203,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
 			break;
 		}
 		*(u16 *)(0x4000106) = value;
-		printf("big reload1\r\n");//todo 
+		printf("big reload1\r");//todo 
 	}
 	else*/
 	{	
@@ -2357,7 +2242,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
 			*(u16 *)(0x400010A) = value + 1;
 			break;
 		}
-		printf("big reload2\r\n");//todo 
+		printf("big reload2\r");//todo 
 		*(u16 *)(0x400010A) = value;
 	}
 	else*/
@@ -2396,7 +2281,7 @@ void  CPUUpdateRegister(u32 address, u16 value)
 			*(u16 *)(0x400010E) = value + 1;
 			break;
 		}
-		printf("big reload3\r\n");//todo 
+		printf("big reload3\r");//todo 
 		*(u16 *)(0x400010E) = value;
 	}
 	else*/
@@ -2506,14 +2391,14 @@ void  CPUUpdateRegister(u32 address, u16 value)
 //debug!
 u32 debuggeroutput(){
 u32 lnk_ptr;
-		__asm__ volatile (
+	__asm__ volatile (
 		"mov %[lnk_ptr],#0;" "\n\t"
 		"add %[lnk_ptr],%[lnk_ptr], lr" "\n\t"//"sub lr, lr, #8;" "\n\t"
 		"sub %[lnk_ptr],%[lnk_ptr],#0x8" 
 		:[lnk_ptr] "=r" (lnk_ptr)
-		);
-printf("\n LR callback trace at %x \n", (unsigned int)lnk_ptr);
-return 0;
+	);
+	printf(" LR callback trace at %x ", (unsigned int)lnk_ptr);
+	return 0;
 }
 
 
@@ -2528,11 +2413,11 @@ return CPUReadHalfWord(address);
 
 //prefetch next opcode
 u32 armnextpc(u32 address){
-//0:ARM | 1:THUMB
-if(armState)
-	return CPUReadMemory(address+0x4);
-//else
-return CPUReadHalfWord(address+0x2);
+	//0:ARM | 1:THUMB
+	if(armState)
+		return CPUReadMemory(address+0x4);
+	//else
+	return CPUReadHalfWord(address+0x2);
 }
 
 //readjoypad
@@ -2546,13 +2431,7 @@ u32 systemreadjoypad(int which){
 	return res;
 }
 
-
-//
-
-
-
 //stacked CPU Read/Writes
-
 u32 CPUReadMemory_stack(u32 address)
 {
 	return CPUReadMemory(address);
@@ -2578,8 +2457,6 @@ s8 CPUReadByteSigned_stack(u32 address)
 	return (s8)CPUReadByteSigned(address);
 }
 
-
-
 void CPUWriteMemory_stack(u32 address, u32 value)
 {
 	CPUWriteMemory(address,value);
@@ -2603,7 +2480,7 @@ void updateVC()
 {
 		u32 temp = (REG_VCOUNT&0xff);
 		u32 temp2 = REG_DISPSTAT;
-		//printf("Vcountreal: %08x\n",temp);
+		//printf("Vcountreal: %08x",temp);
 		//u16 help3;
 		gbaSystemGlobal.GBAVCOUNT = temp;
 		gbaSystemGlobal.GBADISPSTAT &= 0xFFF8; //reset h-blanc and V-Blanc and V-Count Setting
@@ -2622,8 +2499,8 @@ void updateVC()
 			//}
 		}
 		UPDATE_REG(0x04, gbaSystemGlobal.GBADISPSTAT);
-		//printf("Vcountreal: %08x\n",temp);
-		//printf("gbaSystemGlobal.GBADISPSTAT: %08x\n",temp2);
+		//printf("Vcountreal: %08x",temp);
+		//printf("gbaSystemGlobal.GBADISPSTAT: %08x",temp2);
 }
 */
 
@@ -2636,7 +2513,7 @@ u32 CPUReadMemory(u32 address)
 {
   
 #ifdef printreads
-  printf("r32 %08x\n",address);
+  printf("r32 %08x",address);
 #endif
   u32 value=0;
   switch(address >> 24) {
@@ -2834,8 +2711,8 @@ u32 CPUReadMemory(u32 address)
   unreadable:
   //while(1);
 #ifdef checkclearaddrrw
-      //printf("Illegal word read: %08x at %08x\n", address,reg[15].I);
-	  printf("Illegal word read: %08x\n", address);
+      //printf("Illegal word read: %08x at %08x", address,reg[15].I);
+	  printf("Illegal word read: %08x", address);
 	  REG_IME = IME_DISABLE;
 	  debugDump();
 	  while(1);
@@ -2858,12 +2735,12 @@ __attribute__((section(".itcm")))
 u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is smaler
 {
 #ifdef printreads
-	printf("r16 %08x\n",address);
+	printf("r16 %08x",address);
 #endif
 #ifdef DEV_VERSION      
   if(address & 1) {
     if(systemVerbose & VERBOSE_UNALIGNED_MEMORY) {
-      printf("Unaligned halfword read: %08x at %08x\n", address, armMode ?
+      printf("Unaligned halfword read: %08x at %08x", address, armMode ?
           armNextPC - 4 : armNextPC - 2);
     }
   }
@@ -3051,7 +2928,7 @@ u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is sma
 	break;
   case 13:
 #ifdef printsaveread
-	  printf("%X\n\r",address);
+	  printf("%X\r",address);
 #endif
     if(cpuEEPROMEnabled)
       // no need to swap this
@@ -3059,7 +2936,7 @@ u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is sma
     goto unreadable;
   case 14:
 #ifdef printsaveread
-	  printf("%X\n\r",address);
+	  printf("%X\r",address);
 #endif
     if(cpuFlashEnabled | cpuSramEnabled)
       // no need to swap this
@@ -3069,8 +2946,8 @@ u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is sma
   unreadable:
 
 #ifdef checkclearaddrrw
-      //printf("Illegal word read: %08x at %08x\n", address,reg[15].I);
-	  printf("Illegal hword read: %08x\n", address);
+      //printf("Illegal word read: %08x at %08x", address,reg[15].I);
+	  printf("Illegal hword read: %08x", address);
 	  REG_IME = IME_DISABLE;
 	  debugDump();
 	  while(1);
@@ -3108,7 +2985,7 @@ __attribute__((section(".itcm")))
 u8 CPUReadByte(u32 address)
 {
 #ifdef printreads
-printf("r8 %02x\n",address);
+printf("r8 %02x",address);
 #endif
 
   switch(address >> 24) {
@@ -3248,14 +3125,14 @@ printf("r8 %02x\n",address);
 
   case 13:
 #ifdef printsaveread
-	  printf("%X\n\r",address);
+	  printf("%X\r",address);
 #endif
     if(cpuEEPROMEnabled)
       return eepromRead(address);
     goto unreadable;
   case 14:
 #ifdef printsaveread
-	  printf("%X\n\r",address);
+	  printf("%X\r",address);
 #endif
     if(cpuSramEnabled | cpuFlashEnabled)
       return flashRead(address);
@@ -3275,8 +3152,8 @@ printf("r8 %02x\n",address);
   default:
   unreadable:
 #ifdef checkclearaddrrw
-      //printf("Illegal word read: %08x at %08x\n", address,reg[15].I);
-	  printf("Illegal byte read: %08x\n", address);
+      //printf("Illegal word read: %08x at %08x", address,reg[15].I);
+	  printf("Illegal byte read: %08x", address);
 	  REG_IME = IME_DISABLE;
 	  debugDump();
 	  while(1);
@@ -3292,12 +3169,12 @@ __attribute__((section(".itcm")))
 void CPUWriteMemory(u32 address, u32 value) //ichfly not inline is faster because it is smaler
 {
 #ifdef printreads
-    printf("w32 %08x to %08x\n",value,address);
+    printf("w32 %08x to %08x",value,address);
 #endif		  
 #ifdef DEV_VERSION
   if(address & 3) {
     if(systemVerbose & VERBOSE_UNALIGNED_MEMORY) {
-      printf("Unaligned word write: %08x to %08x from %08x\n",
+      printf("Unaligned word write: %08x to %08x from %08x",
           value,
           address,
           armMode ? armNextPC - 4 : armNextPC - 2);
@@ -3383,7 +3260,7 @@ void CPUWriteMemory(u32 address, u32 value) //ichfly not inline is faster becaus
     break;
   case 0x0D:
 #ifdef printsavewrite
-	  	  printf("%X %X\n\r",address,value);
+	  	  printf("%X %X\r",address,value);
 #endif
     if(cpuEEPROMEnabled) {
       eepromWrite(address, value);
@@ -3392,7 +3269,7 @@ void CPUWriteMemory(u32 address, u32 value) //ichfly not inline is faster becaus
     goto unwritable;
   case 0x0E:
 #ifdef printsavewrite
-	  	  printf("%X %X\n\r",address,value);
+	  	  printf("%X %X\r",address,value);
 #endif
     if(!eepromInUse | cpuSramEnabled | cpuFlashEnabled) {
       (*cpuSaveGameFunc)(address, (u8)value);
@@ -3402,8 +3279,8 @@ void CPUWriteMemory(u32 address, u32 value) //ichfly not inline is faster becaus
   default:
   unwritable:
 #ifdef checkclearaddrrw
-      //printf("Illegal word read: %08x at %08x\n", address,reg[15].I);
-	  printf("Illegal word write: %08x to %08x\n",value, address);
+      //printf("Illegal word read: %08x at %08x", address,reg[15].I);
+	  printf("Illegal word write: %08x to %08x",value, address);
 	  REG_IME = IME_DISABLE;
 	  debugDump();
 	  while(1);
@@ -3417,13 +3294,13 @@ __attribute__((section(".itcm")))
 void CPUWriteHalfWord(u32 address, u16 value)
 {
 #ifdef printreads
-printf("w16 %04x to %08x\r\n",value,address);
+printf("w16 %04x to %08x\r",value,address);
 #endif
 
 #ifdef DEV_VERSION
   if(address & 1) {
     if(systemVerbose & VERBOSE_UNALIGNED_MEMORY) {
-      printf("Unaligned halfword write: %04x to %08x from %08x\n",
+      printf("Unaligned halfword write: %04x to %08x from %08x",
           value,
           address,
           armMode ? armNextPC - 4 : armNextPC - 2);
@@ -3509,7 +3386,7 @@ printf("w16 %04x to %08x\r\n",value,address);
     switch(address){
 		case 0x080000c4: case 0x080000c6: case 0x080000c8:
 			if(!rtcWrite(address, value)){
-				//printf("RTC write failed \n");
+				//printf("RTC write failed ");
 				goto unwritable;
 			}
 		break;
@@ -3517,7 +3394,7 @@ printf("w16 %04x to %08x\r\n",value,address);
 	break;
   case 13:
 #ifdef printsavewrite
-	  	  printf("%X %X\n\r",address,value);
+	  	  printf("%X %X\r",address,value);
 #endif
     if(cpuEEPROMEnabled) {
       eepromWrite(address, (u8)value);
@@ -3526,7 +3403,7 @@ printf("w16 %04x to %08x\r\n",value,address);
     goto unwritable;
   case 14:
 #ifdef printsavewrite
-	  	  printf("%X %X\n\r",address,value);
+	  	  printf("%X %X\r",address,value);
 #endif
     if(!eepromInUse | cpuSramEnabled | cpuFlashEnabled) {
       (*cpuSaveGameFunc)(address, (u8)value);
@@ -3536,8 +3413,8 @@ printf("w16 %04x to %08x\r\n",value,address);
   default:
   unwritable:
 #ifdef checkclearaddrrw
-      //printf("Illegal word read: %08x at %08x\n", address,reg[15].I);
-	  printf("Illegal hword write: %04x to %08x\n",value, address);
+      //printf("Illegal word read: %08x at %08x", address,reg[15].I);
+	  printf("Illegal hword write: %04x to %08x",value, address);
 	  REG_IME = IME_DISABLE;
 	  debugDump();
 	  while(1);
@@ -3551,7 +3428,7 @@ __attribute__((section(".itcm")))
 void CPUWriteByte(u32 address, u8 b)
 {
 #ifdef printreads
-	printf("w8 %02x to %08x\r\n",b,address);
+	printf("w8 %02x to %08x\r",b,address);
 #endif
   switch(address >> 24) {
   case 2:
@@ -3681,7 +3558,7 @@ void CPUWriteByte(u32 address, u8 b)
     break;    
   case 13:
 #ifdef printsavewrite
-	  	  printf("%X %X\n\r",address,b);
+	  	  printf("%X %X\r",address,b);
 #endif
 
     if(cpuEEPROMEnabled) {
@@ -3691,7 +3568,7 @@ void CPUWriteByte(u32 address, u8 b)
     goto unwritable;
   case 14:
 #ifdef printsavewrite
-	  	  printf("%X %X\n\r",address,b);
+	  	  printf("%X %X\r",address,b);
 #endif
       if (!(saveType == 5) && (!eepromInUse | cpuSramEnabled | cpuFlashEnabled)) {
 
@@ -3704,8 +3581,8 @@ void CPUWriteByte(u32 address, u8 b)
   default:
   unwritable:
 #ifdef checkclearaddrrw
-      //printf("Illegal word read: %08x at %08x\n", address,reg[15].I);
-	  printf("Illegal byte write: %02x to %08x\n",b, address);
+      //printf("Illegal word read: %08x at %08x", address,reg[15].I);
+	  printf("Illegal byte write: %02x to %08x",b, address);
 	  REG_IME = IME_DISABLE;
 	  debugDump();
 	  while(1);

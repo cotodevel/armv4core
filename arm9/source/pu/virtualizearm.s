@@ -907,14 +907,6 @@ call_adrstack:
 	.word 0x00000000
 	.word 0x00000000
 
-.global vector_addr
-vector_addr:
-	.word __vectors_start
-
-.global vector_end_addr
-vector_end_addr:
-	.word __vectors_end
-
 @----------------------------------------------------------------------------------------------------------------------------
 @ DTCM variables / DTCM IS NOT MEANT TO STORE ASM opcodes because caches must be coherent for that! Otherwise CPU will crash
 @--------------------------------------------------------------------------------
@@ -937,7 +929,7 @@ rom_entrypoint:
 @useful macro to retrieve DTCMs top reserved area
 .global dtcm_end_alloced
 dtcm_end_alloced:
-	.word __dtcm_end
+	.word _dtcm_end
 
 .align
 .pool

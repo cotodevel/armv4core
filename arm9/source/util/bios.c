@@ -244,7 +244,7 @@ return 0;
 //swi 6
 u32 bios_div(){
 //#ifdef DEV_VERSION
-//    log("Div: 0x%08x,0x%08x\n",
+//    log("Div: 0x%08x,0x%08x",
 //        exRegs[0],
 //        exRegs[1]);
 //#endif
@@ -270,7 +270,7 @@ if(denom != 0) {
 }
 
 //#ifdef DEV_VERSION
-//    log("Div: return=0x%08x,0x%08x,0x%08x\n",
+//    log("Div: return=0x%08x,0x%08x,0x%08x",
 //        exRegs[0],
 //        exRegs[1],
 //        exRegs[3]);
@@ -487,7 +487,7 @@ return 0;
 //swi 0xe
 u32 bios_bgaffineset(){
 //#ifdef DEV_VERSION  
-//    log("BgAffineSet: %08x,%08x,%08x\n",
+//    log("BgAffineSet: %08x,%08x,%08x",
 //        exRegs[0],
 //        exRegs[1],
 //        exRegs[2]);
@@ -547,7 +547,7 @@ return 0;
 //swi 0xf
 u32 bios_objaffineset(){
 //#ifdef DEV_VERSION
-//    log("ObjAffineSet: 0x%08x,0x%08x,0x%08x,0x%08x\n",
+//    log("ObjAffineSet: 0x%08x,0x%08x,0x%08x,0x%08x",
 //        exRegs[0],
 //        exRegs[1],
 //        exRegs[2],
@@ -658,7 +658,7 @@ return 0;
 //swi 0x11
 u32 bios_lz77uncompwram(){
 //#ifdef DEV_VERSION
-//    log("LZ77UnCompWram: 0x%08x,0x%08x\n", exRegs[0], exRegs[1]);
+//    log("LZ77UnCompWram: 0x%08x,0x%08x", exRegs[0], exRegs[1]);
 //#endif
 fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); //+r0
 fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0x1), 32,0);//+r1
@@ -716,7 +716,7 @@ return 0;
 //swi 0x12
 u32 bios_lz77uncompvram(){
 //#ifdef DEV_VERSION
-//    log("LZ77UnCompVram: 0x%08x,0x%08x\n",
+//    log("LZ77UnCompVram: 0x%08x,0x%08x",
 //        exRegs[0],
 //        exRegs[1]);
 //#endif
@@ -809,7 +809,7 @@ return 0;
 //swi 0x13
 u32 bios_huffuncomp(){
 //#ifdef DEV_VERSION
-//    log("HuffUnComp: 0x%08x,0x%08x\n",
+//    log("HuffUnComp: 0x%08x,0x%08x",
 //        exRegs[0],
 //        exRegs[1]);
 //#endif
@@ -958,7 +958,7 @@ return 0;
 //swi 0x14
 u32 bios_rluncompwram(){
 //#ifdef DEV_VERSION
-//    log("RLUnCompWram: 0x%08x,0x%08x\n",
+//    log("RLUnCompWram: 0x%08x,0x%08x",
 //        exRegs[0],
 //        exRegs[1]);
 //#endif
@@ -1006,7 +1006,7 @@ return 0;
 //swi 0x15
 u32 bios_rluncompvram(){
 //#ifdef DEV_VERSION
-//    log("RLUnCompVram: 0x%08x,0x%08x\n",
+//    log("RLUnCompVram: 0x%08x,0x%08x",
 //        exRegs[0],
 //        exRegs[1]);
 //#endif
@@ -1076,7 +1076,7 @@ return 0;
 //swi 0x16
 u32 bios_diff8bitunfilterwram(){
 //#ifdef DEV_VERSION
-//    log("Diff8bitUnFilterWram: 0x%08x,0x%08x\n", exRegs[0],
+//    log("Diff8bitUnFilterWram: 0x%08x,0x%08x", exRegs[0],
 //        exRegs[1]);
 //#endif
 
@@ -1112,7 +1112,7 @@ return 0;
 
 u32 bios_diff8bitunfiltervram(){
 //#ifdef DEV_VERSION
-//    log("Diff8bitUnFilterVram: 0x%08x,0x%08x\n", exRegs[0],
+//    log("Diff8bitUnFilterVram: 0x%08x,0x%08x", exRegs[0],
 //        exRegs[1]);
 //#endif
 fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); //+r0
@@ -1157,7 +1157,7 @@ return 0;
 //swi 0x18
 u32 bios_diff16bitunfilter(){
 //#ifdef DEV_VERSION
-//    log("Diff16bitUnFilter: 0x%08x,0x%08x\n", exRegs[0],
+//    log("Diff16bitUnFilter: 0x%08x,0x%08x", exRegs[0],
 //        exRegs[1]);
 //#endif
 fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); 
@@ -1194,7 +1194,7 @@ return 0;
 //swi 0x1f
 u32 bios_midikey2freq(){
 //#ifdef DEV_VERSION
-//    log("MidiKey2Freq: WaveData=%08x mk=%08x fp=%08x\n",
+//    log("MidiKey2Freq: WaveData=%08x mk=%08x fp=%08x",
 //        exRegs[0],
 //        exRegs[1],
 //        exRegs[2]);
@@ -1211,7 +1211,7 @@ dummyreg = (int)((double)freq / tmp); //save to r0
 faststr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0);
 
 //#ifdef DEV_VERSION
-//    log("MidiKey2Freq: return %08x\n",
+//    log("MidiKey2Freq: return %08x",
 //        exRegs[0]);
 //#endif
 return 0;
@@ -1220,7 +1220,7 @@ return 0;
 //swi 0x2a
 u32 bios_snddriverjmptablecopy(){
 //#ifdef DEV_VERSION
-//    log("SndDriverJmpTableCopy: dest=%08x\n",
+//    log("SndDriverJmpTableCopy: dest=%08x",
 //        exRegs[0]);
 //#endif
 fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); 

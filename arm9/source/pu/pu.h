@@ -208,7 +208,7 @@ extern u32 exceptundef(u32 undef);	//undefined vector
 extern u32 exceptirq(u32 nds_iemask,u32 nds_ifmask,u32 sp_ptr);
 extern u32 swicaller(u32 arg);
 
-extern u32 __attribute__((section(".dtcm"))) curr_exception[]; //inter_regs.s
+extern u32 curr_exception[]; //inter_regs.s
 
 //extern void __attribute__((section(".dtcm"))) (*exHandler)();
 //extern void __attribute__((section(".dtcm"))) (*exHandlerswi)();
@@ -218,8 +218,10 @@ extern u32 __attribute__((section(".dtcm"))) curr_exception[]; //inter_regs.s
 
 //cpu_SetCP15Cnt(cpu_GetCP15Cnt() & ~0x1);
 //2 = 2048 / 3 = 4096 / 4 = 8192 / 5 = 16384
-//printf("%x \n",setdtcmsz(5)); //0x027C0000
+//printf("%x ",setdtcmsz(5)); //0x027C0000
 //pu_Enable();
+
+extern void exception_dump();
 
 #ifdef __cplusplus
 }

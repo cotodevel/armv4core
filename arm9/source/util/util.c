@@ -61,7 +61,7 @@ u8 lutu32bitcnt(u32 x){
 
 
 //count bits set in u32 field and return u32 decimal #imm
-//printf("\n ammount of register bytes: %x",(unsigned int)lookupu16(thumbinstr&0xff));
+//printf(" ammount of register bytes: %x",(unsigned int)lookupu16(thumbinstr&0xff));
 //u32 temp=0x00000000;
 //printf("lut:%d",lutu32bitcnt(temp));	//(thumbinstr&0xff)
 
@@ -77,7 +77,7 @@ const bool isInRom [16]=
 
 
 u32 dummycall(u32 arg){
-//printf ("hi i am a dummy call whose arg is: [%x] \n",(unsigned int)arg);
+//printf ("hi i am a dummy call whose arg is: [%x] ",(unsigned int)arg);
 return arg;
 }
 
@@ -97,31 +97,31 @@ return 0;
 int getphystacksz(u32 * curr_stack){
 
 if((u32)(u32*)curr_stack == (u32)&gbastck_usr[0])
-	return gba_stack_usr_size; //printf("stack usr! \n"); 
+	return gba_stack_usr_size; //printf("stack usr! "); 
 	
 else if ((u32)(u32*)curr_stack == (u32)&gbastck_fiq[0])
-	return gba_stack_fiq_size; //printf("stack fiq! \n");
+	return gba_stack_fiq_size; //printf("stack fiq! ");
  
 else if ((u32)(u32*)curr_stack == (u32)&gbastck_irq[0])
-	return gba_stack_irq_size; //printf("stack irq! \n"); 
+	return gba_stack_irq_size; //printf("stack irq! "); 
 
 else if ((u32)(u32*)curr_stack == (u32)&gbastck_svc[0])
-	return gba_stack_svc_size; //printf("stack svc! \n"); 
+	return gba_stack_svc_size; //printf("stack svc! "); 
 
 else if ((u32)(u32*)curr_stack == (u32)&gbastck_abt[0])
-	return gba_stack_abt_size; //printf("stack abt! \n"); 
+	return gba_stack_abt_size; //printf("stack abt! "); 
 
 else if ((u32)(u32*)curr_stack == (u32)&gbastck_und[0])
-	return gba_stack_und_size; //printf("stack und! \n"); 
+	return gba_stack_und_size; //printf("stack und! "); 
 
 //else if ((u32)(u32*)curr_stack == (u32)&gbastck_sys[0])
-	//return gba_stack_sys_size; //printf("stack sys! \n"); 
+	//return gba_stack_sys_size; //printf("stack sys! "); 
 
 else if ((u32)(u32*)curr_stack == (u32)&branch_stack[0])
 	return gba_branch_table_size; //branch table size 
 	
 else
-	return 0xdeaddead; //printf("ERROR STACK NOT DETECTED \n ");
+	return 0xdeaddead; //printf("ERROR STACK NOT DETECTED  ");
 	
 }
 
@@ -141,15 +141,15 @@ if(testmode==0){
 
 		//fill! (+1 because we want the real integer modulus) 
 		if( ((ctr+1) % 0x10) == 0){
-			//printf("\n <r%d:[%x]>",j,(unsigned int)*((u32*)branchfpbu+j));
+			//printf(" <r%d:[%x]>",j,(unsigned int)*((u32*)branchfpbu+j));
 			j=0;
 		}
 
 		else {
 			//gbavirtreg_cpu[j]=0xc070+(j<<8);
-			//printf("stack: @ %x for save data\n",(unsigned int)((u32)(u32*)stackfpbu+(ctr*4)));
+			//printf("stack: @ %x for save data",(unsigned int)((u32)(u32*)stackfpbu+(ctr*4)));
 			cpuwrite_word((unsigned int)(((u32)stackfpbu)+(ctr*4)),0xc070+(j<<8));
-			//printf("(%x)[%x]\n",(unsigned int)((u32)(u32*)stackfpbu+(ctr*4)), (unsigned int) cpuread_word((u32)((u32)(u32*)stackfpbu+(ctr*4))));
+			//printf("(%x)[%x]",(unsigned int)((u32)(u32*)stackfpbu+(ctr*4)), (unsigned int) cpuread_word((u32)((u32)(u32*)stackfpbu+(ctr*4))));
 			j++;
 		}
 	
@@ -162,7 +162,7 @@ if(testmode==0){
 
 		//fill! (+1 because we want the real integer modulus) 
 		if( ((ctr+1) % 0x10) == 0){
-			//printf("\n <r%d:[%x]>",j,(unsigned int)*((u32*)branchfpbu+j));
+			//printf(" <r%d:[%x]>",j,(unsigned int)*((u32*)branchfpbu+j));
 			j=0;
 		}
 
@@ -173,8 +173,8 @@ if(testmode==0){
 				j++;
 			}
 			else{
-				printf("\n [GBAStack] STUCK AT: base(%x)+(%x)",(unsigned int)(u32*)stackfpbu,(unsigned int)(ctr*4));
-				printf("\n [GBAStack] value: [%x]",(unsigned int)cpuread_word((((u32)stackfpbu+(ctr*4)))));
+				printf(" [GBAStack] STUCK AT: base(%x)+(%x)",(unsigned int)(u32*)stackfpbu,(unsigned int)(ctr*4));
+				printf(" [GBAStack] value: [%x]",(unsigned int)cpuread_word((((u32)stackfpbu+(ctr*4)))));
 				
 				while (1);
 			}
@@ -193,7 +193,7 @@ else if(testmode==1){
 
 		//fill!
 		if( (ctr % 0x10) == 0){
-			//printf("\n <r%d:[%x]>",j,(unsigned int)*((u32*)branchfpbu+j));
+			//printf(" <r%d:[%x]>",j,(unsigned int)*((u32*)branchfpbu+j));
 			j=0;
 		}
 
@@ -204,12 +204,12 @@ else if(testmode==1){
 
 		if ( ((ctr % (gba_branch_block_size)) == 0) && (ctr != 0)) {
 			stackfpbu=cpubackupmode((u32*)(stackfpbu),gbavirtreg_cpu,cpsrvirt); //already increases fp
-			//printf("b.ofset:%x \n",(unsigned int)branchfpbu);
+			//printf("b.ofset:%x ",(unsigned int)branchfpbu);
 			//ofset+=0x1;
 		}
 	}
 
-	//printf("1/2 stack test fp set to: %x \n",(unsigned int)(u32*)branchfpbu);
+	//printf("1/2 stack test fp set to: %x ",(unsigned int)(u32*)branchfpbu);
 	//flush workreg
 	for(j=0;j<0x10;j++){
 		*((u32*)(u32)&gbavirtreg_cpu+j)=0x0;
@@ -228,7 +228,7 @@ else if(testmode==1){
 
 		if ( ((ctr % (gba_branch_block_size)) == 0)) {
 			stackfpbu=cpurestoremode((u32*)(stackfpbu),gbavirtreg_cpu);
-			//printf("b.ofset->restore :%x \n",(unsigned int)(u32*)branchfpbu);
+			//printf("b.ofset->restore :%x ",(unsigned int)(u32*)branchfpbu);
 			//ofset+=0x4;
 		}
 
@@ -246,12 +246,12 @@ else if(testmode==1){
 				for(i=0;i<16;i++){
 					//printf(" REG%d[%x]",i,(unsigned int)gbavirtreg_cpu[i]);
 				}
-				printf("\n [branchstack] STUCK AT: %x:%x",(unsigned int)(u32*)(stackfpbu+1),(unsigned int)gbavirtreg_cpu[j]);
+				printf(" [branchstack] STUCK AT: %x:%x",(unsigned int)(u32*)(stackfpbu+1),(unsigned int)gbavirtreg_cpu[j]);
 				while(1);
 			}
 		}
 	}
-	//printf("2/2 stack test fp set to: %x- stack tests OK ;) \n",(u32)(u32*)branchfpbu);
+	//printf("2/2 stack test fp set to: %x- stack tests OK ;) ",(u32)(u32*)branchfpbu);
 	return stackfpbu;
 }
 
@@ -265,7 +265,7 @@ u32 * updatestackfp(u32 * currstack_fp, u32 * stackbase){
 	stacksz=getphystacksz(stackbase);
 	
 	//debug
-	//printf("\n stkfp_curr:%x->offset%x",(unsigned int)(u32*)currstack_fp,(int)((unsigned int)(u32*)currstack_fp-(u32)(u32*)stackbase));
+	//printf(" stkfp_curr:%x->offset%x",(unsigned int)(u32*)currstack_fp,(int)((unsigned int)(u32*)currstack_fp-(u32)(u32*)stackbase));
 	
 	//if framepointer is OK
 	if ( 	((int)((u32)(u32*)currstack_fp-(u32)(u32*)stackbase) >= 0) //MUST start from zero as ptr starts from zero
@@ -273,18 +273,18 @@ u32 * updatestackfp(u32 * currstack_fp, u32 * stackbase){
 			((int)((u32)(u32*)currstack_fp-(u32)(u32*)stackbase) < stacksz)
 	){
 		//debug
-		//printf("stack top: %x / stack_offset:%x \n",stacksz , (int)((unsigned int)(u32*)currstack_fp-(unsigned int)(u32*)stackbase));
+		//printf("stack top: %x / stack_offset:%x ",stacksz , (int)((unsigned int)(u32*)currstack_fp-(unsigned int)(u32*)stackbase));
 		return currstack_fp;
 	}
 	//if overflow stack, fix pointer and make it try again
 	else if( ((int)(((u32)(u32*)currstack_fp-(u32)(u32*)stackbase))+0x4) >= stacksz) {
-		//printf("stacktop!\n");			//debug
+		//printf("stacktop!");			//debug
 		gbastckfpadr_curr=currstack_fp-1; 
 		return 0;
 	}
 	//else if underflow stack, fix pointer and make it try again
 	else if (  (int)((u32*)currstack_fp-(u32)(u32*)stackbase) < (int)0){
-		//printf("stack underflow!\n");	//debug
+		//printf("stack underflow!");	//debug
 		gbastckfpadr_curr=currstack_fp+1;
 		return 0;
 	}
@@ -409,9 +409,9 @@ void initmemory(struct GBASystem *gba){
 	gba->vidram=(u8 *)0x06000000+(0x20000*vramofs); //OAM - OBJ Attributes      (1 Kbyte)
 
 	if(((u8*)gba->vidram)!=NULL)
-		printf("\n VRAM: OK :[%x]!",(unsigned int)(u8*)gba->vidram); 
+		printf(" VRAM: OK :[%x]!",(unsigned int)(u8*)gba->vidram); 
 	else{
-		printf("\n VRAM FAIL! @:%x",(unsigned int)(u8*)gba->vidram);
+		printf(" VRAM FAIL! @:%x",(unsigned int)(u8*)gba->vidram);
 		while(1);
 	}
 
@@ -419,9 +419,9 @@ void initmemory(struct GBASystem *gba){
 	
 	ramtestsz=wramtstasm((int)gba->workram,256*1024);
 	if(ramtestsz==alignw(256*1024))
-		printf("\n GBAWRAM tst: OK :[%x]!",(unsigned int)(u8*)gba->workram); 
+		printf(" GBAWRAM tst: OK :[%x]!",(unsigned int)(u8*)gba->workram); 
 	else{
-		printf("\n FAILED ALLOCING GBAEWRAM[%x]:@%d (bytes: %d)",(unsigned int)(u8*)gbawram,ramtestsz,0x10000);
+		printf(" FAILED ALLOCING GBAEWRAM[%x]:@%d (bytes: %d)",(unsigned int)(u8*)gbawram,ramtestsz,0x10000);
 		while(1);
 	}
 	memset((void*)gba->workram,0x0,0x10000);
@@ -429,50 +429,50 @@ void initmemory(struct GBASystem *gba){
 	//OK
 	ramtestsz=wramtstasm((int)gba->iomem,0x400);
 	if(ramtestsz==alignw(0x400))
-		printf("\n IOMEM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->iomem,ramtestsz);
+		printf(" IOMEM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->iomem,ramtestsz);
 	else 
-		printf("\n IOMEM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->iomem,ramtestsz);
+		printf(" IOMEM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->iomem,ramtestsz);
 	memset((void*)gba->iomem,0x0,0x400);
 
 
 	//this is OK
 	ramtestsz=wramtstasm((int)gba->bios,0x4000);
 	if(ramtestsz==alignw(0x4000))
-		printf("\n BIOS tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->bios,ramtestsz);
+		printf(" BIOS tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->bios,ramtestsz);
 	else 
-		printf("\n BIOS tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->bios,ramtestsz);
+		printf(" BIOS tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->bios,ramtestsz);
 	memset((void*)gba->bios,0x0,0x4000);
 
 	//this is OK
 	ramtestsz=wramtstasm((int)gba->intram,0x8000);
 	if(ramtestsz==alignw(0x8000))
-		printf("\n IRAM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->intram,ramtestsz);
+		printf(" IRAM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->intram,ramtestsz);
 	else 
-		printf("\n IRAM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->intram,ramtestsz);
+		printf(" IRAM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->intram,ramtestsz);
 	memset((void*)gba->intram,0x0,0x8000);
 
 	//this is OK
 	ramtestsz=wramtstasm((int)(u8*)gba->palram,0x400);
 	if(ramtestsz==alignw(0x400))
-		printf("\n PaletteRAM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->palram,ramtestsz);
+		printf(" PaletteRAM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->palram,ramtestsz);
 	else 
-		printf("\n PaletteRAM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->palram,ramtestsz);
+		printf(" PaletteRAM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->palram,ramtestsz);
 	memset((void*)gba->palram,0x0,0x400);
 
 	//this is OK
 	ramtestsz=wramtstasm((int)gba->oam,0x400);
 	if(ramtestsz==alignw(0x400))
-		printf("\n OAM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->oam,ramtestsz);
+		printf(" OAM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->oam,ramtestsz);
 	else 
-		printf("\n OAM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->oam,ramtestsz);
+		printf(" OAM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->oam,ramtestsz);
 	memset((void*)gba->oam,0x0,0x400);
 
 	//this is OK
 	ramtestsz=wramtstasm((int)&gba->caioMem[0x0],0x400);
 	if(ramtestsz==alignw(0x400))
-		printf("\n caioMem tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)&gba->caioMem[0x0],ramtestsz);
+		printf(" caioMem tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)&gba->caioMem[0x0],ramtestsz);
 	else 
-		printf("\n caioMem tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)&gba->caioMem[0x0],ramtestsz);
+		printf(" caioMem tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)&gba->caioMem[0x0],ramtestsz);
 	memset((void*)&gba->caioMem[0x0],0x0,0x400);
 
 	//gba stack test
@@ -480,10 +480,10 @@ void initmemory(struct GBASystem *gba){
 		
 		u16store((u32)&gbastck_usr[0]+(i*2),0xc070+i);	//gbastack[i] = 0xc070;	
 		
-		//printf("%x \n",(unsigned int)gbastack[i]); //printf("%x \n",(unsigned int)**(&gbastack+i*2)); //non contiguous memory 
+		//printf("%x ",(unsigned int)gbastack[i]); //printf("%x ",(unsigned int)**(&gbastack+i*2)); //non contiguous memory 
 
 		if(u16read((u32)&gbastck_usr[0]+i*2)!=0xc070+i){
-			printf("stackusr:failed writing @ %x \n",(unsigned int)&gbastck_usr+(i*2));
+			printf("stackusr:failed writing @ %x ",(unsigned int)&gbastck_usr+(i*2));
 			printf("stackusr:reads: %x",(unsigned int)u16read((u32)&gbastck_usr[0]+i*2));
 			printf("stackusr:base: %x",(unsigned int)&gbastck_usr[0]);
 			while(1);
@@ -494,10 +494,10 @@ void initmemory(struct GBASystem *gba){
 
 	for(i=0;i<sizeof(gbastck_fiq)/2;i++){
 		u16store((u32)&gbastck_fiq[0]+i*2,0xc070+i); //gbastack[i] = 0xc070;
-		//printf("%x \n",(unsigned int)gbastack[i]); //printf("%x \n",(unsigned int)**(&gbastack+i*2)); //non contiguous memory 
+		//printf("%x ",(unsigned int)gbastack[i]); //printf("%x ",(unsigned int)**(&gbastack+i*2)); //non contiguous memory 
 
 		if(u16read((u32)&gbastck_fiq[0]+i*2)!=0xc070+i){
-			printf("stackfiq:failed writing @ %x \n",(unsigned int)&gbastck_fiq+(i*2));
+			printf("stackfiq:failed writing @ %x ",(unsigned int)&gbastck_fiq+(i*2));
 			while(1);
 		}
 	
@@ -506,10 +506,10 @@ void initmemory(struct GBASystem *gba){
 
 	for(i=0;i<sizeof(gbastck_irq)/2;i++){
 		u16store((u32)&gbastck_irq[0]+i*2,0xc070+i); //gbastack[i] = 0xc070;
-		//printf("%x \n",(unsigned int)gbastack[i]); //printf("%x \n",(unsigned int)**(&gbastack+i*2)); //non contiguous memory 
+		//printf("%x ",(unsigned int)gbastack[i]); //printf("%x ",(unsigned int)**(&gbastack+i*2)); //non contiguous memory 
 
 		if(u16read((u32)&gbastck_irq[0]+i*2)!=0xc070+i){
-			printf("stackirq:failed writing @ %x \n",(unsigned int)&gbastck_irq+(i*2));
+			printf("stackirq:failed writing @ %x ",(unsigned int)&gbastck_irq+(i*2));
 			while(1);
 		}
 	
@@ -518,10 +518,10 @@ void initmemory(struct GBASystem *gba){
 
 	for(i=0;i<sizeof(gbastck_svc)/2;i++){
 		u16store((u32)&gbastck_svc[0]+i*2,0xc070+i); //gbastack[i] = 0xc070;				
-		//printf("%x \n",(unsigned int)gbastack[i]); //printf("%x \n",(unsigned int)**(&gbastack+i*2)); //non contiguous memory 
+		//printf("%x ",(unsigned int)gbastack[i]); //printf("%x ",(unsigned int)**(&gbastack+i*2)); //non contiguous memory 
 
 		if(u16read((u32)&gbastck_svc[0]+i*2)!=0xc070+i){
-			printf("stacksvc:failed writing @ %x \n",(unsigned int)&gbastck_svc+(i*2));
+			printf("stacksvc:failed writing @ %x ",(unsigned int)&gbastck_svc+(i*2));
 			while(1);
 		}
 	
@@ -530,10 +530,10 @@ void initmemory(struct GBASystem *gba){
 
 	for(i=0;i<sizeof(gbastck_abt)/2;i++){
 		u16store((u32)&gbastck_abt[0]+i*2,0xc070+i); //gbastack[i] = 0xc070;				
-		//printf("%x \n",(unsigned int)gbastack[i]); //printf("%x \n",(unsigned int)**(&gbastack+i*2)); //non contiguous memory 
+		//printf("%x ",(unsigned int)gbastack[i]); //printf("%x ",(unsigned int)**(&gbastack+i*2)); //non contiguous memory 
 
 		if(u16read((u32)&gbastck_abt[0]+i*2)!=0xc070+i){
-			printf("stackabt:failed writing @ %x \n",(unsigned int)&gbastck_abt+(i*2));
+			printf("stackabt:failed writing @ %x ",(unsigned int)&gbastck_abt+(i*2));
 			while(1);
 		}
 	
@@ -542,10 +542,10 @@ void initmemory(struct GBASystem *gba){
 
 	for(i=0;i<sizeof(gbastck_und)/2;i++){
 		u16store((u32)&gbastck_und[0]+i*2,0xc070+i); //gbastack[i] = 0xc070;				
-		//printf("%x \n",(unsigned int)gbastack[i]); //printf("%x \n",(unsigned int)**(&gbastack+i*2)); //non contiguous memory
+		//printf("%x ",(unsigned int)gbastack[i]); //printf("%x ",(unsigned int)**(&gbastack+i*2)); //non contiguous memory
 
 		if(u16read((u32)&gbastck_und[0]+i*2)!=0xc070+i){
-			printf("stackund:failed writing @ %x \n",(unsigned int)&gbastck_und+(i*2));
+			printf("stackund:failed writing @ %x ",(unsigned int)&gbastck_und+(i*2));
 			while(1);
 		}
 	
@@ -906,7 +906,7 @@ call_adrstack[0x1]=(u32)0xc0707357;
 call_adrstack[0x2]=(u32)&dummycall;
 call_adrstack[0x3]=(u32)&emulatorgba;	//slot 3 is for branching (and requires arguments passed so branch opcodes can set bit 0 to run thumb/arm mode)
 
-//printf("branchstack OK & branchstackadrfp->:%x \n", (unsigned int)set_adr_stacks()); 
+//printf("branchstack OK & branchstackadrfp->:%x ", (unsigned int)set_adr_stacks()); 
 */
 
 }
@@ -914,7 +914,7 @@ call_adrstack[0x3]=(u32)&emulatorgba;	//slot 3 is for branching (and requires ar
 
 int utilload(const char *file,u8 *data,int size,bool extram){ //*file is filename (.gba)
 																//*data is pointer to store rom  / always ~256KB &size at load
-//printf("ewram top: %x \n", (unsigned int)(((int)&__ewram_end) - 0x1));
+//printf("ewram top: %x ", (unsigned int)(((int)&__ewram_end) - 0x1));
 //while(1);
 #ifndef NOBIOS
 //bios copy to biosram
@@ -934,12 +934,12 @@ else
 	//printf("bios OK!");
 	/*
 		// tempbuffer2 
-		printf("\n /// GBABIOS @ %x //",(unsigned int)(u8*)gba.bios);
+		printf(" /// GBABIOS @ %x //",(unsigned int)(u8*)gba.bios);
 			
 		for(i=0;i<16;i++){
 			printf(" %x:[%d] ",i,(unsigned int)*((u32*)gbabios+i));
 			
-			if (i==15) printf("\n");
+			if (i==15) printf("");
 			
 		}
 		while(1);
@@ -966,12 +966,12 @@ fread((char*)&gbaheader, 1, sizeof(gbaheader),f);
 //size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
 int temp = fread((void*)gbaheaderbuf,sizeof(gbaheaderbuf[0]),0x200,f);
 if (temp != 0x200){
-	printf("\n error ret. gbaheader (size rd: %d)",temp);
+	printf(" error ret. gbaheader (size rd: %d)",temp);
 	while(1);
 }
 
-//printf("\n util.c filesize: %d ",fileSize);
-//printf("\n util.c entrypoint: %x ",(unsigned int)0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
+//printf(" util.c filesize: %d ",fileSize);
+//printf(" util.c entrypoint: %x ",(unsigned int)0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
 
 */
 
@@ -996,7 +996,7 @@ if(data == 0){ //null rom destination pointer? allocate space for it
 
 fclose(f);
 
-printf("generated filemap! OK:\n");
+printf("generated filemap! OK:");
 
 return gba.romsize; //rom buffer size
 }
@@ -1017,7 +1017,7 @@ if(gba->cpuismultiboot) whereToLoad = gba->workram;
 
 gba->romsize = utilload(filename,whereToLoad,gba->romsize,extram);
 if(gba->romsize==0){ //set ups u8 * rom to point to allocated buffer and returns *partial* or full romSize
-	printf("error retrieving romSize \n");
+	printf("error retrieving romSize ");
 return 0;
 }
 
@@ -1155,7 +1155,7 @@ for(bitcnt=31;bitcnt>=0;bitcnt--){
     if((1<<bitcnt)&val) printf("1");
 	else printf("0");
     }
-    printf("\n");
+    printf("");
 return 0;
 }
 
@@ -1317,7 +1317,7 @@ int utilLoad(const char *file,u8 *data,int size,bool extram){ //*file is filenam
             ichflyfilestream = f; //pass the filestreampointer and make it global
             ichflyfilestreamsize = fileSize;
                 
-            printf("generated filemap! OK:\n");
+            printf("generated filemap! OK:");
 
             #else
                 romSize = puzzle_original_size;
@@ -1422,11 +1422,11 @@ int ram2file_nds(char * fname,u8 * buffer,int size){
         int sizewritten=fwrite((u8*)buffer, 1, size, fhandle); //2) perform read (512bytes read (128 reads))
         fclose(fhandle);
         if(size == sizewritten){
-            printf("OK exported %d bytes @ fname: %s \n",(int)sizewritten,(char*)fname);
+            printf("OK exported %d bytes @ fname: %s ",(int)sizewritten,(char*)fname);
             return 0;
         }
         else{
-            printf("error, only copied %d bytes @ fname: %s \n",(int)sizewritten,(char*)fname);
+            printf("error, only copied %d bytes @ fname: %s ",(int)sizewritten,(char*)fname);
         }
     }
     else{

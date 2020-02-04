@@ -68,11 +68,11 @@ u32 * cpubackupmode(u32 * branch_stackfp, u32 cpuregvector[0x16], u32 cpsr){
 		//}
 		//while(1);
 		
-		//printf("\n \n \n \n 	--	\n");
+		//printf("    	--	");
 		//move 16 bytes ahead fp and store cpsr
 		//debug: stmiavirt((u8*)cpsr, (u32)(u32*)(branch_stackfp+0x10), 0x1 , 32, 0);
 		
-		//printf("curr_used fp:%x / top: %x / block size: %x \n",(int)((((u32*)branch_stackfp-(u32*)&branch_stack[0])*4)),gba_branch_table_size,gba_branch_block_size);
+		//printf("curr_used fp:%x / top: %x / block size: %x ",(int)((((u32*)branch_stackfp-(u32*)&branch_stack[0])*4)),gba_branch_table_size,gba_branch_block_size);
 		branch_stackfp=(u32*)addasm((u32)(u32*)branch_stackfp,(u32)0x10*4);
 		
 		//save cpsr int SPSR_mode slot
@@ -105,7 +105,7 @@ u32 * cpubackupmode(u32 * branch_stackfp, u32 cpuregvector[0x16], u32 cpsr){
 	}
 	
 	else{ 
-		//printf("branch stack OVERFLOW! \n"); //debug
+		//printf("branch stack OVERFLOW! "); //debug
 	}
 
 return branch_stackfp;
@@ -120,7 +120,7 @@ u32 * cpurestoremode(u32 * branch_stackfp, u32 cpuregvector[0x16]){
 	
 	//printf("gba_branch_block_size[%x] -",gba_branch_block_size); //debug
 
-		//printf("curr_used fp:%x / top: %x / block size: %x \n",(int)((((u32*)branch_stackfp-(u32*)&branch_stack[0])*4)),gba_branch_table_size,gba_branch_block_size);
+		//printf("curr_used fp:%x / top: %x / block size: %x ",(int)((((u32*)branch_stackfp-(u32*)&branch_stack[0])*4)),gba_branch_table_size,gba_branch_block_size);
 		branch_stackfp=(u32*)subasm((u32)(u32*)branch_stackfp,0x10*4);
 		
 		ldmiavirt((u8*)(&cpuregvector[0x0]), (u32)(u32*)(branch_stackfp), 0xffff, 32, 0, 0);
@@ -149,275 +149,275 @@ return branch_stackfp;
 //mode: 0 = hardware asm cpsr update (cpsrvirt & cpu cond flags) / 1 = virtual CPU mode change,  CPSR , change to CPU mode
 // / 2 = Writes to IO MAP for GBA environment variable updates
 u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
-switch(mode){
-	case (0):
-		//1) if invoked from hardware asm function, update flags to virtual environment
-		z_flag=(lsrasm(cpsr,0x1e))&0x1;
-		n_flag=(lsrasm(cpsr,0x1f))&0x1;
-		c_flag=(lsrasm(cpsr,0x1d))&0x1;
-		v_flag=(lsrasm(cpsr,0x1c))&0x1;
-		cpsrvirt&=~0xF0000000;
-		cpsrvirt|=(n_flag<<31|z_flag<<30|c_flag<<29|v_flag<<28);
-		//cpsr = latest cpsrasm from virtual asm opcode
-		//printf("(0)CPSR output: %x \n",cpsr);
-		//printf("(0)cpu flags: Z[%x] N[%x] C[%x] V[%x] \n",z_flag,n_flag,c_flag,v_flag);
-	
-	break;
-	
-  	case (1):{
-		//1)check if cpu<mode> swap does not come from the same mode
-		if((cpsr&0x1f)!=cpumode){
-	
-		//2a)save stack frame pointer for current stack 
-		//and detect old cpu mode from current loaded stack, then store LR , PC into stack (mode)
-		//printf("cpsr:%x / spsr:%x",cpsr&0x1f,spsr_last&0x1f);
+	switch(mode){
+		case (0):
+			//1) if invoked from hardware asm function, update flags to virtual environment
+			z_flag=(lsrasm(cpsr,0x1e))&0x1;
+			n_flag=(lsrasm(cpsr,0x1f))&0x1;
+			c_flag=(lsrasm(cpsr,0x1d))&0x1;
+			v_flag=(lsrasm(cpsr,0x1c))&0x1;
+			cpsrvirt&=~0xF0000000;
+			cpsrvirt|=(n_flag<<31|z_flag<<30|c_flag<<29|v_flag<<28);
+			//cpsr = latest cpsrasm from virtual asm opcode
+			//printf("(0)CPSR output: %x ",cpsr);
+			//printf("(0)cpu flags: Z[%x] N[%x] C[%x] V[%x] ",z_flag,n_flag,c_flag,v_flag);
 		
-			if( ((cpsrvirt&0x1f) == (0x10)) || ((cpsrvirt&0x1f) == (0x1f)) ){ //detect usr/sys (0x10 || 0x1f)
-				spsr_last=spsr_usr=cpsrvirt;
-				
-				//gbastckadr_usr=gbastckmodeadr_curr=; //not required this is to know base stack usr/sys
-				gbastckfp_usr=gbastckfpadr_curr;
-				gbavirtreg_r13usr[0x0]=gbavirtreg_cpu[0xd]; //user/sys is the same stacks
-				gbavirtreg_r14usr[0x0]=gbavirtreg_cpu[0xe];
-				#ifdef DEBUGEMU
-					printf("stacks backup usr_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13usr[0x0]);
-				#endif
-				//printf("before nuked SP usr:%x",(unsigned int)gbavirtreg_r13usr[0x0]);
-				
-				/* //deprecated
-					//if framepointer does not reach the top:
-					if((u32)updatestackfp(gbastckfp_usr,gbastckadr_usr) != (u32)0){
-				
-					//store LR to actual (pre-SPSR'd) Stack
-					dummyreg=gbavirtreg_cpu[0xe];
-					//stmiavirt((u8*)&dummyreg, (u32)(u32*)gbastckfp_usr, 1 << 0xe, 32, 0);
-					faststr((u8*)&dummyreg, ((u32*)gbastckfp_usr[0]), (0xe), 32,0);
+		break;
+		
+		case (1):{
+			//1)check if cpu<mode> swap does not come from the same mode
+			if((cpsr&0x1f)!=cpumode){
+		
+			//2a)save stack frame pointer for current stack 
+			//and detect old cpu mode from current loaded stack, then store LR , PC into stack (mode)
+			//printf("cpsr:%x / spsr:%x",cpsr&0x1f,spsr_last&0x1f);
+			
+				if( ((cpsrvirt&0x1f) == (0x10)) || ((cpsrvirt&0x1f) == (0x1f)) ){ //detect usr/sys (0x10 || 0x1f)
+					spsr_last=spsr_usr=cpsrvirt;
 					
-					//store PC to actual (pre-SPSR'd stack)
-					dummyreg=(u32)(u32*)rom; //PC
-					//stmiavirt((u8*)&dummyreg, (u32)(u32*)gbastckfp_usr+0x1, 1 << 0xf, 32, 0);
-					faststr((u8*)&dummyreg, 
-					//(u32)(u32*)gbastckfp_usr+0x1
-					((u32*)gbastckfp_usr[1])
-					, (0xf), 32,0);
+					//gbastckadr_usr=gbastckmodeadr_curr=; //not required this is to know base stack usr/sys
+					gbastckfp_usr=gbastckfpadr_curr;
+					gbavirtreg_r13usr[0x0]=gbavirtreg_cpu[0xd]; //user/sys is the same stacks
+					gbavirtreg_r14usr[0x0]=gbavirtreg_cpu[0xe];
+					#ifdef DEBUGEMU
+						printf("stacks backup usr_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13usr[0x0]);
+					#endif
+					//printf("before nuked SP usr:%x",(unsigned int)gbavirtreg_r13usr[0x0]);
 					
-					//increase fp by the ammount of regs added
-					gbastckfp_usr=(u32*)addspvirt((u32)(u32*)gbastckfp_usr,2);
+					/* //deprecated
+						//if framepointer does not reach the top:
+						if((u32)updatestackfp(gbastckfp_usr,gbastckadr_usr) != (u32)0){
+					
+						//store LR to actual (pre-SPSR'd) Stack
+						dummyreg=gbavirtreg_cpu[0xe];
+						//stmiavirt((u8*)&dummyreg, (u32)(u32*)gbastckfp_usr, 1 << 0xe, 32, 0);
+						faststr((u8*)&dummyreg, ((u32*)gbastckfp_usr[0]), (0xe), 32,0);
+						
+						//store PC to actual (pre-SPSR'd stack)
+						dummyreg=(u32)(u32*)rom; //PC
+						//stmiavirt((u8*)&dummyreg, (u32)(u32*)gbastckfp_usr+0x1, 1 << 0xf, 32, 0);
+						faststr((u8*)&dummyreg, 
+						//(u32)(u32*)gbastckfp_usr+0x1
+						((u32*)gbastckfp_usr[1])
+						, (0xf), 32,0);
+						
+						//increase fp by the ammount of regs added
+						gbastckfp_usr=(u32*)addspvirt((u32)(u32*)gbastckfp_usr,2);
+					}
+					*/
 				}
-				*/
-			}
-			else if((cpsrvirt&0x1f)==0x11){
-				spsr_last=spsr_fiq=cpsrvirt;
-				gbastckfp_fiq=gbastckfpadr_curr;
-				gbavirtreg_r13fiq[0x0]=gbavirtreg_cpu[0xd];
-				gbavirtreg_r14fiq[0x0]=gbavirtreg_cpu[0xe];
+				else if((cpsrvirt&0x1f)==0x11){
+					spsr_last=spsr_fiq=cpsrvirt;
+					gbastckfp_fiq=gbastckfpadr_curr;
+					gbavirtreg_r13fiq[0x0]=gbavirtreg_cpu[0xd];
+					gbavirtreg_r14fiq[0x0]=gbavirtreg_cpu[0xe];
+					
+					//save
+					//5 extra regs r8-r12 for fiq
+					gbavirtreg_fiq[0x0] = gbavirtreg_cpu[0x0 + 8];
+					gbavirtreg_fiq[0x1] = gbavirtreg_cpu[0x1 + 8];
+					gbavirtreg_fiq[0x2] = gbavirtreg_cpu[0x2 + 8];
+					gbavirtreg_fiq[0x3] = gbavirtreg_cpu[0x3 + 8];
+					gbavirtreg_fiq[0x4] = gbavirtreg_cpu[0x4 + 8];
+					
+					//restore 5 extra reg subset for other modes
+					gbavirtreg_cpu[0x0 + 8]=gbavirtreg_cpubup[0x0];
+					gbavirtreg_cpu[0x1 + 8]=gbavirtreg_cpubup[0x1];
+					gbavirtreg_cpu[0x2 + 8]=gbavirtreg_cpubup[0x2];
+					gbavirtreg_cpu[0x3 + 8]=gbavirtreg_cpubup[0x3];
+					gbavirtreg_cpu[0x4 + 8]=gbavirtreg_cpubup[0x4];
+					#ifdef DEBUGEMU
+						printf("stacks backup fiq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13fiq[0x0]);
+					#endif
+				}
+				else if((cpsrvirt&0x1f)==0x12){
+					spsr_last=spsr_irq=cpsrvirt;
+					gbastckfp_irq=gbastckfpadr_curr;
+					gbavirtreg_r13irq[0x0]=gbavirtreg_cpu[0xd];
+					gbavirtreg_r14irq[0x0]=gbavirtreg_cpu[0xe];
+					#ifdef DEBUGEMU
+						printf("stacks backup irq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13irq[0x0]);
+					#endif
+				}
 				
-				//save
-				//5 extra regs r8-r12 for fiq
-				gbavirtreg_fiq[0x0] = gbavirtreg_cpu[0x0 + 8];
-				gbavirtreg_fiq[0x1] = gbavirtreg_cpu[0x1 + 8];
-				gbavirtreg_fiq[0x2] = gbavirtreg_cpu[0x2 + 8];
-				gbavirtreg_fiq[0x3] = gbavirtreg_cpu[0x3 + 8];
-				gbavirtreg_fiq[0x4] = gbavirtreg_cpu[0x4 + 8];
+				else if((cpsrvirt&0x1f)==0x13){
+					spsr_last=spsr_svc=cpsrvirt;
+					gbastckfp_svc=gbastckfpadr_curr;
+					gbavirtreg_r13svc[0x0]=gbavirtreg_cpu[0xd];
+					gbavirtreg_r14svc[0x0]=gbavirtreg_cpu[0xe];
+					#ifdef DEBUGEMU
+						printf("stacks backup svc_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13svc[0x0]);
+					#endif
+				}
+				else if((cpsrvirt&0x1f)==0x17){
+					spsr_last=spsr_abt=cpsrvirt;
+					gbastckfp_abt=gbastckfpadr_curr;
+					gbavirtreg_r13abt[0x0]=gbavirtreg_cpu[0xd];
+					gbavirtreg_r14abt[0x0]=gbavirtreg_cpu[0xe];
+					#ifdef DEBUGEMU
+						printf("stacks backup abt_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13abt[0x0]);
+					#endif
+				}
 				
-				//restore 5 extra reg subset for other modes
-				gbavirtreg_cpu[0x0 + 8]=gbavirtreg_cpubup[0x0];
-				gbavirtreg_cpu[0x1 + 8]=gbavirtreg_cpubup[0x1];
-				gbavirtreg_cpu[0x2 + 8]=gbavirtreg_cpubup[0x2];
-				gbavirtreg_cpu[0x3 + 8]=gbavirtreg_cpubup[0x3];
-				gbavirtreg_cpu[0x4 + 8]=gbavirtreg_cpubup[0x4];
-				#ifdef DEBUGEMU
-					printf("stacks backup fiq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13fiq[0x0]);
-				#endif
-			}
-			else if((cpsrvirt&0x1f)==0x12){
-				spsr_last=spsr_irq=cpsrvirt;
-				gbastckfp_irq=gbastckfpadr_curr;
-				gbavirtreg_r13irq[0x0]=gbavirtreg_cpu[0xd];
-				gbavirtreg_r14irq[0x0]=gbavirtreg_cpu[0xe];
-				#ifdef DEBUGEMU
-					printf("stacks backup irq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13irq[0x0]);
-				#endif
+				else if((cpsrvirt&0x1f)==0x1b){
+					spsr_last=spsr_und=cpsrvirt;
+					gbastckfp_und=gbastckfpadr_curr;
+					gbavirtreg_r13und[0x0]=gbavirtreg_cpu[0xd];
+					gbavirtreg_r14und[0x0]=gbavirtreg_cpu[0xe];
+					#ifdef DEBUGEMU
+						printf("stacks backup und_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13und[0x0]);
+					#endif
+				}
+				
+				//default (no previous PSR) sets
+				else {
+				
+					// disable FIQ & set SVC
+					// gba->reg[16].I |= 0x40;
+					cpsr|=0x40;
+					cpsr|=0x13;
+					
+					//#ifdef DEBUGEMU
+					//	printf("ERROR CHANGING CPU MODE/STACKS : CPSR: %x ",(unsigned int)cpsrvirt);
+					//	while(1);
+					//#endif
+				}
+			
+			//update SPSR on CPU change <mode> (this is exactly where CPU change happens)
+			spsr_last=cpsr;
+			
+			//3)setup current CPU mode working set of registers and perform stack swap
+			//btw2: gbastckfp_usr can hold up to 0x1ff (511 bytes) of data so pointer must not exceed that value
+			
+			//case gbastckfp_mode  
+			//load LR & PC from regs then decrease #1 for each
+			
+			//unique cpu registers : gbavirtreg_cpu[n];
+			
+			//user/sys
+			if ( ((cpumode&0x1f) == (0x10)) || ((cpumode&0x1f) == (0x1f)) ){	
+					
+					gbastckmodeadr_curr=gbastckadr_usr;
+					gbastckfpadr_curr=gbastckfp_usr;			//current framepointer address (setup in util.c) and updated here
+					gbavirtreg_cpu[0xd]=gbavirtreg_r13usr[0x0]; //user SP/LR registers for cpu<mode> (user/sys is the same stacks)
+					gbavirtreg_cpu[0xe]=gbavirtreg_r14usr[0x0];
+					#ifdef DEBUGEMU
+						printf("| stacks swap to usr_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
+					#endif
 			}
 			
-			else if((cpsrvirt&0x1f)==0x13){
-				spsr_last=spsr_svc=cpsrvirt;
-				gbastckfp_svc=gbastckfpadr_curr;
-				gbavirtreg_r13svc[0x0]=gbavirtreg_cpu[0xd];
-				gbavirtreg_r14svc[0x0]=gbavirtreg_cpu[0xe];
-				#ifdef DEBUGEMU
-					printf("stacks backup svc_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13svc[0x0]);
-				#endif
+			else if((cpumode&0x1f)==0x11){
+					gbastckmodeadr_curr=gbastckadr_fiq;
+					gbastckfpadr_curr=gbastckfp_fiq;			//current framepointer address (setup in util.c) and updated here
+					gbavirtreg_cpu[0xd]=gbavirtreg_r13fiq[0x0]; //fiq SP/LR registers for cpu<mode>
+					gbavirtreg_cpu[0xe]=gbavirtreg_r14fiq[0x0];
+					
+					//save register r8-r12 subset before entering fiq
+					gbavirtreg_cpubup[0x0]=gbavirtreg_cpu[0x0 + 8];
+					gbavirtreg_cpubup[0x1]=gbavirtreg_cpu[0x1 + 8];
+					gbavirtreg_cpubup[0x2]=gbavirtreg_cpu[0x2 + 8];
+					gbavirtreg_cpubup[0x3]=gbavirtreg_cpu[0x3 + 8];
+					gbavirtreg_cpubup[0x4]=gbavirtreg_cpu[0x4 + 8];
+					
+					//restore: 5 extra regs r8-r12 for fiq restore
+					gbavirtreg_cpu[0x0 + 8]=gbavirtreg_fiq[0x0];
+					gbavirtreg_cpu[0x1 + 8]=gbavirtreg_fiq[0x1];
+					gbavirtreg_cpu[0x2 + 8]=gbavirtreg_fiq[0x2];
+					gbavirtreg_cpu[0x3 + 8]=gbavirtreg_fiq[0x3];
+					gbavirtreg_cpu[0x4 + 8]=gbavirtreg_fiq[0x4];
+					#ifdef DEBUGEMU
+						printf("| stacks swap to fiq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
+					#endif
 			}
-			else if((cpsrvirt&0x1f)==0x17){
-				spsr_last=spsr_abt=cpsrvirt;
-				gbastckfp_abt=gbastckfpadr_curr;
-				gbavirtreg_r13abt[0x0]=gbavirtreg_cpu[0xd];
-				gbavirtreg_r14abt[0x0]=gbavirtreg_cpu[0xe];
-				#ifdef DEBUGEMU
-					printf("stacks backup abt_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13abt[0x0]);
-				#endif
+			//irq
+			else if((cpumode&0x1f)==0x12){
+					gbastckmodeadr_curr=gbastckadr_irq;
+					gbastckfpadr_curr=gbastckfp_irq;			//current framepointer address (setup in util.c) and updated here
+					gbavirtreg_cpu[0xd]=gbavirtreg_r13irq[0x0]; //irq SP/LR registers for cpu<mode>
+					gbavirtreg_cpu[0xe]=gbavirtreg_r14irq[0x0];
+					#ifdef DEBUGEMU
+						printf("| stacks swap to irq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
+					#endif
+			}
+			//svc
+			else if((cpumode&0x1f)==0x13){
+					gbastckmodeadr_curr=gbastckadr_svc;
+					gbastckfpadr_curr=gbastckfp_svc;			//current framepointer address (setup in util.c) and updated here
+					gbavirtreg_cpu[0xd]=gbavirtreg_r13svc[0x0]; //svc SP/LR registers for cpu<mode> (user/sys is the same stacks)
+					gbavirtreg_cpu[0xe]=gbavirtreg_r14svc[0x0];
+					#ifdef DEBUGEMU
+						printf("| stacks swap to svc_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
+					#endif
+			}
+			//abort
+			else if((cpumode&0x1f)==0x17){
+					gbastckmodeadr_curr=gbastckadr_abt;
+					gbastckfpadr_curr=gbastckfp_abt;			//current framepointer address (setup in util.c) and updated here
+					gbavirtreg_cpu[0xd]=gbavirtreg_r13abt[0x0]; //abt SP/LR registers for cpu<mode>
+					gbavirtreg_cpu[0xe]=gbavirtreg_r14abt[0x0];
+					#ifdef DEBUGEMU
+						printf("| stacks swap to abt_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
+					#endif
+			}
+			//undef
+			else if((cpumode&0x1f)==0x1b){
+					gbastckmodeadr_curr=gbastckadr_und;
+					gbastckfpadr_curr=gbastckfp_und;			//current framepointer address (setup in util.c) and updated here
+					gbavirtreg_cpu[0xd]=gbavirtreg_r13und[0x0]; //und SP/LR registers for cpu<mode>
+					gbavirtreg_cpu[0xe]=gbavirtreg_r14und[0x0];
+					#ifdef DEBUGEMU
+						printf("| stacks swap to und_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
+					#endif
 			}
 			
-			else if((cpsrvirt&0x1f)==0x1b){
-				spsr_last=spsr_und=cpsrvirt;
-				gbastckfp_und=gbastckfpadr_curr;
-				gbavirtreg_r13und[0x0]=gbavirtreg_cpu[0xd];
-				gbavirtreg_r14und[0x0]=gbavirtreg_cpu[0xe];
-				#ifdef DEBUGEMU
-					printf("stacks backup und_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13und[0x0]);
-				#endif
-			}
+			//then update cpsr (mode) <-- cpsr & spsr case dependant
+			cpsr&=~0x1f;
+			cpsr|=(cpumode&0x1f);
 			
-			//default (no previous PSR) sets
-			else {
+			//->switch to arm/thumb mode depending on cpsr for virtual env
+			if( ((cpsr>>5)&1) == 0x1 )
+				armstate=0x1;
+			else
+				armstate=0x0;
 			
-				// disable FIQ & set SVC
-				// gba->reg[16].I |= 0x40;
-				cpsr|=0x40;
-				cpsr|=0x13;
-				
-				//#ifdef DEBUGEMU
-				//	printf("ERROR CHANGING CPU MODE/STACKS : CPSR: %x \n",(unsigned int)cpsrvirt);
-				//	while(1);
-				//#endif
-			}
+			cpsr&=~(1<<0x5);
+			cpsr|=((armstate&1)<<0x5);
+			
+			//save changes to CPSR
+			cpsrvirt=cpsr;
+			
+		}	//end if current cpumode != new cpu mode
 		
-		//update SPSR on CPU change <mode> (this is exactly where CPU change happens)
-		spsr_last=cpsr;
-		
-		//3)setup current CPU mode working set of registers and perform stack swap
-		//btw2: gbastckfp_usr can hold up to 0x1ff (511 bytes) of data so pointer must not exceed that value
-		
-		//case gbastckfp_mode  
-		//load LR & PC from regs then decrease #1 for each
-		
-		//unique cpu registers : gbavirtreg_cpu[n];
-		
-		//user/sys
-		if ( ((cpumode&0x1f) == (0x10)) || ((cpumode&0x1f) == (0x1f)) ){	
-				
-				gbastckmodeadr_curr=gbastckadr_usr;
-				gbastckfpadr_curr=gbastckfp_usr;			//current framepointer address (setup in util.c) and updated here
-				gbavirtreg_cpu[0xd]=gbavirtreg_r13usr[0x0]; //user SP/LR registers for cpu<mode> (user/sys is the same stacks)
-				gbavirtreg_cpu[0xe]=gbavirtreg_r14usr[0x0];
-				#ifdef DEBUGEMU
-					printf("| stacks swap to usr_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
-				#endif
+		else{
+			#ifdef DEBUGEMU
+				printf("cpsr(arg1)(%x) == cpsr(arg2)(%x)",(unsigned int)(cpsr&0x1f),(unsigned int)cpumode);
+			#endif
+			
+			//any kind of access case:
+			
+			//->can't rewrite SAME cpu<mode> slots!!
+			//->switch to arm/thumb mode depending on cpsr
+			if( ((cpsr>>5)&1) == 0x1 )
+				armstate=0x1;
+			else
+				armstate=0x0;
+			
+			cpsr&=~(1<<0x5);
+			cpsr|=((armstate&1)<<0x5);
+			
+			//save changes to CPSR
+			cpsrvirt=cpsr;
 		}
 		
-		else if((cpumode&0x1f)==0x11){
-				gbastckmodeadr_curr=gbastckadr_fiq;
-				gbastckfpadr_curr=gbastckfp_fiq;			//current framepointer address (setup in util.c) and updated here
-				gbavirtreg_cpu[0xd]=gbavirtreg_r13fiq[0x0]; //fiq SP/LR registers for cpu<mode>
-				gbavirtreg_cpu[0xe]=gbavirtreg_r14fiq[0x0];
-				
-				//save register r8-r12 subset before entering fiq
-				gbavirtreg_cpubup[0x0]=gbavirtreg_cpu[0x0 + 8];
-				gbavirtreg_cpubup[0x1]=gbavirtreg_cpu[0x1 + 8];
-				gbavirtreg_cpubup[0x2]=gbavirtreg_cpu[0x2 + 8];
-				gbavirtreg_cpubup[0x3]=gbavirtreg_cpu[0x3 + 8];
-				gbavirtreg_cpubup[0x4]=gbavirtreg_cpu[0x4 + 8];
-				
-				//restore: 5 extra regs r8-r12 for fiq restore
-				gbavirtreg_cpu[0x0 + 8]=gbavirtreg_fiq[0x0];
-				gbavirtreg_cpu[0x1 + 8]=gbavirtreg_fiq[0x1];
-				gbavirtreg_cpu[0x2 + 8]=gbavirtreg_fiq[0x2];
-				gbavirtreg_cpu[0x3 + 8]=gbavirtreg_fiq[0x3];
-				gbavirtreg_cpu[0x4 + 8]=gbavirtreg_fiq[0x4];
-				#ifdef DEBUGEMU
-					printf("| stacks swap to fiq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
-				#endif
 		}
-		//irq
-		else if((cpumode&0x1f)==0x12){
-				gbastckmodeadr_curr=gbastckadr_irq;
-				gbastckfpadr_curr=gbastckfp_irq;			//current framepointer address (setup in util.c) and updated here
-				gbavirtreg_cpu[0xd]=gbavirtreg_r13irq[0x0]; //irq SP/LR registers for cpu<mode>
-				gbavirtreg_cpu[0xe]=gbavirtreg_r14irq[0x0];
-				#ifdef DEBUGEMU
-					printf("| stacks swap to irq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
-				#endif
-		}
-		//svc
-		else if((cpumode&0x1f)==0x13){
-				gbastckmodeadr_curr=gbastckadr_svc;
-				gbastckfpadr_curr=gbastckfp_svc;			//current framepointer address (setup in util.c) and updated here
-				gbavirtreg_cpu[0xd]=gbavirtreg_r13svc[0x0]; //svc SP/LR registers for cpu<mode> (user/sys is the same stacks)
-				gbavirtreg_cpu[0xe]=gbavirtreg_r14svc[0x0];
-				#ifdef DEBUGEMU
-					printf("| stacks swap to svc_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
-				#endif
-		}
-		//abort
-		else if((cpumode&0x1f)==0x17){
-				gbastckmodeadr_curr=gbastckadr_abt;
-				gbastckfpadr_curr=gbastckfp_abt;			//current framepointer address (setup in util.c) and updated here
-				gbavirtreg_cpu[0xd]=gbavirtreg_r13abt[0x0]; //abt SP/LR registers for cpu<mode>
-				gbavirtreg_cpu[0xe]=gbavirtreg_r14abt[0x0];
-				#ifdef DEBUGEMU
-					printf("| stacks swap to abt_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
-				#endif
-		}
-		//undef
-		else if((cpumode&0x1f)==0x1b){
-				gbastckmodeadr_curr=gbastckadr_und;
-				gbastckfpadr_curr=gbastckfp_und;			//current framepointer address (setup in util.c) and updated here
-				gbavirtreg_cpu[0xd]=gbavirtreg_r13und[0x0]; //und SP/LR registers for cpu<mode>
-				gbavirtreg_cpu[0xe]=gbavirtreg_r14und[0x0];
-				#ifdef DEBUGEMU
-					printf("| stacks swap to und_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
-				#endif
-		}
+		break;
 		
-		//then update cpsr (mode) <-- cpsr & spsr case dependant
-		cpsr&=~0x1f;
-		cpsr|=(cpumode&0x1f);
 		
-		//->switch to arm/thumb mode depending on cpsr for virtual env
-		if( ((cpsr>>5)&1) == 0x1 )
-			armstate=0x1;
-		else
-			armstate=0x0;
-		
-		cpsr&=~(1<<0x5);
-		cpsr|=((armstate&1)<<0x5);
-		
-		//save changes to CPSR
-		cpsrvirt=cpsr;
-		
-	}	//end if current cpumode != new cpu mode
-	
-	else{
-		#ifdef DEBUGEMU
-			printf("cpsr(arg1)(%x) == cpsr(arg2)(%x)",(unsigned int)(cpsr&0x1f),(unsigned int)cpumode);
-		#endif
-		
-		//any kind of access case:
-		
-		//->can't rewrite SAME cpu<mode> slots!!
-		//->switch to arm/thumb mode depending on cpsr
-		if( ((cpsr>>5)&1) == 0x1 )
-			armstate=0x1;
-		else
-			armstate=0x0;
-		
-		cpsr&=~(1<<0x5);
-		cpsr|=((armstate&1)<<0x5);
-		
-		//save changes to CPSR
-		cpsrvirt=cpsr;
+		default:
+		break;
 	}
-	
-	}
-	break;
-	
-	
-	default:
-	break;
-}
 
-return 0;
+	return 0;
 }
 
 ///////////////////////////////////////THUMB virt/////////////////////////////////////////
@@ -431,13 +431,13 @@ debuggeroutput();
 #endif
 
 //testing gba accesses translation to allocated ones
-//printf("output: %x \n",addresslookup( 0x070003ff, (u32*)&addrpatches[0],(u32*)&addrfixes[0]));
+//printf("output: %x ",addresslookup( 0x070003ff, (u32*)&addrpatches[0],(u32*)&addrfixes[0]));
 
 //debug addrfixes
 //int i=0;
 //for(i=0;i<16;i++){
-//	printf("\n patch : %x",*((u32*)&addrfixes+(i)));
-//	if (i==15) printf("\n");
+//	printf(" patch : %x",*((u32*)&addrfixes+(i)));
+//	if (i==15) printf("");
 //}
 
 //Low regs
@@ -450,7 +450,7 @@ switch(thumbinstr>>11){
 		
 		dummyreg2=lslasm(dummyreg,((thumbinstr>>6)&0x1f));
 		#ifdef DEBUGEMU
-		printf("LSL r%d[%x],r%d[%x],#%x (5.1)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)((thumbinstr>>6)&0x1f));
+		printf("LSL r%d[%x],r%d[%x],#%x (5.1)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)((thumbinstr>>6)&0x1f));
 		#endif
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
@@ -467,7 +467,7 @@ switch(thumbinstr>>11){
 		
 		dummyreg2=lsrasm(dummyreg,((thumbinstr>>6)&0x1f));
 		#ifdef DEBUGEMU
-		printf("LSR r%d[%x],r%d[%x],#%x (5.1)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)((thumbinstr>>6)&0x1f));
+		printf("LSR r%d[%x],r%d[%x],#%x (5.1)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)((thumbinstr>>6)&0x1f));
 		#endif
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
@@ -484,7 +484,7 @@ switch(thumbinstr>>11){
 		
 		dummyreg2=(u32)asrasm((int)dummyreg,((thumbinstr>>6)&0x1f)); //dummyreg=lslasm(dummyreg,((thumbinstr>>6)&0x1f));
 		#ifdef DEBUGEMU
-		printf("ASR r%d[%x],r%d[%x],#%x (5.1)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)((thumbinstr>>6)&0x1f));
+		printf("ASR r%d[%x],r%d[%x],#%x (5.1)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)((thumbinstr>>6)&0x1f));
 		#endif
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
@@ -499,7 +499,7 @@ switch(thumbinstr>>11){
 	case 0x4:
 		//mov
 		#ifdef DEBUGEMU
-		printf("mov r%d,#0x%x (5.3)\n",(int)((thumbinstr>>8)&0x7),(unsigned int)thumbinstr&0xff);
+		printf("mov r%d,#0x%x (5.3)",(int)((thumbinstr>>8)&0x7),(unsigned int)thumbinstr&0xff);
 		#endif
 		dummyreg=movasm((u32)(thumbinstr&0xff));
 		
@@ -516,7 +516,7 @@ switch(thumbinstr>>11){
 		//rs
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("cmp r%d[%x],#0x%x (5.3)\n",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg,(unsigned int)(thumbinstr&0xff));
+		printf("cmp r%d[%x],#0x%x (5.3)",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg,(unsigned int)(thumbinstr&0xff));
 		#endif
 		cmpasm(dummyreg,(u32)thumbinstr&0xff);
 		
@@ -530,7 +530,7 @@ switch(thumbinstr>>11){
 		//rn
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("add r%d[%x], #%x (5.3)\n", (int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg,(unsigned int)(thumbinstr&0xff));
+		printf("add r%d[%x], #%x (5.3)", (int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg,(unsigned int)(thumbinstr&0xff));
 		#endif
 		dummyreg=addasm(dummyreg,(thumbinstr&0xff));
 		
@@ -547,7 +547,7 @@ switch(thumbinstr>>11){
 	//rn
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("sub r%d[%x], #%x (5.3)\n", (int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg,(unsigned int)(thumbinstr&0xff));
+		printf("sub r%d[%x], #%x (5.3)", (int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg,(unsigned int)(thumbinstr&0xff));
 		#endif
 		dummyreg=subasm(dummyreg,(thumbinstr&0xff));
 		
@@ -564,7 +564,7 @@ switch(thumbinstr>>11){
 	case 0x9:
 		dummyreg2=cpuread_word((rom+0x4)+((thumbinstr&0xff)<<2)); //[PC+0x4,#(8<<2)Imm] / because prefetch and alignment
 		#ifdef DEBUGEMU
-		printf("(WORD) LDR r%d[%x], [PC:%x,#%x] (5.6) \n",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg2,(unsigned int)dummyreg,(unsigned int)(thumbinstr&0xff));
+		printf("(WORD) LDR r%d[%x], [PC:%x,#%x] (5.6) ",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg2,(unsigned int)dummyreg,(unsigned int)(thumbinstr&0xff));
 		#endif
 		//store read onto Rd
 		faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
@@ -582,7 +582,7 @@ switch(thumbinstr>>11){
 		//2a)read address (from reg) into dummy reg (RB) <-- this NEEDS to be checked for address patch as it's the destination physical address
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("\n STR r%d(%x), [r%d(%x),#0x%x] (5.9)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)(((thumbinstr>>6)&0x1f)<<2));
+		printf(" STR r%d(%x), [r%d(%x),#0x%x] (5.9)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)(((thumbinstr>>6)&0x1f)<<2));
 		#endif
 		//2b) RB = #Imm + RB 
 		dummyreg=addsasm(dummyreg,(u32)(((thumbinstr>>6)&0x1f)<<2));
@@ -600,7 +600,7 @@ switch(thumbinstr>>11){
 	//warning: small error on arm7tdmi docs (this should be LDR, but is listed as STR) as bit 11 set is load, and unset store
 	case(0xd):{ //word quantity (#Imm is 7 bits, filled with bit[0] & bit[1] = 0 by shifting >> 2 )
 		#ifdef DEBUGEMU
-			printf("\n LDR r%d, [r%d,#0x%x] (5.9)\n",(int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)(((thumbinstr>>6)&0x1f)<<2)); //if freeze undo this
+			printf(" LDR r%d, [r%d,#0x%x] (5.9)",(int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)(((thumbinstr>>6)&0x1f)<<2)); //if freeze undo this
 		#endif
 		
 		//RB
@@ -627,7 +627,7 @@ switch(thumbinstr>>11){
 		//2a)read address (from reg) into dummy reg (RB) <-- this NEEDS to be checked for address patch as it's the destination physical address
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
-			printf("\n strb r%d(%x), [r%d(%x),#0x%x] (5.9)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)((thumbinstr>>6)&0x1f)<<2);
+			printf(" strb r%d(%x), [r%d(%x),#0x%x] (5.9)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)((thumbinstr>>6)&0x1f)<<2);
 		#endif
 		//2b) RB = #Imm + RB 
 		dummyreg=addsasm(dummyreg,(u32)(((thumbinstr>>6)&0x1f)<<2));
@@ -655,7 +655,7 @@ switch(thumbinstr>>11){
 		dummyreg3=cpuread_byte(dummyreg3);
 		
 		#ifdef DEBUGEMU
-			printf("\n ldrb Rd(%d)[%x], [Rb(%d)[%x],#(0x%x)] (5.9)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg3,
+			printf(" ldrb Rd(%d)[%x], [Rb(%d)[%x],#(0x%x)] (5.9)",(int)(thumbinstr&0x7),(unsigned int)dummyreg3,
 			(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
 			(unsigned int)(((thumbinstr>>6)&0x1f)<<2)); //if freeze undo this
 		#endif
@@ -681,7 +681,7 @@ switch(thumbinstr>>11){
 		cpuwrite_hword(dummyreg3,dummyreg2);
 		
 		#ifdef DEBUGEMU
-		printf("strh r(%d)[%x] ,[Rb(%d)[%x],#[%x]] (5.7)\n",(int)((thumbinstr)&0x7),(unsigned int)dummyreg2,
+		printf("strh r(%d)[%x] ,[Rb(%d)[%x],#[%x]] (5.7)",(int)((thumbinstr)&0x7),(unsigned int)dummyreg2,
 		(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)(((thumbinstr>>6)&0x1f)<<1));
 		#endif
 		
@@ -704,7 +704,7 @@ switch(thumbinstr>>11){
 		dummyreg3=cpuread_hword(dummyreg3);
 		
 		#ifdef DEBUGEMU
-			printf("\n ldrh Rd(%d)[%x], [Rb(%d)[%x],#(0x%x)] (5.9)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg3,
+			printf(" ldrh Rd(%d)[%x], [Rb(%d)[%x],#(0x%x)] (5.9)",(int)(thumbinstr&0x7),(unsigned int)dummyreg3,
 			(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
 			(unsigned int)(((thumbinstr>>6)&0x1f)<<1)); //if freeze undo this
 		#endif
@@ -727,10 +727,10 @@ switch(thumbinstr>>11){
 		dummyreg3=((thumbinstr&0xff)<<2);
 		
 		#ifdef DEBUGEMU
-			printf("str rd(%d)[%x], [SP:(%x),#[%x]] \n",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg2,(unsigned int)dummyreg,(unsigned int)dummyreg3);
+			printf("str rd(%d)[%x], [SP:(%x),#[%x]] ",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg2,(unsigned int)dummyreg,(unsigned int)dummyreg3);
 		#endif
 		
-		//printf("str: content: %x \n",dummyreg2);
+		//printf("str: content: %x ",dummyreg2);
 		cpuwrite_word((dummyreg+dummyreg3),dummyreg2);
 		
 		//note: this opcode doesn't increase SP
@@ -749,7 +749,7 @@ switch(thumbinstr>>11){
 		dummyreg3=cpuread_word((dummyreg+dummyreg2));
 		
 		#ifdef DEBUGEMU
-			printf("ldr rd(%d)[%x], [SP:(%x),#[%x]] \n",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg3,(unsigned int)dummyreg,(unsigned int)dummyreg2);
+			printf("ldr rd(%d)[%x], [SP:(%x),#[%x]] ",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg3,(unsigned int)dummyreg,(unsigned int)dummyreg2);
 		#endif
 		
 		//save Rd
@@ -776,7 +776,7 @@ switch(thumbinstr>>11){
 		dummyreg3=cpuread_word(dummyreg3);
 		
 		#ifdef DEBUGEMU
-			printf("add rd(%d)[%x], [PC:(%x),#[%x]] (5.12) \n",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg3,(unsigned int)dummyreg,(unsigned int)dummyreg2);
+			printf("add rd(%d)[%x], [PC:(%x),#[%x]] (5.12) ",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg3,(unsigned int)dummyreg,(unsigned int)dummyreg2);
 		#endif
 		
 		faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
@@ -799,7 +799,7 @@ switch(thumbinstr>>11){
 		dummyreg3=cpuread_word(dummyreg3);
 		
 		#ifdef DEBUGEMU
-			printf("add rd(%d)[%x], [r13:(%x),#[%x]] (5.12) \n",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg3,(unsigned int)dummyreg,(unsigned int)dummyreg2);
+			printf("add rd(%d)[%x], [r13:(%x),#[%x]] (5.12) ",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg3,(unsigned int)dummyreg,(unsigned int)dummyreg2);
 		#endif
 		
 		faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
@@ -814,7 +814,7 @@ switch(thumbinstr>>11){
 			fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
 			
 			#ifdef DEBUGEMU
-			printf("STMIA r%d![%x], {R: %d %d %d %d %d %d %d %x }:regs op:%x (5.15)\n",
+			printf("STMIA r%d![%x], {R: %d %d %d %d %d %d %d %x }:regs op:%x (5.15)",
 			(int)(thumbinstr>>8)&0x7,
 			(unsigned int)dummyreg,
 			(int)(thumbinstr&0xff)&0x80,
@@ -860,7 +860,7 @@ switch(thumbinstr>>11){
 			fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
 			
 			#ifdef DEBUGEMU
-			printf("LDMIA r%d![%x], {R: %d %d %d %d %d %d %d %d }:regs op:%x (5.15)\n",
+			printf("LDMIA r%d![%x], {R: %d %d %d %d %d %d %d %d }:regs op:%x (5.15)",
 			(int)((thumbinstr>>8)&0x7),
 			(unsigned int)dummyreg2,
 			(int)(thumbinstr&0xff)&0x80,
@@ -904,7 +904,7 @@ switch(thumbinstr>>11){
 			
 			rom=cpuread_word((thumbinstr&0x3ff)<<1)+0x4; //bit[11] but word-aligned so assembler puts 0>>1
 			#ifdef DEBUGEMU
-			printf("[BAL] label[%x] THUMB mode / CPSR:%x (5.18) \n",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BAL] label[%x] THUMB mode / CPSR:%x (5.18) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
 			#endif
 	return 0;	
 	}
@@ -955,7 +955,7 @@ switch(thumbinstr>>11){
 		//update LR
 		gbavirtreg_cpu[0xe]=((temppc+(0x4)) | (1<<0));
 		#ifdef DEBUGEMU
-			printf("LONG BRANCH WITH LINK: PC:[%x],LR[%x] (5.19) \n",(unsigned int)(rom+(0x2)),(unsigned int)gbavirtreg_cpu[0xe]);
+			printf("LONG BRANCH WITH LINK: PC:[%x],LR[%x] (5.19) ",(unsigned int)(rom+(0x2)),(unsigned int)gbavirtreg_cpu[0xe]);
 		#endif
 	
 		*/
@@ -990,7 +990,7 @@ switch(thumbinstr>>11){
 			
 		}
 		
-		printf("BL rom @(%x):[%x] \n",(unsigned int)rom,(unsigned int)u32read);
+		printf("BL rom @(%x):[%x] ",(unsigned int)rom,(unsigned int)u32read);
 		
 		//original PC
 		u32 oldpc=rom;
@@ -1006,7 +1006,7 @@ switch(thumbinstr>>11){
 		gbavirtreg_cpu[0xe]=(oldpc+(0x4)) | 1; //+0x4 for prefetch
 		
 		#ifdef DEBUGEMU
-			printf("LONG BRANCH WITH LINK: PC:[%x],LR[%x] (5.19) \n",
+			printf("LONG BRANCH WITH LINK: PC:[%x],LR[%x] (5.19) ",
 			(unsigned int)(rom+0x2),(unsigned int)gbavirtreg_cpu[0xe]); //+0x2 (pc++ fixup)
 		#endif
 		
@@ -1028,7 +1028,7 @@ switch(thumbinstr>>9){
 		//rn
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>6)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("add rd(%d),rs(%d)[%x],rn(%d)[%x] (5.2)\n", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg);
+		printf("add rd(%d),rs(%d)[%x],rn(%d)[%x] (5.2)", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg);
 		#endif
 		dummyreg2=addasm(dummyreg2,dummyreg);
 		
@@ -1052,7 +1052,7 @@ switch(thumbinstr>>9){
 		//rn
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>6)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("sub r%d,r%d[%x],r%d[%x] (5.2)\n", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg);
+		printf("sub r%d,r%d[%x],r%d[%x] (5.2)", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg);
 		#endif
 		dummyreg2=subasm(dummyreg2,dummyreg);
 		
@@ -1072,7 +1072,7 @@ switch(thumbinstr>>9){
 		//rs
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("add r%d,r%d[%x],#0x%x (5.2)\n", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2,(unsigned int)((thumbinstr>>6)&0x7));
+		printf("add r%d,r%d[%x],#0x%x (5.2)", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2,(unsigned int)((thumbinstr>>6)&0x7));
 		#endif
 		dummyreg2=addasm(dummyreg2,(thumbinstr>>6)&0x7);
 		
@@ -1092,7 +1092,7 @@ switch(thumbinstr>>9){
 		//rs
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("sub r(%d),r(%d)[%x],#0x%x (5.2)\n", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2,(unsigned int)((thumbinstr>>6)&0x7));
+		printf("sub r(%d),r(%d)[%x],#0x%x (5.2)", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2,(unsigned int)((thumbinstr>>6)&0x7));
 		#endif
 		dummyreg2=subasm(dummyreg2,(thumbinstr>>6)&0x7);
 		
@@ -1122,7 +1122,7 @@ switch(thumbinstr>>9){
 		//dummyreg4=addsasm(dummyreg,dummyreg2);
 		
 		#ifdef DEBUGEMU
-		printf("str rd(%d)[%x] ,rb(%d)[%x],ro(%d)[%x] (5.7)\n",
+		printf("str rd(%d)[%x] ,rb(%d)[%x],ro(%d)[%x] (5.7)",
 		(int)(thumbinstr&0x7),(unsigned int)dummyreg3,
 		(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
 		(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg2
@@ -1149,7 +1149,7 @@ switch(thumbinstr>>9){
 		//dummyreg4=addsasm(dummyreg,dummyreg2);
 		
 		#ifdef DEBUGEMU
-		printf("strb rd(%d)[%x] ,rb(%d)[%x],ro(%d)[%x] (5.7)\n",
+		printf("strb rd(%d)[%x] ,rb(%d)[%x],ro(%d)[%x] (5.7)",
 		(int)(thumbinstr&0x7),(unsigned int)dummyreg3,
 		(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
 		(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg2
@@ -1173,7 +1173,7 @@ switch(thumbinstr>>9){
 		dummyreg3=cpuread_word((dummyreg+dummyreg2));
 		
 		#ifdef DEBUGEMU
-		printf("LDR rd(%d)[%x] ,[rb(%d)[%x],ro(%d)[%x]] (5.7)\n",
+		printf("LDR rd(%d)[%x] ,[rb(%d)[%x],ro(%d)[%x]] (5.7)",
 		(int)(thumbinstr&0x7),(unsigned int)dummyreg3,
 		(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
 		(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg2
@@ -1196,7 +1196,7 @@ switch(thumbinstr>>9){
 		dummyreg3=cpuread_byte((dummyreg+dummyreg2));
 		
 		#ifdef DEBUGEMU
-		printf("LDRB rd(%d)[%x] ,[rb(%d)[%x],ro(%d)[%x]] (5.7)\n",
+		printf("LDRB rd(%d)[%x] ,[rb(%d)[%x],ro(%d)[%x]] (5.7)",
 		(int)(thumbinstr&0x7),(unsigned int)dummyreg3,
 		(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
 		(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg2
@@ -1212,7 +1212,7 @@ switch(thumbinstr>>9){
 	
 	//////////////////////5.8
 	//halfword
-	//printf("STRH RD ,[Rb,Ro] (5.8) \n"); //thumbinstr
+	//printf("STRH RD ,[Rb,Ro] (5.8) "); //thumbinstr
 	case(0x29):{ //41dec strh
 		//Rb
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
@@ -1224,7 +1224,7 @@ switch(thumbinstr>>9){
 		fastldr((u8*)&dummyreg3, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
 		
 		#ifdef DEBUGEMU
-		printf("strh rd(%d)[%x] ,rb(%d)[%x],ro(%d)[%x] (5.7)\n",
+		printf("strh rd(%d)[%x] ,rb(%d)[%x],ro(%d)[%x] (5.7)",
 		(int)(thumbinstr&0x7),(unsigned int)dummyreg3,
 		(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
 		(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg2
@@ -1237,7 +1237,7 @@ switch(thumbinstr>>9){
 	}	
 	break;
 	
-	// LDRH RD ,[Rb,Ro] (5.8)\n
+	// LDRH RD ,[Rb,Ro] (5.8)
 	case(0x2b):{ //43dec ldrh
 		//Rb
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
@@ -1247,7 +1247,7 @@ switch(thumbinstr>>9){
 		dummyreg3=cpuread_hword((dummyreg+dummyreg2));
 		
 		#ifdef DEBUGEMU
-		printf("LDRB rd(%d)[%x] ,[rb(%d)[%x],ro(%d)[%x]] (5.7)\n",
+		printf("LDRB rd(%d)[%x] ,[rb(%d)[%x],ro(%d)[%x]] (5.7)",
 		(int)(thumbinstr&0x7),(unsigned int)dummyreg3,
 		(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
 		(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg2
@@ -1271,7 +1271,7 @@ switch(thumbinstr>>9){
 		s8 sbyte=cpuread_byte(dummyreg+dummyreg2);
 		
 		#ifdef DEBUGEMU
-		printf("ldsb rd(%d)[%x] ,Rb(%d)[%x],Ro(%d)[%x] (5.7)\n",
+		printf("ldsb rd(%d)[%x] ,Rb(%d)[%x],Ro(%d)[%x] (5.7)",
 		(int)(thumbinstr&0x7),(signed int)sbyte,
 		(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
 		(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg2);
@@ -1293,7 +1293,7 @@ switch(thumbinstr>>9){
 		s16 shword=cpuread_hword(dummyreg+dummyreg2);
 		
 		#ifdef DEBUGEMU
-		printf("ldsh rd(%d)[%x] ,Rb(%d)[%x],Ro(%d)[%x] (5.7)\n",
+		printf("ldsh rd(%d)[%x] ,Rb(%d)[%x],Ro(%d)[%x] (5.7)",
 		(int)(thumbinstr&0x7),(signed int)shword,
 		(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
 		(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg2);
@@ -1315,7 +1315,7 @@ switch(thumbinstr>>8){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0xd), 32,0); 
 		
 		#ifdef DEBUGEMU
-		printf("[THUMB] PUSH {R: %d %d %d %d %d %d %d %x }:regout:%x (5.14)\n",
+		printf("[THUMB] PUSH {R: %d %d %d %d %d %d %d %x }:regout:%x (5.14)",
 			(unsigned int)((thumbinstr&0xff)&0x80),
 			(unsigned int)((thumbinstr&0xff)&0x40),
 			(unsigned int)((thumbinstr&0xff)&0x20),
@@ -1377,7 +1377,7 @@ switch(thumbinstr>>8){
 		faststr((u8*)&dummyreg, gbavirtreg_cpu, (0xd) , 32,0);
 		
 		#ifdef DEBUGEMU
-		printf("[THUMB] PUSH {R: %x %x %x %x %x %x %x %x },LR :regout:%x (5.14)\n",
+		printf("[THUMB] PUSH {R: %x %x %x %x %x %x %x %x },LR :regout:%x (5.14)",
 			(unsigned int)((thumbinstr&0xff)&0x80),
 			(unsigned int)((thumbinstr&0xff)&0x40),
 			(unsigned int)((thumbinstr&0xff)&0x20),
@@ -1460,12 +1460,12 @@ switch(thumbinstr>>8){
 			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
 			
 			#ifdef DEBUGEMU
-			printf("[BEQ] label[%x] THUMB mode / CPSR:%x (5.16) \n",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BEQ] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
 			#endif
 		}
 		else {
 			#ifdef DEBUGEMU
-			printf("THUMB: BEQ not met! \n");
+			printf("THUMB: BEQ not met! ");
 			#endif
 		}
 	return 0;	
@@ -1482,13 +1482,13 @@ switch(thumbinstr>>8){
 			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
 			
 			#ifdef DEBUGEMU
-			printf("[BNE] label[%x] THUMB mode (5.16) \n",(unsigned int)rom); 
+			printf("[BNE] label[%x] THUMB mode (5.16) ",(unsigned int)rom); 
 			#endif
 			
 		}
 		else {
 			#ifdef DEBUGEMU
-			printf("THUMB: BNE not met! \n");
+			printf("THUMB: BNE not met! ");
 			#endif
 		}
 	return 0;	
@@ -1506,13 +1506,13 @@ switch(thumbinstr>>8){
 			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
 			
 			#ifdef DEBUGEMU
-			printf("[BCS] label[%x] THUMB mode / CPSR:%x (5.16) \n",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BCS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
 			#endif
 			
 		}
 		else {
 			#ifdef DEBUGEMU
-			printf("THUMB: BCS not met! \n");
+			printf("THUMB: BCS not met! ");
 			#endif
 		}
 	return 0;
@@ -1529,13 +1529,13 @@ switch(thumbinstr>>8){
 			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
 			
 			#ifdef DEBUGEMU
-			printf("[BCC] label[%x] THUMB mode / CPSR:%x (5.16) \n",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BCC] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
 			#endif
 		
 		}
 		else {
 			#ifdef DEBUGEMU
-			printf("THUMB: BCC not met! \n");
+			printf("THUMB: BCC not met! ");
 			#endif
 		}
 	return 0;
@@ -1552,13 +1552,13 @@ switch(thumbinstr>>8){
 			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
 			
 			#ifdef DEBUGEMU
-			printf("[BMI] label[%x] THUMB mode / CPSR:%x (5.16) \n",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BMI] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
 			#endif
 	
 		}
 		else {
 			#ifdef DEBUGEMU
-			printf("THUMB: BMI not met! \n");
+			printf("THUMB: BMI not met! ");
 			#endif
 		}
 	return 0;	
@@ -1575,13 +1575,13 @@ switch(thumbinstr>>8){
 			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
 			
 			#ifdef DEBUGEMU
-			printf("[BPL] label[%x] THUMB mode / CPSR:%x (5.16) \n",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BPL] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
 			#endif
 			
 		}
 		else {
 			#ifdef DEBUGEMU
-			printf("THUMB: BPL not met! \n");
+			printf("THUMB: BPL not met! ");
 			#endif
 		}
 	return 0;
@@ -1598,13 +1598,13 @@ switch(thumbinstr>>8){
 			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
 			
 			#ifdef DEBUGEMU
-			printf("[BVS] label[%x] THUMB mode / CPSR:%x (5.16) \n",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BVS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
 			#endif
 			
 		}
 		else {
 			#ifdef DEBUGEMU
-			printf("THUMB: BVS not met! \n");
+			printf("THUMB: BVS not met! ");
 			#endif
 		}
 	return 0;	
@@ -1621,13 +1621,13 @@ switch(thumbinstr>>8){
 			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
 			
 			#ifdef DEBUGEMU
-			printf("[BVC] label[%x] THUMB mode / CPSR:%x (5.16) \n",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BVC] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
 			#endif
 			
 		}
 		else {
 			#ifdef DEBUGEMU
-			printf("THUMB: BVC not met! \n");
+			printf("THUMB: BVC not met! ");
 			#endif
 		}
 	return 0;
@@ -1644,13 +1644,13 @@ switch(thumbinstr>>8){
 			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
 			
 			#ifdef DEBUGEMU
-			printf("[BHI] label[%x] THUMB mode / CPSR:%x (5.16) \n",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BHI] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
 			#endif
 			
 		}
 		else{
 			#ifdef DEBUGEMU
-			printf("THUMB: BHI not met! \n");
+			printf("THUMB: BHI not met! ");
 			#endif
 		}
 	return 0;	
@@ -1667,13 +1667,13 @@ switch(thumbinstr>>8){
 			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;	
 			
 			#ifdef DEBUGEMU
-			printf("[BLS] label[%x] THUMB mode / CPSR:%x (5.16) \n",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BLS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
 			#endif
 			
 		}
 		else {
 			#ifdef DEBUGEMU
-			printf("THUMB: BLS not met! \n");
+			printf("THUMB: BLS not met! ");
 			#endif
 		}
 	return 0;	
@@ -1690,13 +1690,13 @@ switch(thumbinstr>>8){
 			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
 			
 			#ifdef DEBUGEMU
-			printf("[BGE] label[%x] THUMB mode / CPSR:%x (5.16) \n",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BGE] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
 			#endif
 		
 		}
 		else {
 			#ifdef DEBUGEMU
-			printf("THUMB: BGE not met! \n");
+			printf("THUMB: BGE not met! ");
 			#endif
 		}
 	return 0;
@@ -1713,12 +1713,12 @@ switch(thumbinstr>>8){
 			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
 			
 			#ifdef DEBUGEMU
-			printf("[BLT] label[%x] THUMB mode / CPSR:%x (5.16) \n",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BLT] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
 			#endif
 		}
 		else {
 			#ifdef DEBUGEMU
-			printf("THUMB: BLT not met! \n");
+			printf("THUMB: BLT not met! ");
 			#endif
 		}
 	return 0;
@@ -1735,12 +1735,12 @@ switch(thumbinstr>>8){
 			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
 			
 			#ifdef DEBUGEMU
-			printf("[BGT] label[%x] THUMB mode / CPSR:%x (5.16) \n",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BGT] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
 			#endif
 		}
 		else {
 			#ifdef DEBUGEMU
-			printf("THUMB: BGT not met! \n");
+			printf("THUMB: BGT not met! ");
 			#endif
 		}
 	return 0;
@@ -1757,12 +1757,12 @@ switch(thumbinstr>>8){
 			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
 			
 			#ifdef DEBUGEMU
-			printf("[BLE] label[%x] THUMB mode / CPSR:%x (5.16) \n",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BLE] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
 			#endif
 		}
 		else {
 			#ifdef DEBUGEMU
-			printf("THUMB: BLE not met! \n");
+			printf("THUMB: BLE not met! ");
 			#endif
 		}
 	return 0;	
@@ -1787,7 +1787,7 @@ switch(thumbinstr>>8){
 		//we force ARM mode directly regardless cpsr
 		armstate=0x0; //1 thmb / 0 ARM
 		
-		//printf("[thumb] SWI #0x%x / CPSR: %x(5.17)\n",(thumbinstr&0xff),cpsrvirt);
+		//printf("[thumb] SWI #0x%x / CPSR: %x(5.17)",(thumbinstr&0xff),cpsrvirt);
 		swi_virt((thumbinstr&0xff));
 		
 		//if we don't use the BIOS handling, restore CPU mode inmediately
@@ -1829,7 +1829,7 @@ switch(thumbinstr>>7){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0xd), 32,0); 
 		
 		#ifdef DEBUGEMU
-		printf("ADD SP:%x, +#%d (5.13) \n",(unsigned int)dummyreg,(signed int)dbyte_tmp);
+		printf("ADD SP:%x, +#%d (5.13) ",(unsigned int)dummyreg,(signed int)dbyte_tmp);
 		#endif
 		
 		dummyreg2=addsasm(dummyreg,dbyte_tmp);
@@ -1850,7 +1850,7 @@ switch(thumbinstr>>7){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0xd), 32,0); 
 		
 		#ifdef DEBUGEMU
-			printf("ADD SP:%x, -#%d (5.13) \n",(unsigned int)dummyreg,(signed int) dbyte_tmp);
+			printf("ADD SP:%x, -#%d (5.13) ",(unsigned int)dummyreg,(signed int) dbyte_tmp);
 		#endif
 		
 		dummyreg2=subsasm(dummyreg,dbyte_tmp);
@@ -1872,14 +1872,14 @@ switch(thumbinstr>>6){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("ALU OP: AND r%d[%x], r%d[%x] (5.4)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: AND r%d[%x], r%d[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
 		dummyreg=andasm(dummyreg,dummyreg2);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x \n",cpsrvirt);
+		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
 		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
@@ -1892,14 +1892,14 @@ switch(thumbinstr>>6){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("ALU OP: EOR rd(%d)[%x], rs(%d)[%x] (5.4)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: EOR rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
 		dummyreg=eorasm(dummyreg,dummyreg2);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x \n",cpsrvirt);
+		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
 	faststr((u8*)&dummyreg,gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
@@ -1912,14 +1912,14 @@ switch(thumbinstr>>6){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("ALU OP: LSL r(%d)[%x], r(%d)[%x] (5.4)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: LSL r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
 		dummyreg=lslasm(dummyreg,dummyreg2);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x \n",cpsrvirt);
+		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
 		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);	
@@ -1933,14 +1933,14 @@ switch(thumbinstr>>6){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("ALU OP: LSR r(%d)[%x], r(%d)[%x] (5.4)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: LSR r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
 		dummyreg=lsrasm(dummyreg,dummyreg2);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x \n",cpsrvirt);
+		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
 		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
@@ -1954,14 +1954,14 @@ switch(thumbinstr>>6){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("ALU OP: ASR r(%d)[%x], r(%d)[%x] (5.4)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: ASR r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
 		dummyreg=asrasm(dummyreg,dummyreg2);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x \n",cpsrvirt);
+		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
 		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
@@ -1974,14 +1974,14 @@ switch(thumbinstr>>6){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("ALU OP: ADC r(%d)[%x], r(%d)[%x] (5.4)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: ADC r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
 		dummyreg=adcasm(dummyreg,dummyreg2);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x \n",cpsrvirt);
+		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
 		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
@@ -1994,14 +1994,14 @@ switch(thumbinstr>>6){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("ALU OP: SBC r(%d)[%x], r(%d)[%x] (5.4)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: SBC r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
 		dummyreg=sbcasm(dummyreg,dummyreg2);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x \n",cpsrvirt);
+		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
 		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
@@ -2015,14 +2015,14 @@ switch(thumbinstr>>6){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("ALU OP: ROR r(%d)[%x], r(%d)[%x] (5.4)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: ROR r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
 		dummyreg=rorasm(dummyreg,dummyreg2);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x \n",cpsrvirt);
+		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
 		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
@@ -2037,14 +2037,14 @@ switch(thumbinstr>>6){
 		
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("ALU OP: TST rd(%d)[%x], rs(%d)[%x] (5.4)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg);
+		printf("ALU OP: TST rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg);
 		#endif
 		dummyreg=tstasm(dummyreg2,dummyreg); 	//opcode rd,rs
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x \n",cpsrvirt);
+		//printf("CPSR:%x ",cpsrvirt);
 	return 0;
 	}	
 	break;
@@ -2059,9 +2059,9 @@ switch(thumbinstr>>6){
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		#ifdef DEBUGEMU
-		printf("ALU OP: NEG rd(%d)[%x], rs%d[%x] (5.4)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: NEG rd(%d)[%x], rs%d[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
-		//printf("CPSR:%x \n",cpsrvirt);
+		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
 		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
@@ -2075,14 +2075,14 @@ switch(thumbinstr>>6){
 		
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("ALU OP: CMP rd(%d)[%x], rs(%d)[%x] (5.4)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg);
+		printf("ALU OP: CMP rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg);
 		#endif
 		dummyreg=cmpasm(dummyreg2,dummyreg); 	//opcode rd,rs
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x \n",cpsrvirt);
+		//printf("CPSR:%x ",cpsrvirt);
 	return 0;
 	}
 	break;
@@ -2093,14 +2093,14 @@ switch(thumbinstr>>6){
 		
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("ALU OP: CMN rd(%d)[%x], rs(%d)[%x] (5.4)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg);
+		printf("ALU OP: CMN rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg);
 		#endif
 		dummyreg=cmnasm(dummyreg2,dummyreg); 	//opcode rd,rs
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x \n",cpsrvirt);
+		//printf("CPSR:%x ",cpsrvirt);
 	return 0;
 	}
 	break;
@@ -2110,14 +2110,14 @@ switch(thumbinstr>>6){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("ALU OP: ORR r%d[%x], r%d[%x] (5.4)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: ORR r%d[%x], r%d[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
 		dummyreg=orrasm(dummyreg,dummyreg2);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x \n",cpsrvirt);
+		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
 		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
@@ -2130,14 +2130,14 @@ switch(thumbinstr>>6){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("ALU OP: MUL r%d[%x], r%d[%x] (5.4)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: MUL r%d[%x], r%d[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
 		dummyreg=mulasm(dummyreg,dummyreg2);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x \n",cpsrvirt);
+		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
 		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
@@ -2150,14 +2150,14 @@ switch(thumbinstr>>6){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("ALU OP: BIC r(%d)[%x], r(%d)[%x] (5.4)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: BIC r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
 		dummyreg=bicasm(dummyreg,dummyreg2);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x \n",cpsrvirt);
+		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
 		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
@@ -2175,9 +2175,9 @@ switch(thumbinstr>>6){
 		updatecpuflags(0,cpsrasm,0x0);
 		
 		#ifdef DEBUGEMU
-		printf("ALU OP: MVN rd(%d)[%x], rs(%d)[%x] (5.4)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: MVN rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
-		//printf("CPSR:%x \n",cpsrvirt);
+		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
 		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
@@ -2199,7 +2199,7 @@ switch(thumbinstr>>6){
 		//these don't update CPSR flags
 		
 		#ifdef DEBUGEMU
-		printf("HI reg ADD rd(%d)[%x], hs(%d)[%x] (5.5)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)(((thumbinstr>>3)&0x7)+8),(unsigned int)dummyreg2);
+		printf("HI reg ADD rd(%d)[%x], hs(%d)[%x] (5.5)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)(((thumbinstr>>3)&0x7)+8),(unsigned int)dummyreg2);
 		#endif
 		//done? update desired reg content
 		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
@@ -2218,7 +2218,7 @@ switch(thumbinstr>>6){
 		//these don't update CPSR flags
 		
 		#ifdef DEBUGEMU
-		printf("HI reg op ADD hd%d[%x], rs%d[%x] (5.5)\n",(int)((thumbinstr&0x7)+8),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("HI reg op ADD hd%d[%x], rs%d[%x] (5.5)",(int)((thumbinstr&0x7)+8),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
 		//done? update desired reg content
 		faststr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr&0x7)+0x8), 32,0);
@@ -2231,7 +2231,7 @@ switch(thumbinstr>>6){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr&0x7)+0x8), 32,0);
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (((thumbinstr>>3)&0x7)+0x8), 32,0);
 		#ifdef DEBUGEMU
-		printf("HI reg op ADD hd%d[%x], hs%d[%x] (5.5)\n",(int)((thumbinstr&0x7)+0x8),(unsigned int)dummyreg,(int)(((thumbinstr>>3)&0x7)+0x8),(unsigned int)dummyreg2);
+		printf("HI reg op ADD hd%d[%x], hs%d[%x] (5.5)",(int)((thumbinstr&0x7)+0x8),(unsigned int)dummyreg,(int)(((thumbinstr>>3)&0x7)+0x8),(unsigned int)dummyreg2);
 		#endif
 		dummyreg=addasm(dummyreg,dummyreg2);
 		
@@ -2248,14 +2248,14 @@ switch(thumbinstr>>6){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (((thumbinstr>>3)&0x7)+0x8), 32,0);
 		#ifdef DEBUGEMU
-		printf("HI reg op CMP rd%d[%x], hs%d[%x] (5.5)\n",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)(((thumbinstr>>3)&0x7)+0x8),(unsigned int)dummyreg2);
+		printf("HI reg op CMP rd%d[%x], hs%d[%x] (5.5)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)(((thumbinstr>>3)&0x7)+0x8),(unsigned int)dummyreg2);
 		#endif
 		dummyreg=cmpasm(dummyreg,dummyreg2);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x \n",cpsrvirt);	
+		//printf("CPSR:%x ",cpsrvirt);	
 	return 0;
 	}
 	break;
@@ -2266,14 +2266,14 @@ switch(thumbinstr>>6){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr&0x7)+0x8), 32,0);
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("HI reg op CMP hd(%d)[%x], rs(%d)[%x] (5.5)\n",(int)((thumbinstr&0x7)+0x8),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("HI reg op CMP hd(%d)[%x], rs(%d)[%x] (5.5)",(int)((thumbinstr&0x7)+0x8),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
 		dummyreg=cmpasm(dummyreg,dummyreg2);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x \n",cpsrvirt);
+		//printf("CPSR:%x ",cpsrvirt);
 	return 0;
 	}
 	break;
@@ -2284,14 +2284,14 @@ switch(thumbinstr>>6){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr&0x7)+0x8), 32,0);
 		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (((thumbinstr>>3)&0x7)+0x8), 32,0);
 		#ifdef DEBUGEMU
-		printf("HI reg op CMP hd%d[%x], hd%d[%x] (5.5)\n",(int)((thumbinstr&0x7)+0x8),(unsigned int)dummyreg,(int)(((thumbinstr>>3)&0x7)+0x8),(unsigned int)dummyreg2);
+		printf("HI reg op CMP hd%d[%x], hd%d[%x] (5.5)",(int)((thumbinstr&0x7)+0x8),(unsigned int)dummyreg,(int)(((thumbinstr>>3)&0x7)+0x8),(unsigned int)dummyreg2);
 		#endif
 		dummyreg=cmpasm(dummyreg,dummyreg2);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x \n",cpsrvirt);
+		//printf("CPSR:%x ",cpsrvirt);
 	return 0;
 	}
 	break;
@@ -2302,7 +2302,7 @@ switch(thumbinstr>>6){
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (((thumbinstr>>0x3)&0x7)+0x8), 32,0);
 		
 		#ifdef DEBUGEMU
-		printf("mov rd(%d),hs(%d)[%x] \n",(int)(thumbinstr&0x7),(int)(((thumbinstr>>0x3)&0x7)+0x8),(unsigned int)dummyreg);
+		printf("mov rd(%d),hs(%d)[%x] ",(int)(thumbinstr&0x7),(int)(((thumbinstr>>0x3)&0x7)+0x8),(unsigned int)dummyreg);
 		#endif
 		
 		dummyreg2=movasm(dummyreg);
@@ -2319,7 +2319,7 @@ switch(thumbinstr>>6){
 	case(0x11a):{
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>0x3)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("mov hd%d,rs%d[%x] \n",(int)(((thumbinstr)&0x7)+0x8),(int)(thumbinstr>>0x3)&0x7,(unsigned int)dummyreg);
+		printf("mov hd%d,rs%d[%x] ",(int)(((thumbinstr)&0x7)+0x8),(int)(thumbinstr>>0x3)&0x7,(unsigned int)dummyreg);
 		#endif
 
 		dummyreg2=movasm(dummyreg);
@@ -2336,7 +2336,7 @@ switch(thumbinstr>>6){
 	case(0x11b):{
 		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (((thumbinstr>>0x3)&0x7)+0x8), 32,0);
 		#ifdef DEBUGEMU
-		printf("mov hd(%d),hs(%d)[%x] \n",(int)(((thumbinstr)&0x7)+0x8),(int)(((thumbinstr>>0x3)&0x7)+0x8),(unsigned int)dummyreg);
+		printf("mov hd(%d),hs(%d)[%x] ",(int)(((thumbinstr)&0x7)+0x8),(int)(((thumbinstr>>0x3)&0x7)+0x8),(unsigned int)dummyreg);
 		#endif
 		
 		dummyreg2=movasm(dummyreg);
@@ -2407,7 +2407,7 @@ switch(thumbinstr>>6){
 }
 
 //default:
-//printf("unknown OP! %x\n",thumbinstr>>9); //debug
+//printf("unknown OP! %x",thumbinstr>>9); //debug
 //break;
 
 
@@ -3116,15 +3116,15 @@ if (((arminstr>>26)&3)==0) {
 		}
 		break;
 	}
-	//printf("ARM opcode output %x \n",((arminstr>>20)&0x21));
+	//printf("ARM opcode output %x ",((arminstr>>20)&0x21));
 }
-//printf("s:%d,i:%d \n",setcond_arm,immop_arm);
+//printf("s:%d,i:%d ",setcond_arm,immop_arm);
 
 
 //2 / 2 process ARM opcode by set bits earlier
 if(isalu==1){
 
-//printf("ARM opcode output %x \n",((arminstr>>21)&0xf));
+//printf("ARM opcode output %x ",((arminstr>>21)&0xf));
 	
 	switch((arminstr>>21)&0xf){
 	
@@ -3147,7 +3147,7 @@ if(isalu==1){
 				//rd destination reg	 bit[15]---bit[12]
 				faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("AND rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) \n",
+				printf("AND rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) ",
 				(int)(arminstr>>12)&0xf,(unsigned int)dummyreg3,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(unsigned int)(arminstr&0xff),
@@ -3178,7 +3178,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
@@ -3188,7 +3188,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
@@ -3198,7 +3198,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
@@ -3208,7 +3208,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
@@ -3228,7 +3228,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lslasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSL rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//lsr
@@ -3237,7 +3237,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lsrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//asr
@@ -3246,7 +3246,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=asrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ASR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//ror
@@ -3255,7 +3255,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=rorasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ROR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 				//compatibility: refresh CPU flags when barrel shifter is used
@@ -3267,7 +3267,7 @@ if(isalu==1){
 				//rd destination reg	 bit[15]---bit[12]
 				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("AND rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x] (5.4)\n",
+				printf("AND rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x] (5.4)",
 				(int)(arminstr>>12)&0xf,(unsigned int)dummyreg2,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(int)(arminstr)&0xf,(unsigned int)dummyreg3
@@ -3302,7 +3302,7 @@ if(isalu==1){
 				//rd destination reg	 bit[15]---bit[12]
 				faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("EOR rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) \n",
+				printf("EOR rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) ",
 				(int)(arminstr>>12)&0xf,(unsigned int)dummyreg3,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(unsigned int)(arminstr&0xff),
@@ -3333,7 +3333,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
@@ -3343,7 +3343,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
@@ -3353,7 +3353,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
@@ -3363,7 +3363,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
@@ -3382,7 +3382,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lslasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSL rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//lsr
@@ -3391,7 +3391,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lsrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//asr
@@ -3400,7 +3400,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=asrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ASR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//ror
@@ -3409,7 +3409,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=rorasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ROR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -3421,7 +3421,7 @@ if(isalu==1){
 				//rd destination reg	 bit[15]---bit[12]
 				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("EOR rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x] (5.4)\n",
+				printf("EOR rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x] (5.4)",
 				(int)(arminstr>>12)&0xf,(unsigned int)dummyreg2,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(int)((arminstr)&0xf),(unsigned int)dummyreg3
@@ -3455,7 +3455,7 @@ if(isalu==1){
 				//rd destination reg	 bit[15]---bit[12]
 				faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("SUB rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) \n",
+				printf("SUB rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(unsigned int)(arminstr&0xff),
@@ -3486,7 +3486,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
@@ -3496,7 +3496,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
@@ -3506,7 +3506,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
@@ -3516,7 +3516,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
@@ -3535,7 +3535,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lslasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSL rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//lsr
@@ -3544,7 +3544,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lsrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//asr
@@ -3553,7 +3553,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=asrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ASR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//ror
@@ -3562,7 +3562,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=rorasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ROR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -3574,7 +3574,7 @@ if(isalu==1){
 				//rd destination reg	 bit[15]---bit[12]
 				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("SUB rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x] (5.4)\n",
+				printf("SUB rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x] (5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg2,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(int)((arminstr)&0xf),(unsigned int)dummyreg3
@@ -3608,7 +3608,7 @@ if(isalu==1){
 				//rd destination reg	 bit[15]---bit[12]
 				faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("RSB rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) \n",
+				printf("RSB rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(unsigned int)(arminstr&0xff),
@@ -3638,7 +3638,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
@@ -3648,7 +3648,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
@@ -3658,7 +3658,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
@@ -3668,7 +3668,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
@@ -3687,7 +3687,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lslasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSL rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//lsr
@@ -3696,7 +3696,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lsrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//asr
@@ -3705,7 +3705,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=asrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ASR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//ror
@@ -3714,7 +3714,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=rorasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ROR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -3726,7 +3726,7 @@ if(isalu==1){
 				//rd destination reg	 bit[15]---bit[12]
 				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("RSB rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x] (5.4)\n",
+				printf("RSB rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x] (5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg2,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(int)((arminstr)&0xf),(unsigned int)dummyreg3
@@ -3798,7 +3798,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d),rs(%x)[%x] \n",(int)dummyreg3,(int)((dummyreg2>>4)&0xf),(int)dummyreg4);
+						printf("LSL rm(%d),rs(%x)[%x] ",(int)dummyreg3,(int)((dummyreg2>>4)&0xf),(int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
@@ -3808,7 +3808,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4,gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d),rs(%d)[%x] \n",(int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%d),rs(%d)[%x] ",(int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
@@ -3818,7 +3818,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d),rs(%d)[%x] \n",(int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%d),rs(%d)[%x] ",(int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
@@ -3828,7 +3828,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d),rs(%d)[%x] \n",(int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%d),rs(%d)[%x] ",(int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
@@ -3847,7 +3847,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lslasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSL rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//lsr
@@ -3856,7 +3856,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lsrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//asr
@@ -3865,7 +3865,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=asrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ASR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//ror
@@ -3874,7 +3874,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=rorasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ROR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -3906,7 +3906,7 @@ if(isalu==1){
 				gbavirtreg_cpu[(arminstr>>12)&0xf]=dummyreg3;
 				
 				#ifdef DEBUGEMU
-				printf("ADD rd(%d)<-rn(%d)[%x],rm(%d)[%x] (5.4)\n",
+				printf("ADD rd(%d)<-rn(%d)[%x],rm(%d)[%x] (5.4)",
 				(int)((arminstr>>12)&0xf),
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(int)((arminstr)&0xf),(unsigned int)dummyreg3
@@ -3937,7 +3937,7 @@ if(isalu==1){
 				//rd destination reg	 bit[15]---bit[12]
 				faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("ADC rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) \n",
+				printf("ADC rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(unsigned int)(arminstr&0xff),
@@ -3968,7 +3968,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
@@ -3978,7 +3978,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
@@ -3988,7 +3988,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
@@ -3998,7 +3998,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
@@ -4017,7 +4017,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lslasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSL rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//lsr
@@ -4026,7 +4026,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lsrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//asr
@@ -4035,7 +4035,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=asrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ASR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//ror
@@ -4044,7 +4044,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=rorasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ROR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -4056,7 +4056,7 @@ if(isalu==1){
 				//rd destination reg	 bit[15]---bit[12]
 				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("ADC rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)\n",
+				printf("ADC rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg2,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(int)((arminstr)&0xf),(unsigned int)dummyreg3
@@ -4067,7 +4067,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf("\n CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",cpsrvirt);
 		return 0;
 		}
 		break;
@@ -4091,7 +4091,7 @@ if(isalu==1){
 				//rd destination reg	 bit[15]---bit[12]
 				faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("SBC rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x]) (5.4) \n",
+				printf("SBC rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(unsigned int)(arminstr&0xff),
@@ -4122,7 +4122,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
@@ -4132,7 +4132,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4,gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
@@ -4142,7 +4142,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
@@ -4152,7 +4152,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
@@ -4171,7 +4171,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lslasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSL rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//lsr
@@ -4180,7 +4180,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lsrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//asr
@@ -4189,7 +4189,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=asrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ASR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//ror
@@ -4198,7 +4198,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=rorasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ROR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -4210,7 +4210,7 @@ if(isalu==1){
 				//rd destination reg	 bit[15]---bit[12]
 				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("SBC rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)\n",
+				printf("SBC rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg2,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(unsigned int)((arminstr)&0xf),(unsigned int)dummyreg3
@@ -4221,7 +4221,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf("\n CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",cpsrvirt);
 		return 0;
 		}
 		break;
@@ -4245,7 +4245,7 @@ if(isalu==1){
 				//rd destination reg	 bit[15]---bit[12]
 				faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("RSC rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x]) (5.4) \n",
+				printf("RSC rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(unsigned int)(arminstr&0xff),
@@ -4276,7 +4276,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
@@ -4286,7 +4286,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
@@ -4296,7 +4296,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
@@ -4306,7 +4306,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%x),rs(%x)[%x] \n",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
@@ -4325,7 +4325,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lslasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSL rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//lsr
@@ -4334,7 +4334,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lsrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//asr
@@ -4343,7 +4343,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=asrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ASR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//ror
@@ -4352,7 +4352,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=rorasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm[%x],#imm[%x] \n",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ROR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -4364,7 +4364,7 @@ if(isalu==1){
 				//rd destination reg	 bit[15]---bit[12]
 				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("RSC rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)\n",
+				printf("RSC rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg2,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(int)((arminstr)&0xf),(unsigned int)dummyreg3
@@ -4375,7 +4375,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf("\n CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",cpsrvirt);
 		return 0;
 		}
 		break;
@@ -4396,7 +4396,7 @@ if(isalu==1){
 			
 				dummyreg3=tstasm(dummyreg,dummyreg2);
 				#ifdef DEBUGEMU
-				printf("TST [and] rn%d[%x],#Imm[%x](ror:%x[%x]) (5.4) \n",
+				printf("TST [and] rn%d[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(unsigned int)(arminstr&0xff),
 				(unsigned int)(2*((arminstr>>8)&0xf)),(unsigned int)dummyreg2
@@ -4426,7 +4426,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
@@ -4436,7 +4436,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
@@ -4446,7 +4446,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
@@ -4456,7 +4456,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
@@ -4475,7 +4475,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lslasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//lsr
@@ -4484,7 +4484,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lsrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//asr
@@ -4493,7 +4493,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=asrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//ror
@@ -4502,7 +4502,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=rorasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -4512,7 +4512,7 @@ if(isalu==1){
 				//op 1 opc op 2
 				dummyreg2=tstasm(dummyreg,dummyreg3);
 				#ifdef DEBUGEMU
-				printf("TST [%x]<-rn(%d)[%x],rm(%d)[%x](5.4)\n",
+				printf("TST [%x]<-rn(%d)[%x],rm(%d)[%x](5.4)",
 				(unsigned int)dummyreg2,
 				(int)((arminstr>>16)&0xf),(unsigned)dummyreg,
 				(int)((arminstr)&0xf),(unsigned int)dummyreg3
@@ -4523,7 +4523,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf("\n CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",cpsrvirt);
 		return 0;
 		}
 		break;
@@ -4544,7 +4544,7 @@ if(isalu==1){
 			
 				dummyreg2=teqasm(dummyreg,dummyreg2);
 				#ifdef DEBUGEMU
-				printf("TEQ rn%d[%x],#Imm[%x](ror:%x[%x]) (5.4) \n",
+				printf("TEQ rn%d[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(unsigned int)(arminstr&0xff),
 				(unsigned int)(2*((arminstr>>8)&0xf)),(unsigned int)dummyreg2
@@ -4574,7 +4574,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
@@ -4584,7 +4584,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
@@ -4594,7 +4594,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
@@ -4604,7 +4604,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
@@ -4623,7 +4623,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lslasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//lsr
@@ -4632,7 +4632,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lsrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//asr
@@ -4641,7 +4641,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=asrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//ror
@@ -4650,7 +4650,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=rorasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -4659,7 +4659,7 @@ if(isalu==1){
 				//op 1 opc op 2
 				teqasm(dummyreg,dummyreg3);
 				#ifdef DEBUGEMU
-				printf("TEQ rn(%d)[%x],rm(%d)[%x](5.4)\n",
+				printf("TEQ rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(int)((arminstr)&0xf),(unsigned int)dummyreg3
 				);
@@ -4669,7 +4669,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf("\n CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",cpsrvirt);
 		return 0;
 		}
 		break;
@@ -4690,7 +4690,7 @@ if(isalu==1){
 			
 				cmpasm(dummyreg,dummyreg2);
 				#ifdef DEBUGEMU
-				printf("CMP rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) \n",
+				printf("CMP rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(unsigned int)(arminstr&0xff),
 				(unsigned int)(2*((arminstr>>8)&0xf)),(unsigned int)dummyreg2
@@ -4720,7 +4720,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
@@ -4730,7 +4730,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
@@ -4740,7 +4740,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
@@ -4750,7 +4750,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
@@ -4769,7 +4769,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lslasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//lsr
@@ -4778,7 +4778,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lsrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//asr
@@ -4787,7 +4787,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=asrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//ror
@@ -4796,7 +4796,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=rorasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -4805,7 +4805,7 @@ if(isalu==1){
 				//op 1 opc op 2
 				cmpasm(dummyreg,dummyreg3);
 				#ifdef DEBUGEMU
-				printf("CMP rn(%d)[%x],rm(%d)[%x](5.4)\n",
+				printf("CMP rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(int)((arminstr)&0xf),(unsigned int)dummyreg3
 				);
@@ -4815,7 +4815,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf("\n CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",cpsrvirt);
 		return 0;
 		}
 		break;
@@ -4836,7 +4836,7 @@ if(isalu==1){
 			
 				cmnasm(dummyreg,dummyreg2);
 				#ifdef DEBUGEMU
-				printf("CMN rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) \n",
+				printf("CMN rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(unsigned int)(arminstr&0xff),
 				(unsigned int)(2*((arminstr>>8)&0xf)),(unsigned int)dummyreg2
@@ -4866,7 +4866,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
@@ -4876,7 +4876,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
@@ -4886,7 +4886,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
@@ -4896,7 +4896,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
@@ -4915,7 +4915,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lslasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//lsr
@@ -4924,7 +4924,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lsrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//asr
@@ -4933,7 +4933,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=asrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//ror
@@ -4942,7 +4942,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=rorasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -4952,7 +4952,7 @@ if(isalu==1){
 				//op 1 opc op 2
 				cmnasm(dummyreg,dummyreg3);
 				#ifdef DEBUGEMU
-				printf("CMN rn(%d)[%x],rm(%d)[%x](5.4)\n",
+				printf("CMN rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(int)((arminstr)&0xf),(unsigned int)dummyreg3
 				);
@@ -4962,7 +4962,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf("\n CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",cpsrvirt);
 		return 0;
 		}
 		break;
@@ -4986,7 +4986,7 @@ if(isalu==1){
 				//rd destination reg	 bit[15]---bit[12]
 				faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("ORR rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) \n",
+				printf("ORR rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(unsigned int)(arminstr&0xff),
@@ -5017,7 +5017,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
@@ -5027,7 +5027,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
@@ -5037,7 +5037,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
@@ -5047,7 +5047,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
@@ -5066,7 +5066,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lslasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//lsr
@@ -5075,7 +5075,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lsrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//asr
@@ -5084,7 +5084,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=asrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//ror
@@ -5093,7 +5093,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=rorasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -5105,7 +5105,7 @@ if(isalu==1){
 				//rd destination reg	 bit[15]---bit[12]
 				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("ORR rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)\n",
+				printf("ORR rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg2,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(int)((arminstr)&0xf),(unsigned int)dummyreg3
@@ -5116,7 +5116,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf("\n CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",cpsrvirt);
 		return 0;
 		}
 		break;
@@ -5137,7 +5137,7 @@ if(isalu==1){
 				
 				dummyreg=movasm(dummyreg2);
 				#ifdef DEBUGEMU
-				printf("MOV rn(%d)[%x],#Imm[%x] (ror:%x[%x])(5.4) \n",
+				printf("MOV rn(%d)[%x],#Imm[%x] (ror:%x[%x])(5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg,
 				(unsigned int)(arminstr&0xff),
 				(unsigned int)(2*((arminstr>>8)&0xf)),(unsigned int)dummyreg2
@@ -5169,7 +5169,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
@@ -5179,7 +5179,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
@@ -5189,7 +5189,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
@@ -5199,7 +5199,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
@@ -5218,7 +5218,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lslasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//lsr
@@ -5227,7 +5227,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lsrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//asr
@@ -5236,7 +5236,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=asrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//ror
@@ -5245,7 +5245,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=rorasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -5261,7 +5261,7 @@ if(isalu==1){
 				//rd (1st op reg) 		 bit[19]---bit[16] 
 				faststr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("MOV rd(%x)[%x],rm(%d)[%x] (5.4)\n",
+				printf("MOV rd(%x)[%x],rm(%d)[%x] (5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg,
 				(int)((arminstr)&0xf),(unsigned int)dummyreg3
 				);
@@ -5269,7 +5269,7 @@ if(isalu==1){
 				//check for S bit here and update (virt<-asm) processor flags
 				if(setcond_arm==1)
 					updatecpuflags(0,cpsrasm,0x0);
-					//printf("\n CPSR:%x",cpsrvirt);
+					//printf(" CPSR:%x",cpsrvirt);
 			}
 		return 0;
 		}
@@ -5294,7 +5294,7 @@ if(isalu==1){
 				//rd destination reg	 bit[15]---bit[12]
 				faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("BIC rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) \n",
+				printf("BIC rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(unsigned int)(arminstr&0xff),
@@ -5325,7 +5325,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
@@ -5335,7 +5335,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
@@ -5345,7 +5345,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
@@ -5355,7 +5355,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
@@ -5374,7 +5374,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lslasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//lsr
@@ -5383,7 +5383,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lsrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//asr
@@ -5392,7 +5392,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=asrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//ror
@@ -5401,7 +5401,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=rorasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -5413,7 +5413,7 @@ if(isalu==1){
 				//rd destination reg	 bit[15]---bit[12]
 				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("BIC rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)\n",
+				printf("BIC rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg2,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(int)((arminstr)&0xf),(unsigned int)dummyreg3
@@ -5424,7 +5424,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf("\n CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",cpsrvirt);
 		return 0;
 		}
 		break;
@@ -5445,7 +5445,7 @@ if(isalu==1){
 			
 				dummyreg=mvnasm(dummyreg2);
 				#ifdef DEBUGEMU
-				printf("MVN rn(%d)[%x],#Imm[%x] (ror:%x[%x])(5.4) \n",
+				printf("MVN rn(%d)[%x],#Imm[%x] (ror:%x[%x])(5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg,
 				(unsigned int)(arminstr&0xff),
 				(int)(2*((arminstr>>8)&0xf)),(unsigned int)dummyreg2
@@ -5477,7 +5477,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
@@ -5487,7 +5487,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
@@ -5497,7 +5497,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
@@ -5507,7 +5507,7 @@ if(isalu==1){
 						//rs loaded into dr4
 						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],rs(%d)[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
 						//least signif byte (rs) used opc rm,rs
 						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
@@ -5526,7 +5526,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lslasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//lsr
@@ -5535,7 +5535,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=lsrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//asr
@@ -5544,7 +5544,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=asrasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//ror
@@ -5553,7 +5553,7 @@ if(isalu==1){
 						dummyreg4=dummyreg3;
 						dummyreg3=rorasm(dummyreg3,(dummyreg2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
+						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -5565,7 +5565,7 @@ if(isalu==1){
 				//rd (1st op reg) 		 bit[19]---bit[16] 
 				faststr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
-				printf("MVN rd(%d)[%x],rm(%d)[%x] (5.4)\n",
+				printf("MVN rd(%d)[%x],rm(%d)[%x] (5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg,
 				(int)((arminstr)&0xf),(unsigned int)dummyreg3
 				);
@@ -5575,7 +5575,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf("\n CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",cpsrvirt);
 		return 0;
 		}
 		break;
@@ -5596,7 +5596,7 @@ switch((arminstr>>16)&0x3f){
 	//so read, modify , write should be employed
 	
 	case(0xf):{ 		//MRS (transfer PSR to register)
-		//printf("MRS (transf PSR to reg!) \n");
+		//printf("MRS (transf PSR to reg!) ");
 		
 		//source PSR is: CPSR & save cond flags
 		if( ((dummyreg2=((arminstr>>22)&0x3ff)) &0x1) == 0){
@@ -5617,7 +5617,7 @@ switch((arminstr>>16)&0x3f){
 	break;
 	
 	case(0x29):{ 	//MSR (transfer reg content to PSR)
-		//printf("MSR (transf reg to PSR!) \n");
+		//printf("MSR (transf reg to PSR!) ");
 		//CPSR
 		if( ((dummyreg2=((arminstr>>22)&0x3ff)) &0x1) == 0){
 			fastldr((u8*)&dummyreg, gbavirtreg_cpu, (arminstr&0xf), 32,0);
@@ -5647,7 +5647,7 @@ switch((arminstr>>16)&0x3f){
 	break;
 	
 	case(0x28):{ 	//MSR (transfer reg content or #imm to PSR flag bits)
-		//printf("MRS (transf reg or #imm to PSR flag bits!) \n");
+		//printf("MRS (transf reg or #imm to PSR flag bits!) ");
 		
 		//CPSR
 		if( ((dummyreg2=((arminstr>>22)&0x3ff)) &0x1) == 0){
@@ -5658,7 +5658,7 @@ switch((arminstr>>16)&0x3f){
 				//dummy PSR
 				dummyreg&=0xf90f03ff; //important PSR bits
 				#ifdef DEBUGEMU
-				printf("CPSR restore from rd(%d)!:%x \n",(int)(arminstr&0xf),(unsigned int)dummyreg);
+				printf("CPSR restore from rd(%d)!:%x ",(int)(arminstr&0xf),(unsigned int)dummyreg);
 				#endif
 				cpsrvirt=dummyreg;
 			}
@@ -5670,7 +5670,7 @@ switch((arminstr>>16)&0x3f){
 				//to rotate right by twice the value in rotate field:
 				dummyreg2 = (2*((arminstr>>8)&0xf)); 
 				dummyreg2=rorasm((arminstr&0xff),dummyreg2);
-				//printf("CPSR restore from #imm!:%x \n",dummyreg2);
+				//printf("CPSR restore from #imm!:%x ",dummyreg2);
 				cpsrvirt=dummyreg2;
 			}
 		
@@ -5684,7 +5684,7 @@ switch((arminstr>>16)&0x3f){
 				//dummy PSR
 				dummyreg&=0xf90f03ff; //important PSR bits
 				#ifdef DEBUGEMU
-				printf("SPSR restore from rd(%d)!:%x \n ",(int)(arminstr&0xf),(unsigned int)dummyreg);
+				printf("SPSR restore from rd(%d)!:%x  ",(int)(arminstr&0xf),(unsigned int)dummyreg);
 				#endif
 				spsr_last=dummyreg;
 			}
@@ -5697,7 +5697,7 @@ switch((arminstr>>16)&0x3f){
 				dummyreg2 = (2*((arminstr>>8)&0xf)); 
 				dummyreg2=rorasm((arminstr&0xff),dummyreg2);
 				#ifdef DEBUGEMU
-				printf("SPSR restore from #imm!:%x \n",(unsigned int)dummyreg2);
+				printf("SPSR restore from #imm!:%x ",(unsigned int)dummyreg2);
 				#endif
 				spsr_last=dummyreg2;
 			}
@@ -5726,7 +5726,7 @@ switch((arminstr>>16)&0x3f){
 //take bit[27] ... bit[22] & 0 and bit[4] ... bit[0] = 9 for MUL opc 
 switch( ((arminstr>>22)&0x3f) + ((arminstr>>4)&0xf) ){
 	case(0x9):{
-		//printf("MUL/MLA opcode! (5.6)\n");
+		//printf("MUL/MLA opcode! (5.6)");
 		switch((arminstr>>20)&0x3){
 			//btw: rn is ignored as whole
 			//multiply only & dont alter CPSR cpu flags
@@ -5865,7 +5865,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 			//rm (operand 2 )		 bit[11]---bit[0]
 			fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((arminstr)&0xf), 32,0);
 			
-			//printf("rm%d(%x) \n",((arminstr)&0xf),dummyreg4);
+			//printf("rm%d(%x) ",((arminstr)&0xf),dummyreg4);
 			
 			//(currently at: shift field) rs shift opcode to Rm
 			if( ((dummyreg5=((arminstr>>4)&0xff)) &0x1) == 1){
@@ -5875,7 +5875,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 					//rs loaded
 					fastldr((u8*)&gbachunk, gbavirtreg_cpu, ((dummyreg5>>4)&0xf), 32,0); 
 					#ifdef DEBUGEMU
-					printf("LSL rm(%d),rs(%d)[%x] \n",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)gbachunk);
+					printf("LSL rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)gbachunk);
 					#endif
 					//least signif byte (rs) uses: opcode rm,rs
 					dummyreg4=lslasm(dummyreg4,(gbachunk&0xff));
@@ -5885,7 +5885,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 					//rs loaded
 					fastldr((u8*)&gbachunk, gbavirtreg_cpu, ((dummyreg5>>4)&0xf), 32,0); 
 					#ifdef DEBUGEMU
-					printf("LSR rm(%d),rs(%d)[%x] \n",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)gbachunk);
+					printf("LSR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)gbachunk);
 					#endif
 					//least signif byte (rs) uses: opcode rm,rs
 					dummyreg4=lsrasm(dummyreg4,(gbachunk&0xff));
@@ -5895,7 +5895,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 					//rs loaded
 					fastldr((u8*)&gbachunk, gbavirtreg_cpu, ((dummyreg5>>4)&0xf), 32,0); 
 					#ifdef DEBUGEMU
-					printf("ASR rm(%d),rs(%d)[%x] \n",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)gbachunk);
+					printf("ASR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)gbachunk);
 					#endif
 					//least signif byte (rs) uses: opcode rm,rs
 					dummyreg4=asrasm(dummyreg4,(gbachunk&0xff));
@@ -5905,7 +5905,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 					//rs loaded
 					fastldr((u8*)&gbachunk, gbavirtreg_cpu, ((dummyreg5>>4)&0xf), 32,0); 
 					#ifdef DEBUGEMU
-					printf("ROR rm(%d),rs(%d)[%x] \n",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)gbachunk);
+					printf("ROR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)gbachunk);
 					#endif
 					//least signif byte (rs) uses: opcode rm,rs
 					dummyreg4=rorasm(dummyreg4,(gbachunk&0xff));
@@ -5923,7 +5923,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 					//bit[11]---bit[7] #Imm used opc rm,#Imm
 					dummyreg4=lslasm(dummyreg4,((dummyreg5>>3)&0x1f));
 					#ifdef DEBUGEMU
-					printf("LSL rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg5>>3)&0x1f));
+					printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg5>>3)&0x1f));
 					#endif
 				}
 				//lsr
@@ -5931,7 +5931,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 					//bit[11]---bit[7] #Imm used opc rm,#Imm
 					dummyreg4=lsrasm(dummyreg4,((dummyreg5>>3)&0x1f));
 					#ifdef DEBUGEMU
-					printf("LSR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg5>>3)&0x1f));
+					printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg5>>3)&0x1f));
 					#endif
 				}
 				//asr
@@ -5939,7 +5939,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 					//bit[11]---bit[7] #Imm used opc rm,#Imm
 					dummyreg4=asrasm(dummyreg4,((dummyreg5>>3)&0x1f));
 					#ifdef DEBUGEMU
-					printf("ASR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg5>>3)&0x1f));
+					printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg5>>3)&0x1f));
 					#endif
 				}
 				//ror
@@ -5947,7 +5947,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 					//bit[11]---bit[7] #Imm used opc rm,#Imm
 					dummyreg4=rorasm(dummyreg4,((dummyreg5>>3)&0x1f));
 					#ifdef DEBUGEMU
-					printf("ROR rm(%d)[%x],#imm[%x] \n",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg5>>3)&0x1f));
+					printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((dummyreg5>>3)&0x1f));
 					#endif
 				}
 			//compatibility: refresh CPU flags when barrel shifter is used
@@ -5960,7 +5960,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 			//#Imm value (operand 2)		 bit[11]---bit[0]
 			dummyreg4=(arminstr&0xfff);
 			#ifdef DEBUGEMU
-			printf(" #Imm(0x%x) \n",(unsigned int)dummyreg4);			
+			printf(" #Imm(0x%x) ",(unsigned int)dummyreg4);			
 			#endif
 			
 		}
@@ -5982,7 +5982,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 			dummyreg|= (1<<1);
 			
 			#ifdef DEBUGEMU
-			printf("pre-indexed bit! \n");
+			printf("pre-indexed bit! ");
 			#endif
 		}
 		
@@ -6008,7 +6008,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 					//store RD into [Rn,#Imm]
 					cpuwrite_byte(dummyreg3,(dummyreg2&0xff));
 					#ifdef DEBUGEMU
-						printf("ARM:5.7 trying STRB rd(%d), [b:rn(%d)[%x],xxx] (5.9) \n",(int)((arminstr>>12)&0xf),(int)((arminstr>>16)&0xf),(unsigned int)dummyreg3);
+						printf("ARM:5.7 trying STRB rd(%d), [b:rn(%d)[%x],xxx] (5.9) ",(int)((arminstr>>12)&0xf),(int)((arminstr>>16)&0xf),(unsigned int)dummyreg3);
 					#endif
 				}
 				//transfer word quantity
@@ -6016,7 +6016,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 					//store RD into [RB,#Imm]
 					cpuwrite_word(dummyreg3,dummyreg2);
 					#ifdef DEBUGEMU
-						printf("ARM:5.7 trying to STR rd(%d), [b:rn(%d)[%x],xxx] (5.9)\n",(int)((arminstr>>12)&0xf),(int)((arminstr>>16)&0xf),(unsigned int)dummyreg3);
+						printf("ARM:5.7 trying to STR rd(%d), [b:rn(%d)[%x],xxx] (5.9)",(int)((arminstr>>12)&0xf),(int)((arminstr>>16)&0xf),(unsigned int)dummyreg3);
 					#endif
 				}
 			}
@@ -6030,7 +6030,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 					dummyreg2=cpuread_byte(dummyreg3);
 					
 					#ifdef DEBUGEMU
-						printf("\n GBA LDRB rd(%d)[%x], [#0x%x] (5.9)\n",
+						printf(" GBA LDRB rd(%d)[%x], [#0x%x] (5.9)",
 						(int)((arminstr>>12)&0xf),(unsigned int)dummyreg2,(unsigned int)(dummyreg3));
 					#endif
 					faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
@@ -6042,7 +6042,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 					dummyreg2=cpuread_word(dummyreg3);
 					
 					#ifdef DEBUGEMU
-						printf("\n GBA LDR rd(%d)[%x], [#0x%x] (5.9)\n",
+						printf(" GBA LDR rd(%d)[%x], [#0x%x] (5.9)",
 						(int)((arminstr>>12)&0xf),(unsigned int)dummyreg2,(unsigned int)(dummyreg3));
 					#endif
 					faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
@@ -6082,7 +6082,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 			else{
 				//transfer byte quantity
 				if((dummyreg&0x4)==0x4){
-					//printf("\n LDRB #imm");
+					//printf(" LDRB #imm");
 					//dummyreg2=((arminstr&0xfff)); //dummyreg4 already has this
 					
 					/* //old: because we use r15 and fetch directly from faststr/fastldr
@@ -6203,7 +6203,7 @@ switch( ( (dummyreg=((arminstr>>20)&0xff)) & 0x80)  ){
 		//STM
 		if((dummyreg&0x1)==0x0){
 			#ifdef DEBUGEMU
-			printf("STMIA r(%d)[%x], {R: %d %d %d %d %d %d %d %x \n %d %d %d %d %d %d %d %d } \n",
+			printf("STMIA r(%d)[%x], {R: %d %d %d %d %d %d %d %x  %d %d %d %d %d %d %d %d } ",
 			(int)((arminstr>>16)&0xf),
 			(unsigned int)dummyreg3,
 			
@@ -6272,7 +6272,7 @@ switch( ( (dummyreg=((arminstr>>20)&0xff)) & 0x80)  ){
 		//LDM
 		else{
 			#ifdef DEBUGEMU
-			printf("LDMIA rd(%d)[%x], {R: %d %d %d %d %d %d %d %x \n %d %d %d %d %d %d %d %d } \n",
+			printf("LDMIA rd(%d)[%x], {R: %d %d %d %d %d %d %d %x  %d %d %d %d %d %d %d %d } ",
 			(int)((arminstr>>16)&0xf),
 			(unsigned int)dummyreg3,
 			
@@ -6342,7 +6342,7 @@ switch( ( (dummyreg=((arminstr>>20)&0xff)) & 0x80)  ){
 		if((dummyreg&0x10)==0x0){
 			dummyreg|=0x2; //forces the writeback post indexed base
 			#ifdef DEBUGEMU
-			printf("post indexed (default)! \n");
+			printf("post indexed (default)! ");
 			#endif
 		}
 		
@@ -6364,7 +6364,7 @@ switch( ( (dummyreg=((arminstr>>20)&0xff)) & 0x80)  ){
 			faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
 			
 			#ifdef DEBUGEMU
-			printf(" updated addr: %x / Bytes workd onto stack: %x \n", (unsigned int)dummyreg3,((lutu32bitcnt(arminstr&0xffff))*4));
+			printf(" updated addr: %x / Bytes workd onto stack: %x ", (unsigned int)dummyreg3,((lutu32bitcnt(arminstr&0xffff))*4));
 			#endif
 		}
 		//else: don't write-back address into base
@@ -6397,35 +6397,35 @@ switch( ( (dummyreg=(arminstr)) & 0x1000090)  ){
 		
 		//swap byte
 		if(dummyreg & (1<<22)){
-			//printf("byte quantity!\n");
+			//printf("byte quantity!");
 			//[rn]->rd
 			//deprecated:dummyreg3=ldru8extasm(dummyreg2,0x0);
 			dummyreg3=cpuread_byte(dummyreg2);
 			faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((dummyreg>>12)&0xf), 32,0);
 			#ifdef DEBUGEMU
-			printf("SWPB 1/2 [rn(%d):%x]->rd(%d)[%x] \n",(int)((dummyreg>>16)&0xf),(unsigned int)dummyreg2,(int)((dummyreg>>12)&0xf),(unsigned int)dummyreg3);
+			printf("SWPB 1/2 [rn(%d):%x]->rd(%d)[%x] ",(int)((dummyreg>>16)&0xf),(unsigned int)dummyreg2,(int)((dummyreg>>12)&0xf),(unsigned int)dummyreg3);
 			#endif
 			//rm->[rn]
 			//deprecated:stru8asm(dummyreg2,0x0,dummyreg4);
 			cpuwrite_byte(dummyreg2,dummyreg4&0xff);
 			#ifdef DEBUGEMU
-			printf("SWPB 2/2 rm(%d):[%x]->[rn(%d):[%x]] \n",(int)((dummyreg)&0xf),(unsigned int)(dummyreg4&0xff),(int)((dummyreg>>16)&0xf),(unsigned int)dummyreg2);
+			printf("SWPB 2/2 rm(%d):[%x]->[rn(%d):[%x]] ",(int)((dummyreg)&0xf),(unsigned int)(dummyreg4&0xff),(int)((dummyreg>>16)&0xf),(unsigned int)dummyreg2);
 			#endif
 		}
 		else{
-			//printf("word quantity!\n");
+			//printf("word quantity!");
 			//[rn]->rd
 			//deprecated:dummyreg3=ldru32extasm(dummyreg2,0x0);
 			dummyreg3=cpuread_word(dummyreg2);
 			faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((dummyreg>>12)&0xf), 32,0);
 			#ifdef DEBUGEMU
-			printf("SWP 1/2 rm(%d):[%x]->[rn(%d):[%x]] \n",(int)((dummyreg)&0xf),(unsigned int)(dummyreg4&0xff),(int)((dummyreg>>16)&0xf),(unsigned int)dummyreg2);
+			printf("SWP 1/2 rm(%d):[%x]->[rn(%d):[%x]] ",(int)((dummyreg)&0xf),(unsigned int)(dummyreg4&0xff),(int)((dummyreg>>16)&0xf),(unsigned int)dummyreg2);
 			#endif
 			//rm->[rn]
 			//deprecated:stru32asm(dummyreg2,0x0,dummyreg4);
 			cpuwrite_word(dummyreg2,dummyreg4);
 			#ifdef DEBUGEMU
-			printf("SWP 2/2 rm(%d):[%x]->[rn(%d):[%x]] \n",(int)((dummyreg)&0xf),(unsigned int)(dummyreg4&0xff),(int)((dummyreg>>16)&0xf),(unsigned int)dummyreg2);
+			printf("SWP 2/2 rm(%d):[%x]->[rn(%d):[%x]] ",(int)((dummyreg)&0xf),(unsigned int)(dummyreg4&0xff),(int)((dummyreg>>16)&0xf),(unsigned int)dummyreg2);
 			#endif
 		}
 		
@@ -6442,7 +6442,7 @@ switch( (arminstr) & 0xf000000 ){
 		//Enter SVC<mode>
 		//updatecpuflags(1,cpsrvirt,0x13);
 		
-		//printf("CPSR(entrymode):%x \n",cpsrvirt&0x1f);
+		//printf("CPSR(entrymode):%x ",cpsrvirt&0x1f);
 		//#ifdef DEBUGEMU
 		//printf("[ARM] swi call #0x%x! (5.10)",arminstr&0xffffff);
 		//#endif
@@ -6451,7 +6451,7 @@ switch( (arminstr) & 0xf000000 ){
 		//Restore CPU<mode>
 		//updatecpuflags(1,cpsrvirt,spsr_last&0x1F);
 		
-		//printf("CPSR(restoremode):%x \n",cpsrvirt&0x1f);
+		//printf("CPSR(restoremode):%x ",cpsrvirt&0x1f);
 		
 		//restore correct SPSR
 		//spsr_last=spsr_old;
@@ -6471,9 +6471,9 @@ switch( (arminstr) & 0xf000000 ){
 		
 		updatecpuflags(1,cpsrvirt,0x13);
 		
-		//printf("CPSR(entrymode):%x \n",cpsrvirt&0x1f);
+		//printf("CPSR(entrymode):%x ",cpsrvirt&0x1f);
 		
-		//printf("SWI #0x%x / CPSR: %x(5.17)\n",(thumbinstr&0xff),cpsrvirt);
+		//printf("SWI #0x%x / CPSR: %x(5.17)",(thumbinstr&0xff),cpsrvirt);
 		swi_virt(arminstr&0xffffff);
 		
 		gbavirtreg_cpu[0xe] = rom - (armstate ? 4 : 2);

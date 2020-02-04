@@ -26,15 +26,13 @@ extern unsigned int __ewram_end;
 //__sp_usr	=	__sp_irq - 0x400;
 //__sp_abort	=	__sp_usr - 0x400;
 
-extern u32 SPswi __attribute__((section(".vectors")));
-extern u32 SPirq __attribute__((section(".vectors")));
-extern u32 SPusr __attribute__((section(".vectors")));
-extern u32 SPdabt __attribute__((section(".vectors")));
+extern u32 SPswi;
+extern u32 SPirq;
+extern u32 SPusr;
+extern u32 SPdabt;
 
-//DTCM TOP full memory
-extern u32 dtcm_top_ld __attribute__((section(".vectors")));
 //DTCM TOP reserved by compiler/user memory
-extern u32 dtcm_end_alloced __attribute__((section(".dtcm")));
+extern u32 dtcm_end_alloced;
 
 
 typedef int (*intfuncptr)();
@@ -53,7 +51,7 @@ extern u32 PATCH_ENTRYPOINT[4];
 //r0: new_instruction / r1: cpsr
 //arg1 is cpsr <new mode> inter from branch calls, execute then send curr_cpsr back
 extern u32 emulatorgba();	
-extern char temppath[255 * 2];
+extern char filepath[255 * 2];
 extern char biospath[255 * 2];
 extern char savepath[255 * 2];
 extern char patchpath[255 * 2];

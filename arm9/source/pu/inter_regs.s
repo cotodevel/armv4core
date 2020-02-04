@@ -38,9 +38,6 @@ SPusr:
 SPdabt:
 .word __sp_abort
 
-.global dtcm_top_ld
-dtcm_top_ld:
-.word __dtcm_top
 
 @---------------------------------------reset code----------------------------------
 .global rststack
