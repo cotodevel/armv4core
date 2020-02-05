@@ -310,7 +310,7 @@ int main(int _argc, sint8 **_argv) {
 	//IEBACKUP = 0;
 
 	//bios calls (flush) destroyed sp13 for usr mode
-	exRegs[0xd]=gbavirtreg_r13usr[0];
+	exRegs[0xd]=exRegs_r13usr[0];
 	  
 	//Set CPSR virtualized bits & perform USR/SYS CPU mode change. & set stacks
 	updatecpuflags(1,cpsrvirt,0x10);
@@ -430,28 +430,28 @@ int main(int _argc, sint8 **_argv) {
 
 			//c07000-1:  usr/sys  _ c17100-6: fiq _ c27200-1: irq _ c37300-1: svc _ c47400-1: abt _ c57500-1: und
 
-			gbavirtreg_r13usr[0]=0xc07000;
-			gbavirtreg_r14usr[0]=0xc07001;
+			exRegs_r13usr[0]=0xc07000;
+			exRegs_r14usr[0]=0xc07001;
 
-			gbavirtreg_r13fiq[0]=0xc17100;
-			gbavirtreg_r14fiq[0]=0xc17101;
+			exRegs_r13fiq[0]=0xc17100;
+			exRegs_r14fiq[0]=0xc17101;
 			exRegs_fiq[0x0]=0xc171002;
 			exRegs_fiq[0x1]=0xc171003;
 			exRegs_fiq[0x2]=0xc171004;
 			exRegs_fiq[0x3]=0xc171005;
 			exRegs_fiq[0x4]=0xc171006;
 
-			gbavirtreg_r13irq[0]=0xc27200;
-			gbavirtreg_r14irq[0]=0xc27201;
+			exRegs_r13irq[0]=0xc27200;
+			exRegs_r14irq[0]=0xc27201;
 
-			gbavirtreg_r13svc[0]=0xc37300;
-			gbavirtreg_r14svc[0]=0xc37301;
+			exRegs_r13svc[0]=0xc37300;
+			exRegs_r14svc[0]=0xc37301;
 
-			gbavirtreg_r13abt[0]=0xc47400;
-			gbavirtreg_r14abt[0]=0xc47401;
+			exRegs_r13abt[0]=0xc47400;
+			exRegs_r14abt[0]=0xc47401;
 
-			gbavirtreg_r13und[0]=0xc57500;
-			gbavirtreg_r14und[0]=0xc57501;
+			exRegs_r13und[0]=0xc57500;
+			exRegs_r14und[0]=0xc57501;
 
 			//tempbuffer[0x0]=0xc0700000;
 			//tempbuffer[0x1]=0xc0700001;

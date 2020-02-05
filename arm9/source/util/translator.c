@@ -175,12 +175,12 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 					
 					//gbastckadr_usr=gbastckmodeadr_curr=; //not required this is to know base stack usr/sys
 					gbastckfp_usr=gbastckfpadr_curr;
-					gbavirtreg_r13usr[0x0]=exRegs[0xd]; //user/sys is the same stacks
-					gbavirtreg_r14usr[0x0]=exRegs[0xe];
+					exRegs_r13usr[0x0]=exRegs[0xd]; //user/sys is the same stacks
+					exRegs_r14usr[0x0]=exRegs[0xe];
 					#ifdef DEBUGEMU
-						printf("stacks backup usr_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13usr[0x0]);
+						printf("stacks backup usr_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs_r13usr[0x0]);
 					#endif
-					//printf("before nuked SP usr:%x",(unsigned int)gbavirtreg_r13usr[0x0]);
+					//printf("before nuked SP usr:%x",(unsigned int)exRegs_r13usr[0x0]);
 					
 					/* //deprecated
 						//if framepointer does not reach the top:
@@ -207,8 +207,8 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 				else if((cpsrvirt&0x1f)==0x11){
 					spsr_last=spsr_fiq=cpsrvirt;
 					gbastckfp_fiq=gbastckfpadr_curr;
-					gbavirtreg_r13fiq[0x0]=exRegs[0xd];
-					gbavirtreg_r14fiq[0x0]=exRegs[0xe];
+					exRegs_r13fiq[0x0]=exRegs[0xd];
+					exRegs_r14fiq[0x0]=exRegs[0xe];
 					
 					//save
 					//5 extra regs r8-r12 for fiq
@@ -219,51 +219,51 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 					exRegs_fiq[0x4] = exRegs[0x4 + 8];
 					
 					//restore 5 extra reg subset for other modes
-					exRegs[0x0 + 8]=gbavirtreg_cpubup[0x0];
-					exRegs[0x1 + 8]=gbavirtreg_cpubup[0x1];
-					exRegs[0x2 + 8]=gbavirtreg_cpubup[0x2];
-					exRegs[0x3 + 8]=gbavirtreg_cpubup[0x3];
-					exRegs[0x4 + 8]=gbavirtreg_cpubup[0x4];
+					exRegs[0x0 + 8]=exRegs_cpubup[0x0];
+					exRegs[0x1 + 8]=exRegs_cpubup[0x1];
+					exRegs[0x2 + 8]=exRegs_cpubup[0x2];
+					exRegs[0x3 + 8]=exRegs_cpubup[0x3];
+					exRegs[0x4 + 8]=exRegs_cpubup[0x4];
 					#ifdef DEBUGEMU
-						printf("stacks backup fiq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13fiq[0x0]);
+						printf("stacks backup fiq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs_r13fiq[0x0]);
 					#endif
 				}
 				else if((cpsrvirt&0x1f)==0x12){
 					spsr_last=spsr_irq=cpsrvirt;
 					gbastckfp_irq=gbastckfpadr_curr;
-					gbavirtreg_r13irq[0x0]=exRegs[0xd];
-					gbavirtreg_r14irq[0x0]=exRegs[0xe];
+					exRegs_r13irq[0x0]=exRegs[0xd];
+					exRegs_r14irq[0x0]=exRegs[0xe];
 					#ifdef DEBUGEMU
-						printf("stacks backup irq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13irq[0x0]);
+						printf("stacks backup irq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs_r13irq[0x0]);
 					#endif
 				}
 				
 				else if((cpsrvirt&0x1f)==0x13){
 					spsr_last=spsr_svc=cpsrvirt;
 					gbastckfp_svc=gbastckfpadr_curr;
-					gbavirtreg_r13svc[0x0]=exRegs[0xd];
-					gbavirtreg_r14svc[0x0]=exRegs[0xe];
+					exRegs_r13svc[0x0]=exRegs[0xd];
+					exRegs_r14svc[0x0]=exRegs[0xe];
 					#ifdef DEBUGEMU
-						printf("stacks backup svc_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13svc[0x0]);
+						printf("stacks backup svc_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs_r13svc[0x0]);
 					#endif
 				}
 				else if((cpsrvirt&0x1f)==0x17){
 					spsr_last=spsr_abt=cpsrvirt;
 					gbastckfp_abt=gbastckfpadr_curr;
-					gbavirtreg_r13abt[0x0]=exRegs[0xd];
-					gbavirtreg_r14abt[0x0]=exRegs[0xe];
+					exRegs_r13abt[0x0]=exRegs[0xd];
+					exRegs_r14abt[0x0]=exRegs[0xe];
 					#ifdef DEBUGEMU
-						printf("stacks backup abt_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13abt[0x0]);
+						printf("stacks backup abt_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs_r13abt[0x0]);
 					#endif
 				}
 				
 				else if((cpsrvirt&0x1f)==0x1b){
 					spsr_last=spsr_und=cpsrvirt;
 					gbastckfp_und=gbastckfpadr_curr;
-					gbavirtreg_r13und[0x0]=exRegs[0xd];
-					gbavirtreg_r14und[0x0]=exRegs[0xe];
+					exRegs_r13und[0x0]=exRegs[0xd];
+					exRegs_r14und[0x0]=exRegs[0xe];
 					#ifdef DEBUGEMU
-						printf("stacks backup und_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13und[0x0]);
+						printf("stacks backup und_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs_r13und[0x0]);
 					#endif
 				}
 				
@@ -297,8 +297,8 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 					
 					gbastckmodeadr_curr=gbastckadr_usr;
 					gbastckfpadr_curr=gbastckfp_usr;			//current framepointer address (setup in util.c) and updated here
-					exRegs[0xd]=gbavirtreg_r13usr[0x0]; //user SP/LR registers for cpu<mode> (user/sys is the same stacks)
-					exRegs[0xe]=gbavirtreg_r14usr[0x0];
+					exRegs[0xd]=exRegs_r13usr[0x0]; //user SP/LR registers for cpu<mode> (user/sys is the same stacks)
+					exRegs[0xe]=exRegs_r14usr[0x0];
 					#ifdef DEBUGEMU
 						printf("| stacks swap to usr_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
@@ -307,15 +307,15 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 			else if((cpumode&0x1f)==0x11){
 					gbastckmodeadr_curr=gbastckadr_fiq;
 					gbastckfpadr_curr=gbastckfp_fiq;			//current framepointer address (setup in util.c) and updated here
-					exRegs[0xd]=gbavirtreg_r13fiq[0x0]; //fiq SP/LR registers for cpu<mode>
-					exRegs[0xe]=gbavirtreg_r14fiq[0x0];
+					exRegs[0xd]=exRegs_r13fiq[0x0]; //fiq SP/LR registers for cpu<mode>
+					exRegs[0xe]=exRegs_r14fiq[0x0];
 					
 					//save register r8-r12 subset before entering fiq
-					gbavirtreg_cpubup[0x0]=exRegs[0x0 + 8];
-					gbavirtreg_cpubup[0x1]=exRegs[0x1 + 8];
-					gbavirtreg_cpubup[0x2]=exRegs[0x2 + 8];
-					gbavirtreg_cpubup[0x3]=exRegs[0x3 + 8];
-					gbavirtreg_cpubup[0x4]=exRegs[0x4 + 8];
+					exRegs_cpubup[0x0]=exRegs[0x0 + 8];
+					exRegs_cpubup[0x1]=exRegs[0x1 + 8];
+					exRegs_cpubup[0x2]=exRegs[0x2 + 8];
+					exRegs_cpubup[0x3]=exRegs[0x3 + 8];
+					exRegs_cpubup[0x4]=exRegs[0x4 + 8];
 					
 					//restore: 5 extra regs r8-r12 for fiq restore
 					exRegs[0x0 + 8]=exRegs_fiq[0x0];
@@ -331,8 +331,8 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 			else if((cpumode&0x1f)==0x12){
 					gbastckmodeadr_curr=gbastckadr_irq;
 					gbastckfpadr_curr=gbastckfp_irq;			//current framepointer address (setup in util.c) and updated here
-					exRegs[0xd]=gbavirtreg_r13irq[0x0]; //irq SP/LR registers for cpu<mode>
-					exRegs[0xe]=gbavirtreg_r14irq[0x0];
+					exRegs[0xd]=exRegs_r13irq[0x0]; //irq SP/LR registers for cpu<mode>
+					exRegs[0xe]=exRegs_r14irq[0x0];
 					#ifdef DEBUGEMU
 						printf("| stacks swap to irq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
@@ -341,8 +341,8 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 			else if((cpumode&0x1f)==0x13){
 					gbastckmodeadr_curr=gbastckadr_svc;
 					gbastckfpadr_curr=gbastckfp_svc;			//current framepointer address (setup in util.c) and updated here
-					exRegs[0xd]=gbavirtreg_r13svc[0x0]; //svc SP/LR registers for cpu<mode> (user/sys is the same stacks)
-					exRegs[0xe]=gbavirtreg_r14svc[0x0];
+					exRegs[0xd]=exRegs_r13svc[0x0]; //svc SP/LR registers for cpu<mode> (user/sys is the same stacks)
+					exRegs[0xe]=exRegs_r14svc[0x0];
 					#ifdef DEBUGEMU
 						printf("| stacks swap to svc_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
@@ -351,8 +351,8 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 			else if((cpumode&0x1f)==0x17){
 					gbastckmodeadr_curr=gbastckadr_abt;
 					gbastckfpadr_curr=gbastckfp_abt;			//current framepointer address (setup in util.c) and updated here
-					exRegs[0xd]=gbavirtreg_r13abt[0x0]; //abt SP/LR registers for cpu<mode>
-					exRegs[0xe]=gbavirtreg_r14abt[0x0];
+					exRegs[0xd]=exRegs_r13abt[0x0]; //abt SP/LR registers for cpu<mode>
+					exRegs[0xe]=exRegs_r14abt[0x0];
 					#ifdef DEBUGEMU
 						printf("| stacks swap to abt_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
@@ -361,8 +361,8 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 			else if((cpumode&0x1f)==0x1b){
 					gbastckmodeadr_curr=gbastckadr_und;
 					gbastckfpadr_curr=gbastckfp_und;			//current framepointer address (setup in util.c) and updated here
-					exRegs[0xd]=gbavirtreg_r13und[0x0]; //und SP/LR registers for cpu<mode>
-					exRegs[0xe]=gbavirtreg_r14und[0x0];
+					exRegs[0xd]=exRegs_r13und[0x0]; //und SP/LR registers for cpu<mode>
+					exRegs[0xe]=exRegs_r14und[0x0];
 					#ifdef DEBUGEMU
 						printf("| stacks swap to und_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif

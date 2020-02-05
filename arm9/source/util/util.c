@@ -811,7 +811,7 @@ void initemu(){
 	//new stack setup
 	//1) set stack base 2) to detect stack top just sizeof(gbastck_mode), framepointer has the current pos (from 0 to n) used so far
 	gbastckadr_usr=(u32*)0x03007F00; //0x100 size & 0x10 as CPU <mode> start (usr/sys shared stack)
-	exRegs[0xd]=gbavirtreg_r13usr[0]=(u32)(u32*)gbastckadr_usr;
+	exRegs[0xd]=exRegs_r13usr[0]=(u32)(u32*)gbastckadr_usr;
 
 	gbastckfp_usr=(u32*)0x03007F00;
 	#ifdef STACKTEST
@@ -822,7 +822,7 @@ void initemu(){
 	#endif
 
 	gbastckadr_fiq=(u32*)(gbastckadr_usr-GBASTACKSIZE); //custom fiq stack
-	gbavirtreg_r13fiq[0]=(u32)(u32*)gbastckadr_fiq;
+	exRegs_r13fiq[0]=(u32)(u32*)gbastckadr_fiq;
 
 	gbastckfp_fiq=(u32*)(gbastckadr_usr-GBASTACKSIZE); //#GBASTACKSIZE size
 	#ifdef STACKTEST
@@ -833,7 +833,7 @@ void initemu(){
 	#endif
 
 	gbastckadr_irq=(u32*)0x03007FA0;
-	gbavirtreg_r13irq[0]=(u32)(u32*)gbastckadr_irq;
+	exRegs_r13irq[0]=(u32)(u32*)gbastckadr_irq;
 
 	gbastckfp_irq=(u32*)0x03007FA0;
 	#ifdef STACKTEST
@@ -844,7 +844,7 @@ void initemu(){
 	#endif
 
 	gbastckadr_svc=(u32*)0x03007FE0;
-	gbavirtreg_r13svc[0]=(u32)(u32*)gbastckadr_svc;
+	exRegs_r13svc[0]=(u32)(u32*)gbastckadr_svc;
 
 	gbastckfp_svc=(u32*)0x03007FE0;
 	#ifdef STACKTEST
@@ -855,7 +855,7 @@ void initemu(){
 	#endif
 
 	gbastckadr_abt=(u32*)(gbastckadr_fiq-GBASTACKSIZE); //custom abt stack
-	gbavirtreg_r13abt[0]=(u32)(u32*)gbastckadr_abt;
+	exRegs_r13abt[0]=(u32)(u32*)gbastckadr_abt;
 
 	gbastckfp_abt=(u32*)(gbastckadr_fiq-GBASTACKSIZE);
 	#ifdef STACKTEST
@@ -866,7 +866,7 @@ void initemu(){
 	#endif
 
 	gbastckadr_und=(u32*)(gbastckadr_abt-GBASTACKSIZE); //custom und stack
-	gbavirtreg_r13und[0]=(u32)(u32*)gbastckadr_und;
+	exRegs_r13und[0]=(u32)(u32*)gbastckadr_und;
 
 	gbastckfp_und=(u32*)(gbastckadr_abt-GBASTACKSIZE);
 	#ifdef STACKTEST

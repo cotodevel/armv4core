@@ -75,7 +75,7 @@ extern u32 * gbastckfpadr_curr;
 //each sp,lr for cpu<mode>
 
 //and cpu<mode> all the other backup registers when restoring from FIQ r8-r12
-extern u32  gbavirtreg_cpubup[0x5];
+extern u32  exRegs_cpubup[0x5];
 
 
 //branchslot calls (up to 32 groups of * 17 elements * 4 depth size (u32) addresses)

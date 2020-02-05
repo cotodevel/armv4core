@@ -945,20 +945,20 @@ return 0;
 u32	exRegs[0x10]; //placeholder for actual CPU mode registers
 
 //r13, r14 for each mode (sp and lr)
-u32 gbavirtreg_r13usr[0x1];
-u32 gbavirtreg_r14usr[0x1];
-u32 gbavirtreg_r13fiq[0x1];
-u32 gbavirtreg_r14fiq[0x1];
-u32 gbavirtreg_r13irq[0x1];
-u32 gbavirtreg_r14irq[0x1];
-u32 gbavirtreg_r13svc[0x1];
-u32 gbavirtreg_r14svc[0x1];
-u32 gbavirtreg_r14abt[0x1];
-u32 gbavirtreg_r13abt[0x1];
-u32 gbavirtreg_r14und[0x1];
-u32 gbavirtreg_r13und[0x1];
-//u32 gbavirtreg_r14sys[0x1]; //stack shared with usr
-//u32 gbavirtreg_r14sys[0x1];
+u32 exRegs_r13usr[0x1];
+u32 exRegs_r14usr[0x1];
+u32 exRegs_r13fiq[0x1];
+u32 exRegs_r14fiq[0x1];
+u32 exRegs_r13irq[0x1];
+u32 exRegs_r14irq[0x1];
+u32 exRegs_r13svc[0x1];
+u32 exRegs_r14svc[0x1];
+u32 exRegs_r14abt[0x1];
+u32 exRegs_r13abt[0x1];
+u32 exRegs_r14und[0x1];
+u32 exRegs_r13und[0x1];
+//u32 exRegs_r14sys[0x1]; //stack shared with usr
+//u32 exRegs_r14sys[0x1];
 
 //original registers used by any PSR_MODE that do belong to FIQ r8-r12
 u32  exRegs_fiq[0x5];

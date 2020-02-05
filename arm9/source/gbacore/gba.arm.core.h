@@ -20,7 +20,7 @@
 #define internalRAM (u8*)(&gbaintram[0])
 #define workRAM (u8*)(&gbawram[0])
 #define paletteRAM (u8*)(&palram[0])
-#define vram (u8*)((u8*)0x06000000)
+#define vram (u8*)((u8*)0x06200000)	//VRAM_C_0x06200000_ENGINE_B_BG;	//NDS BMP rgb15 mode + keyboard -> see TGDS gui_console_connector.c
 #define bios (u8*)(&gbabios[0])
 #define oam (u8*)(&gbaoam[0])
 
@@ -51,20 +51,20 @@ extern u32  bios_irqhandlerstub_C;	//irq handler word aligned pointer for ARM9
 extern u32  exRegs[0x10]; //placeholder for actual CPU mode registers
 
 //each sp,lr for cpu<mode>
-extern u32  gbavirtreg_r13usr[0x1];
-extern u32  gbavirtreg_r14usr[0x1];
-extern u32  gbavirtreg_r13fiq[0x1];
-extern u32  gbavirtreg_r14fiq[0x1];
-extern u32  gbavirtreg_r13irq[0x1];
-extern u32  gbavirtreg_r14irq[0x1];
-extern u32  gbavirtreg_r13svc[0x1];
-extern u32  gbavirtreg_r14svc[0x1];
-extern u32  gbavirtreg_r13abt[0x1];
-extern u32  gbavirtreg_r14abt[0x1];
-extern u32  gbavirtreg_r13und[0x1];
-extern u32  gbavirtreg_r14und[0x1];
-//extern u32  gbavirtreg_r14sys[0x1]; //usr/sys uses same stacks
-//extern u32  gbavirtreg_r14sys[0x1];
+extern u32  exRegs_r13usr[0x1];
+extern u32  exRegs_r14usr[0x1];
+extern u32  exRegs_r13fiq[0x1];
+extern u32  exRegs_r14fiq[0x1];
+extern u32  exRegs_r13irq[0x1];
+extern u32  exRegs_r14irq[0x1];
+extern u32  exRegs_r13svc[0x1];
+extern u32  exRegs_r14svc[0x1];
+extern u32  exRegs_r13abt[0x1];
+extern u32  exRegs_r14abt[0x1];
+extern u32  exRegs_r13und[0x1];
+extern u32  exRegs_r14und[0x1];
+//extern u32  exRegs_r14sys[0x1]; //usr/sys uses same stacks
+//extern u32  exRegs_r14sys[0x1];
 
 //original registers used by any PSR_MODE that do belong to FIQ r8-r12
 extern u32  exRegs_fiq[0x5];
