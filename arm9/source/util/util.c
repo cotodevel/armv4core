@@ -387,22 +387,19 @@ void initmemory(){
 	//  E       64K   1    -     6000000h
 	//  F,G     16K   1    0..3  6000000h+(4000h*OFS.0)+(10000h*OFS.1)
   
-	
+	gbawram = (u8*)malloc(256*1024);
+	palram = (u8*)malloc(0x400);
+	gbabios = (u8*)malloc(0x4000);
+	gbaintram = (u8*)malloc(0x8000);
+	gbaoam = (u8*)malloc(0x400);
+	gbacaioMem = (u8*)malloc(0x400);
+	saveram = (u8*)malloc(128*1024);
+
 	u8 vramofs=(0<<3);
 	u8 vrammst=(1<<0);
 	
 	u32store(0x04000240,vrammst|vramofs|(1<<7)); //MST 1 , vram offset 0 (A), VRAM enable
 	
-	//NDS vram A bank 6000000h+(20000h*OFS)
-	u8 * vramtest=(u8 *)0x06000000+(0x20000*vramofs); //OAM - OBJ Attributes      (1 Kbyte)
-
-	if(((u8*)vramtest)!=NULL)
-		printf(" VRAM: OK :[%x]!",(unsigned int)(u8*)vramtest); 
-	else{
-		printf(" VRAM FAIL! @:%x",(unsigned int)(u8*)vramtest);
-		while(1);
-	}
-
 	int ramtestsz=0;
 	
 	ramtestsz=wramtstasm((int)workRAM,256*1024);
@@ -456,12 +453,12 @@ void initmemory(){
 	memset((void*)oam,0x0,0x400);
 
 	//this is OK
-	ramtestsz=wramtstasm((int)&gbacaioMem[0x0],0x400);
+	ramtestsz=wramtstasm((int)gbacaioMem,0x400);
 	if(ramtestsz==alignw(0x400))
-		printf(" caioMem tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)&gbacaioMem[0x0],ramtestsz);
+		printf(" caioMem tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gbacaioMem,ramtestsz);
 	else 
-		printf(" caioMem tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)&gbacaioMem[0x0],ramtestsz);
-	memset((void*)&gbacaioMem[0x0],0x0,0x400);
+		printf(" caioMem tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gbacaioMem,ramtestsz);
+	memset((void*)gbacaioMem,0x0,0x400);
 
 	//gba stack test
 	for(i=0;i<sizeof(gbastck_usr)/2;i++){
@@ -780,9 +777,9 @@ void initemu(){
 
 
 	//setup patches for gbaoffsets into emulator offsets 
-	addrfixes[0]=(u32)(u8*)bios;				//@bios
+	addrfixes[0]=(u32)(u8*)bios;	//@bios
 	addrfixes[1]=(u32)0x4000;
-	addrfixes[2]=(u32)(u8*)workRAM;	//((int)&__ewram_end + 0x1);	//@ewram
+	addrfixes[2]=(u32)(u8*)workRAM;	//@ewram
 	addrfixes[3]=(u32)0x10000;
 	addrfixes[4]=(u32)(u8*)internalRAM;	///internal wram
 	addrfixes[5]=(u32)0x8000;
@@ -790,9 +787,9 @@ void initemu(){
 	addrfixes[7]=(u32)0x00000800;
 	addrfixes[8]=(u32)(u8*)palram;		//palram;				//@BG/OBJ Palette RAM
 	addrfixes[9]=(u32)0x400;
-	addrfixes[0xa]=(u32)(u8*)vram;	//0x06000000+(0x20000*vramofs);	//@vram
+	addrfixes[0xa]=(u32)(u8*)vram;	//@vram
 	addrfixes[0xb]=(u32)(1024*128);
-	addrfixes[0xc]=(u32)(u8*)oam;	//&gbaoam[0];				//@object attribute memory
+	addrfixes[0xc]=(u32)(u8*)oam;	//@object attribute memory
 	addrfixes[0xd]=(u32)0x400;
 	addrfixes[0xe]=(u32)0x0;						//(u32)0x08000000;		//@rom
 	addrfixes[0xf]=(u32)0x0;						//romsize;				//@rom top
@@ -1095,6 +1092,8 @@ int executeuntil_pc(u32 target_pc){
 
 void CPUInit(const char *biosFileName, bool useBiosFile,bool extram)
 {
+	initemu();
+	
 #ifdef WORDS_BIGENDIAN
   if(!cpuBiosSwapped) {
     for(unsigned int i = 0; i < sizeof(myROM)/4; i++) {

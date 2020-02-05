@@ -28,14 +28,14 @@
 extern "C" {
 #endif
 
-extern volatile u8 gbawram[256*1024]; //genuine reference - wram that is 32bit per chunk
-extern volatile u8 __attribute__ ((aligned (1))) palram[0x400];
-extern volatile u8 __attribute__ ((aligned (1))) gbabios[0x4000];
-extern volatile u8 __attribute__ ((aligned (1))) gbaintram[0x8000];
-extern volatile u8 __attribute__ ((aligned (1))) gbaoam[0x400];
-extern volatile u8 __attribute__ ((aligned (1))) gbacaioMem[0x400];
-extern volatile u8 __attribute__ ((aligned (1))) iomem[0x400];
-extern volatile u8 __attribute__ ((aligned (1))) saveram[128*1024]; //128K
+extern u8 * gbawram;	//[256*1024]; //genuine reference - wram that is 32bit per chunk
+extern u8 * palram;	//[0x400];
+extern u8 * gbabios;	//[0x4000];
+extern u8 * gbaintram;	//[0x8000];
+extern u8 * gbaoam;	//[0x400];
+extern u8 * gbacaioMem;	//[0x400];
+extern u8 * saveram;	//[128*1024]; //128K
+extern u8 * iomem[0x400];
 
 //tests
 extern u32 tempbuffer[1024*1]; //1K test

@@ -103,26 +103,6 @@ struct DirEntry {
 DIR *pdir;
 struct dirent *pent;
 
-/*
-inline __attribute__((always_inline))
-int wramtst(int wram,int top){
-extern int temp,temp2;
-temp=wramtst1(wram,top);
-if(temp==alignw(top))
-	printf("ARM9 test1/2: OK (%d bytes @ 0x%lu+0x%lu) ",temp,EWRAM,temp);
-else 
-	printf("ARM9RAM tst 1/2: FAIL (%d bytes @ 0x%lu+0x%lu) ",temp,EWRAM,temp);
-temp2=wramtst2(wram,top);
-if(temp2==alignw(top))
-	printf("ARM9 test2/2: OK (%d bytes @ 0x%lu+0x%lu) ",temp2,EWRAM,temp2);
-else if ((temp2-2)==alignw(top))
-	printf("ARM9 test2/2: OK (%d bytes @ 0x%lu+0x%lu)  !!aligned read!!",temp2,EWRAM,temp2);
-else 
-	printf("ARM9RAM tst 2/2: FAIL (%d bytes @ 0x%lu+0x%lu) ",temp2,EWRAM,temp2);
-return 0;
-}
-*/
-
 int u32count_values(u32 u32word){
 int i=0,cntr=0;
 
@@ -291,8 +271,7 @@ int main(int _argc, sint8 **_argv) {
 		while(1);
 	}
 	printf("OK");
-
-
+	
 	useBios = false;
 	printf("CPUInit");
 	CPUInit(biospath, useBios,false);
@@ -314,7 +293,6 @@ int main(int _argc, sint8 **_argv) {
 	  
 	//Set CPSR virtualized bits & perform USR/SYS CPU mode change. & set stacks
 	updatecpuflags(1,cpsrvirt,0x10);
-
 
 	//old entrypoint: gba map cant reach this ... so
 	//exRegs[0xf] = (u32)&gba_setup;
@@ -384,7 +362,7 @@ int main(int _argc, sint8 **_argv) {
 			//swp r0,r1,[r2]
 			//tempbuffer[0x0]=0xc00ffee0; //patched bios address
 			//tempbuffer[0x0]=0xc00ffeee;
-			tempbuffer[0x0]=(u32)&gbabios[0];
+			tempbuffer[0x0]=(u32)gbabios;
 			//tempbuffer[0x1]=0xc0ca;
 			//tempbuffer[0x1]=0x0;
 			//tempbuffer[0x1]=(u32)&tempbuffer2[0];
@@ -963,7 +941,7 @@ int main(int _argc, sint8 **_argv) {
 					exRegs[i]=0x0;
 
 			}
-			exRegs[0x0]=(u32)&gbabios[0];
+			exRegs[0x0]=(u32)gbabios;
 			rom=0;
 			disarmcode(0xe890ffff); //ldm r0,{r0-r15}
 			*/

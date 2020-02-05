@@ -16,13 +16,12 @@
 #include <ctype.h>
 #include "Util.h"
 
-#define bios (u8*)(&gbabios[0])
-#define internalRAM (u8*)(&gbaintram[0])
-#define workRAM (u8*)(&gbawram[0])
-#define paletteRAM (u8*)(&palram[0])
-#define vram (u8*)((u8*)0x06200000)	//VRAM_C_0x06200000_ENGINE_B_BG;	//NDS BMP rgb15 mode + keyboard -> see TGDS gui_console_connector.c
-#define bios (u8*)(&gbabios[0])
-#define oam (u8*)(&gbaoam[0])
+#define bios (u8*)(gbabios)
+#define internalRAM (u8*)(gbaintram)
+#define workRAM (u8*)(gbawram)
+#define paletteRAM (u8*)(palram)
+#define vram (u8*)(0x06200000)	//VRAM_C_0x06200000_ENGINE_B_BG;	//NDS BMP rgb15 mode + keyboard -> see TGDS gui_console_connector.c
+#define oam (u8*)(gbaoam)
 
 #endif
 
