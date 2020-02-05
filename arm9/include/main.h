@@ -4,6 +4,7 @@
 #include "typedefsTGDS.h"
 #include "dsregs.h"
 #include "dsregs_asm.h"
+#include "fatfslayerTGDS.h"
 
 #define CLUSTER_FREE	0x00000000
 #define	CLUSTER_EOF		0x0FFFFFFF
@@ -51,10 +52,11 @@ extern u32 PATCH_ENTRYPOINT[4];
 //r0: new_instruction / r1: cpsr
 //arg1 is cpsr <new mode> inter from branch calls, execute then send curr_cpsr back
 extern u32 emulatorgba();	
-extern char filepath[255 * 2];
-extern char biospath[255 * 2];
-extern char savepath[255 * 2];
-extern char patchpath[255 * 2];
+
+extern char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH+1];
+extern char biospath[MAX_TGDSFILENAME_LENGTH+1];
+extern char savepath[MAX_TGDSFILENAME_LENGTH+1];
+extern char patchpath[MAX_TGDSFILENAME_LENGTH+1];
 
 #ifdef __cplusplus
 }

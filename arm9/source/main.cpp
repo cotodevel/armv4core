@@ -25,24 +25,26 @@ USA
 #include "biosTGDS.h"
 #include "dldi.h"
 #include "buffer.h"
+#include "fileBrowse.h"
 
 //disassembler (thumb)
-
 #include "armstorm/arm.h" //THUMB DISASSEMBLER
 #include "armstorm/armstorm.h" //THUMB DISASSEMBLER
 #include "armstorm/common.h" //THUMB DISASSEMBLER
 #include "armstorm/thumb.h" //THUMB DISASSEMBLER
 #include "armstorm/thumb_db.h" //THUMB DISASSEMBLER
-
 //PU and stack managmt
 #include "pu/pu.h"
 #include "pu/supervisor.h"
 #include "gba.arm.core.h"
-
 #include "bios.h"
-
 #include "TGDSLogoLZSSCompressed.h"
 #include "global_settings.h"
+
+char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH+1];
+char biospath[MAX_TGDSFILENAME_LENGTH+1];
+char savepath[MAX_TGDSFILENAME_LENGTH+1];
+char patchpath[MAX_TGDSFILENAME_LENGTH+1];
 
 /* THUMB DISASSEMBLER (little endian) */ //format { 0xc5, 0xc0-- };
 unsigned char buf[1*2]; //buffer for 16 thumb instructions
@@ -209,13 +211,7 @@ u32 emulatorgba(){
 	return 0;
 }
 
-char filepath[255 * 2];
-char biospath[255 * 2];
-char savepath[255 * 2];
-char patchpath[255 * 2];
-
 int main(int _argc, sint8 **_argv) {
-
 	/*			TGDS 1.5 Standard ARM9 Init code start	*/
 	bool project_specific_console = true;	//set default console or custom console: custom console
 	GUI_init(project_specific_console);
@@ -251,11 +247,15 @@ int main(int _argc, sint8 **_argv) {
 	biospath[0] = 0;
 	savepath[0] = 0;
 	patchpath[0] = 0;
-
+	
 	// GBA EMU INIT//
 	//show gbadata printf("\x1b[21;1H
-	strcpy(filepath, "0:/gba/rs-pzs.gba");
-	//printgbainfo (filepath);
+	char startPath[MAX_TGDSFILENAME_LENGTH+1];
+	strcpy(startPath,"/");
+	while( ShowBrowser((char *)startPath, (char *)curChosenBrowseFile) == true ){	//as long you keep using directories ShowBrowser will be true
+		//navigating DIRs here...
+	}
+	//printgbainfo (curChosenBrowseFile);
 
 	//debugging is enabled at startup
 	isdebugemu_defined();
@@ -264,7 +264,7 @@ int main(int _argc, sint8 **_argv) {
 	bool extram = false; //enabled for dsi
 
 	printf("CPULoadRom...");
-	bool failed = !CPULoadRom(filepath, extram);
+	bool failed = !CPULoadRom(curChosenBrowseFile, extram);
 	if(failed)
 	{
 		printf("failed");

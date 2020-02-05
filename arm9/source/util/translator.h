@@ -13,6 +13,7 @@
 #include "opcode.h"
 #include "pu.h"
 #include "supervisor.h"
+#include "fatfslayerTGDS.h"
 
 #endif
 
