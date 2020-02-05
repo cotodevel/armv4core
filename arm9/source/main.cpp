@@ -51,9 +51,6 @@ struct DecomposeInfo info = {0}; //_DecomposeInfo info = {0};
 struct TInst tinst = {0}; //TInst t = {0};
 /* END THUMB DISASSEMBLER */
 
-GBASystem gba; //this creates a proper GBASystem pointer to struct (stack) - across C++ from struct GBASystem (C)
-//gbaHeader_t *gbaGamehdr;
-
 extern struct gbaheader_t gbaheader;
 
 //0x03800000 - 0x038082xx = 0x82B4 (33xxx bytesld) - 0x038082B5 - 0x03810000 = 0x7D4C free 
@@ -190,48 +187,46 @@ u16 TMXCNT_HW(u8 TMXCNT, u8 prescaler,u8 countup,u8 status){
 
 u32 emulatorgba(){
 
-//1) read GBAROM entrypoint
-//2) reserve registers r0-r15, stack pointer , LR, PC and stack (for USR, AND SYS MODES)
-//3) get pointers from all reserved memory areas (allocated)
-//4) use this function to fetch addresses from GBAROM, patch swi calls (own BIOS calls), patch interrupts (by calling correct vblank draw, sound)
-//patch IO access , REDIRECT VIDEO WRITES TO ALLOCATED VRAM & VRAMIO [use switch and intercalls for asm]
+	//1) read GBAROM entrypoint
+	//2) reserve registers r0-r15, stack pointer , LR, PC and stack (for USR, AND SYS MODES)
+	//3) get pointers from all reserved memory areas (allocated)
+	//4) use this function to fetch addresses from GBAROM, patch swi calls (own BIOS calls), patch interrupts (by calling correct vblank draw, sound)
+	//patch IO access , REDIRECT VIDEO WRITES TO ALLOCATED VRAM & VRAMIO [use switch and intercalls for asm]
 
-//btw entrypoint is always ARM code 
+	//btw entrypoint is always ARM code 
 
-if(gba.cpustate==true){
-	
-	u32 new_instr=armfetchpc((uint32)rom);
-	#ifdef DEBUGEMU
-		printf("/*****************/");
-		printf(" rom:%x [%x]",(unsigned int)rom,(unsigned int)new_instr);
-	#endif
-	
-	//CPUfetch depending on CPUmode
-	(armstate==0)?disarmcode(new_instr):disthumbcode(new_instr);	
+	if(cpuStart == true){
+		
+		u32 new_instr=armfetchpc((uint32)exRegs[0xf]&0xfffffffe);
+		#ifdef DEBUGEMU
+			printf("/*****************/");
+			printf(" rom:%x [%x]",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)new_instr);
+		#endif
+		
+		//CPUfetch depending on CPUmode
+		(armstate==0)?disarmcode(new_instr):disthumbcode(new_instr);	
 
-	//refresh vcount & disptat here before cpuloop
-	gba.lcdticks=((*(u32*)0x04000006) &0xfff); //use vcounter for generation ticks
+		//refresh vcount & disptat here before cpuloop
+		lcdTicks = ((*(u32*)0x04000006) &0xfff); //use vcounter for tick generation 
 
-	cpuloop(cpucore_tick);	//1 list per hblank / threads from gba.lcdticks into IF
-	cpucore_tick++;
-	if(cpucore_tick>10001) 
-		cpucore_tick=0;
-}
-else
-	gba.cpustate=true;
+		cpuloop(cpucore_tick);	//1 list per hblank
+		cpucore_tick++;
+		if(cpucore_tick>10001) 
+			cpucore_tick=0;
+	}
+	else
+		cpuStart = true;
 
-//read input is done already -> gba.GBAP1
+	//increase PC depending on CPUmode
+	(armstate==0)?exRegs[0xf]+=4:exRegs[0xf]+=2;
 
-//increase PC depending on CPUmode
-(armstate==0)?rom+=4:rom+=2;
+	//before anything, interrupts (GBA generated) are checked on NDS9 IRQ.s PU.C exceptirq()
 
-//before anything, interrupts (GBA generated) are checked on NDS9 IRQ.s PU.C exceptirq()
+	//old dcache is discarded
+	//DC_InvalidateAll(); 
+	//DC_FlushAll();
 
-//old dcache is discarded
-//DC_InvalidateAll(); 
-//DC_FlushAll();
-
-return 0;
+	return 0;
 }
 
 char filepath[255 * 2];
@@ -395,8 +390,6 @@ int main(int _argc, sint8 **_argv) {
 			//tempbuffer[0x1]=(u32)&tempbuffer2[0];
 			tempbuffer[0x1]=0x3;
 
-			//tempbuffer[0x2]=(u32)(u32*)rom;
-
 			//tempbuffer[0x2]=(u32)&tempbuffer2[0];
 			//tempbuffer[0x2]=0xff;
 			//tempbuffer[0x2]=(u32)&tempbuffer2[0]; //COFFE1 SHOULD BE AT tempbuf2[0]
@@ -404,23 +397,19 @@ int main(int _argc, sint8 **_argv) {
 			tempbuffer2[0]=0x0; //AND COFFEE 2 SHOULD BE AT R0
 
 			tempbuffer[0x3]=0xc33ffee3;
-			//tempbuffer[0x3]=(u32)(u32*)rom;
-
+			
 			//tempbuffer[0x3]=(u32)&tempbuffer2[0x0];
 
 			//tempbuffer2[1]=0xcac0c0ca;
 
 			//tempbuffer[0x3]=(u32)&tempbuffer[0xc];
-			//tempbuffer[0x3]=(u32)(u32*)rom;
 			tempbuffer[0x4]=0xc00ffee4;
 			//tempbuffer[0x4]=0xc0c0caca;
-			//tempbuffer[0x4]=(u32)(u32*)rom;
 			tempbuffer[0x5]=0xc00ffee5;
 
 			//tempbuffer[0x6]=-56;
 			tempbuffer[0x6]=0xc00ffee6; //for some reason ldrsb does good with sign bit 2^8 values, but -128 is Z flag enabled  (+127 / -128) 
-			//tempbuffer[0x6]=(u32)(u32*)rom;
-
+			
 			tempbuffer[0x7]=0xc00ffee7;
 			tempbuffer[0x8]=0xc00ffee8;
 			tempbuffer[0x9]=0xc00ffee9;
@@ -437,7 +426,7 @@ int main(int _argc, sint8 **_argv) {
 			//tempbuffer[0xd]=0xc00ffeed;
 
 			tempbuffer[0xe]=0xc070eeee;
-			tempbuffer[0xf]=(u32)rom;
+			tempbuffer[0xf]=(u32)(exRegs[0xf]&0xfffffffe);
 
 			//c07000-1:  usr/sys  _ c17100-6: fiq _ c27200-1: irq _ c37300-1: svc _ c47400-1: abt _ c57500-1: und
 
@@ -446,11 +435,11 @@ int main(int _argc, sint8 **_argv) {
 
 			gbavirtreg_r13fiq[0]=0xc17100;
 			gbavirtreg_r14fiq[0]=0xc17101;
-			gbavirtreg_fiq[0x0]=0xc171002;
-			gbavirtreg_fiq[0x1]=0xc171003;
-			gbavirtreg_fiq[0x2]=0xc171004;
-			gbavirtreg_fiq[0x3]=0xc171005;
-			gbavirtreg_fiq[0x4]=0xc171006;
+			exRegs_fiq[0x0]=0xc171002;
+			exRegs_fiq[0x1]=0xc171003;
+			exRegs_fiq[0x2]=0xc171004;
+			exRegs_fiq[0x3]=0xc171005;
+			exRegs_fiq[0x4]=0xc171006;
 
 			gbavirtreg_r13irq[0]=0xc27200;
 			gbavirtreg_r14irq[0]=0xc27201;
@@ -483,7 +472,7 @@ int main(int _argc, sint8 **_argv) {
 
 			//writing to (0x7fff for stmiavirt opcode) destroys PC , be aware that buffer_input[0xf] slot should be filled before rewriting PC.
 			//0 for CPURES/BACKUP / 2 for stack/push pop / 1 free
-			stmiavirt( ((u8*)tempbuffer), (u32)gbavirtreg_cpu, 0x00ff, 32, 0, 0);
+			stmiavirt( ((u8*)tempbuffer), (u32)exRegs, 0x00ff, 32, 0, 0);
 
 			//stack pointer test
 			/*
@@ -510,7 +499,7 @@ int main(int _argc, sint8 **_argv) {
 
 			//clean registers
 			for(i=0;i<16;i++){
-				*((u32*)gbavirtreg_cpu[0]+(i))=0x0;
+				*((u32*)exRegs[0]+(i))=0x0;
 			}
 			printf(" 1/2 new sfp:%x ",(u32)(u32*)gbastckfpadr_curr);
 
@@ -529,7 +518,7 @@ int main(int _argc, sint8 **_argv) {
 
 			//clean registers
 			for(i=0;i<16;i++){
-				*((u32*)gbavirtreg_cpu[0]+(i))=0x0;
+				*((u32*)exRegs[0]+(i))=0x0;
 			}
 			rom=0x0;
 
@@ -547,7 +536,7 @@ int main(int _argc, sint8 **_argv) {
 			disthumbcode(0x9302); //str r3,[sp,#0x8]
 
 			dummyreg2=0;
-			faststr((u8*)&dummyreg2, (u32)gbavirtreg_cpu[0], (0x3), 32,0);
+			faststr((u8*)&dummyreg2, (u32)exRegs[0], (0x3), 32,0);
 
 			//restore (5.11)
 			disthumbcode(0x9b02); //ldr r3,[sp,#0x8]
@@ -566,7 +555,7 @@ int main(int _argc, sint8 **_argv) {
 
 			for(i=0;i<16;i++){
 				if(i!=0x2 )
-					gbavirtreg_cpu[i]=0x0;
+					exRegs[i]=0x0;
 
 			}
 
@@ -597,7 +586,7 @@ int main(int _argc, sint8 **_argv) {
 			/*disthumbcode(0xb5f0); //push r4-r7,lr
 			for(i=0;i<16;i++){
 				if(i!=0x2 )
-					gbavirtreg_cpu[i]=0x0;
+					exRegs[i]=0x0;
 			}
 			disthumbcode(0xbdf0); //pop {r4-r7,pc}
 			*/
@@ -971,10 +960,10 @@ int main(int _argc, sint8 **_argv) {
 			//clean registers
 			for(i=0;i<16;i++){
 				if(i!=0x0 )
-					gbavirtreg_cpu[i]=0x0;
+					exRegs[i]=0x0;
 
 			}
-			gbavirtreg_cpu[0x0]=(u32)&gbabios[0];
+			exRegs[0x0]=(u32)&gbabios[0];
 			rom=0;
 			disarmcode(0xe890ffff); //ldm r0,{r0-r15}
 			*/
@@ -1097,11 +1086,11 @@ int main(int _argc, sint8 **_argv) {
 			*/
 			
 			// 
-			//printf(" /// GBABIOS @ %x //",(unsigned int)(u8*)gba.bios);
+			//printf(" /// GBABIOS @ %x //",(unsigned int)(u8*)bios);
 			
 			/*
 			for(i=0;i<16;i++){
-			printf(" %d:[%x] ",i,(unsigned int)*((u32*)gba.bios+i));//ldru32asm((u32)tempbuffer2,i));
+			printf(" %d:[%x] ",i,(unsigned int)*((u32*)bios+i));//ldru32asm((u32)tempbuffer2,i));
 			
 				if (i==15) printf("");
 			
@@ -1141,21 +1130,19 @@ int main(int _argc, sint8 **_argv) {
 			printf(" //////contents//////: ");
 			
 			for(cntr=0;cntr<16;cntr++){
-				//printf(" r%d :[%x] ",cntr,(unsigned int)ldru32asm((u32)&gbavirtreg_cpu,cntr*4)); //byteswap reads
-				if (cntr!=0xf) 
-				printf(" r%d :[0x%x] ",cntr, (unsigned int)gbavirtreg_cpu[cntr]);
-				else printf(" PC(0x%x)",  (unsigned int)rom); //works: (u32)&rom  // &gbavirtreg_usr[0xf] OK
+				//printf(" r%d :[%x] ",cntr,(unsigned int)ldru32asm((u32)&exRegs,cntr*4)); //byteswap reads
+				printf(" r%d :[0x%x] ",cntr, (unsigned int)exRegs[cntr]);
 			}
 			
 			printf(" CPSR[%x] / SPSR:[%x] ",(unsigned int)cpsrvirt,(unsigned int)spsr_last);
 			printf("CPUvirtrunning:");
-			if (gba.cpustate==true) printf("true:");
+			if (cpuStart == true) printf("true:");
 			else printf("false");
 			printf("/ CPUmode:");
 			if (armstate==1) printf("THUMB");
 			else printf("ARM ");
 			
-			printf(" CPUtotalticks:(%d) / gba.lcdticks:(%d) / vcount: (%d)",(int)cputotalticks,(int)gba.lcdticks,(int)gba.GBAVCOUNT);
+			printf(" cpuTotalTicks:(%d) / lcdTicks:(%d) / vcount: (%d)",(int)cpuTotalTicks,(int)lcdTicks,(int)GBAVCOUNT);
 		} //a button
 	
 		if(keysPressed() & KEY_B){
@@ -1164,7 +1151,7 @@ int main(int _argc, sint8 **_argv) {
 			/*
 			for(i=0;i<16;i++){
 			
-				printf(" [%c] ",(unsigned int)*((u32*)&gbavirtreg_cpu+i));
+				printf(" [%c] ",(unsigned int)*((u32*)&exRegs+i));
 				if (i==15) printf(""); //sizeof(tempbuffer[0]) == 1 byte (u8)
 			}
 			*/
@@ -1175,7 +1162,7 @@ int main(int _argc, sint8 **_argv) {
 			
 			stru32asm( (u32)&tempbuffer, i*(4/(sizeof(tempbuffer[0]))) ,0xc0700000+i);
 			
-			//stru32asm((u32)&gbavirtreg_cpu, i*4,ldru32asm((u32)&tempbuffer,i*4));
+			//stru32asm((u32)&exRegs, i*4,ldru32asm((u32)&tempbuffer,i*4));
 			
 			}
 			
@@ -1184,7 +1171,7 @@ int main(int _argc, sint8 **_argv) {
 			tempbuffer[i]=0;
 			}
 			
-			ldmiavirt((u8*)&tempbuffer, (u32)&gbavirtreg_cpu, 0xffff, 32, 1); //read using normal reading method
+			ldmiavirt((u8*)&tempbuffer, (u32)&exRegs, 0xffff, 32, 1); //read using normal reading method
 			
 			for(i=0;i<16;i++){
 				printf(" [%x] ",(unsigned int)ldru32asm((u32)&tempbuffer,i*4));
@@ -1293,8 +1280,7 @@ int main(int _argc, sint8 **_argv) {
 			//*(gbastackptr+i)=0;
 			//}
 			
-			rom=(u8*)rom_entrypoint;
-			gbavirtreg_cpu[0xf]=(u32)rom;
+			exRegs[0xf]=(u32)rom_entrypoint;
 			//Set CPSR virtualized bits & perform USR/SYS CPU mode change. & set stacks
 			updatecpuflags(1,cpsrvirt,0x12);
 			
@@ -1308,18 +1294,17 @@ int main(int _argc, sint8 **_argv) {
 			//tempbuffer[0]=0x0;
 			//tempbuffer[1]=0x00000000;
 			//tempbuffer[2]=(u32)&tempbuffer[2]; //address will be rewritten with gbaread / r2 value
-			//stmiavirt( ((u8*)&tempbuffer[0]), (u32)gbavirtreg_cpu[0], 0xe0, 32, 1);
+			//stmiavirt( ((u8*)&tempbuffer[0]), (u32)exRegs[0], 0xe0, 32, 1);
 	
 			
 			/* VBAM stats
 			printf(" *********************");
 			printf(" emu stats: ");
-			printf(" N_FLAG(%x) C_FLAG(%x) Z_FLAG(%x) V_FLAG(%x) ",(unsigned int)gba.N_FLAG,(unsigned int)gba.C_FLAG,(unsigned int)gba.Z_FLAG,(unsigned int)gba.V_FLAG);
-			printf(" armstate(%x) frameskip(%x)  ",(unsigned int)gba.armState,(unsigned int)gba.frameSkip);
-			printf(" gbaSystemGlobal.GBADISPCNT(%x) DISPSTAT(%x) gbaSystemGlobal.GBAVCOUNT(%x)",(unsigned int)gba.GBADISPCNT,(unsigned int)gba.GBADISPSTAT,(unsigned int)gba.GBAVCOUNT);
-			printf(" GBAIE(%lu) GBAIF(%x) GBAIME(%x) EMULATING:(%x)",(unsigned int)gba.GBAIE,(unsigned int)gba.GBAIF,(unsigned int)gba.GBAIME,(unsigned int)gba.emulating);
-			printf(" clockTicks(%x) cpuTotalTicks(%x) LCDTicks(%x)",(unsigned int)gba.clockTicks,(unsigned int)gba.cpuTotalTicks,(unsigned int)gba.lcdTicks);
-			printf(" frameCount(%x) count(%x) romSize(%x)",(unsigned int)gba.frameCount,(unsigned int)gba.count,(unsigned int)gba.romSize);
+			printf(" N_FLAG(%x) C_FLAG(%x) Z_FLAG(%x) V_FLAG(%x) ",(unsigned int)N_FLAG,(unsigned int)C_FLAG,(unsigned int)Z_FLAG,(unsigned int)V_FLAG);
+			printf(" armstate(%x) frameskip(%x)  ",(unsigned int)armState,(unsigned int)frameSkip);
+			printf(" GBADISPCNT(%x) DISPSTAT(%x) GBAVCOUNT(%x)",(unsigned int)GBADISPCNT,(unsigned int)GBADISPSTAT,(unsigned int)GBAVCOUNT);
+			printf(" clockTicks(%x) cpuTotalTicks(%x) lcdTicks(%x)",(unsigned int)clockTicks,(unsigned int)cpuTotalTicks,(unsigned int)lcdTicks);
+			printf(" frameCount(%x) count(%x) romSize(%x)",(unsigned int)frameCount,(unsigned int)count,(unsigned int)romSize);
 			*/
 			
 			//sbrk(-0x800);
@@ -1356,7 +1341,7 @@ int main(int _argc, sint8 **_argv) {
 			sendfifo(buffer_output);
 			*/
 			
-			//branch_stackfp=cpubackupmode((u32*)branch_stackfp,gbavirtreg_cpu,cpsrvirt);
+			//branch_stackfp=cpubackupmode((u32*)branch_stackfp,exRegs,cpsrvirt);
 			//printf("branch fp :%x ",(unsigned int)(u32*)branch_stackfp);
 			
 			//psg noise test printf("pitch: %d",(*(buffer_input+0)>>16)&0xffff);temp3++;
@@ -1379,7 +1364,7 @@ int main(int _argc, sint8 **_argv) {
 			sendfifo(buffer_output);
 			*/
 			
-			//branch_stackfp=cpurestoremode((u32*)branch_stackfp,&gbavirtreg_cpu[0]);
+			//branch_stackfp=cpurestoremode((u32*)branch_stackfp,&exRegs[0]);
 			//printf("branch fp :%x ",(unsigned int)(u32*)branch_stackfp);
 
 			//psg noise test printf("pitch: %d",(*(buffer_input+0)>>16)&0xffff);temp3--;
@@ -1431,7 +1416,7 @@ int main(int _argc, sint8 **_argv) {
 			
 			branchfpbu=branch_stackfp;
 			
-			branchfpbu=cpubackupmode((u32*)(branchfpbu),&gbavirtreg_cpu[0],cpsrvirt);
+			branchfpbu=cpubackupmode((u32*)(branchfpbu),&exRegs[0],cpsrvirt);
 			
 			stmiavirt((u8*)&cpsrvirt, (u32)(u32*)branchfpbu, 1 << 0x0, 32, 1);
 			
@@ -1442,7 +1427,7 @@ int main(int _argc, sint8 **_argv) {
 			//flush workreg
 			cpsrvirt=0;
 			for(i=0;i<0x10;i++){
-				*((u32*)gbavirtreg_cpu[0]+i)=0x0;
+				*((u32*)exRegs[0]+i)=0x0;
 			}
 			
 			
@@ -1452,7 +1437,7 @@ int main(int _argc, sint8 **_argv) {
 			
 			printf("restored cpsr: %x",(unsigned int)cpsrvirt);
 			
-			branchfpbu=cpurestoremode((u32*)(branchfpbu),&gbavirtreg_cpu[0]);
+			branchfpbu=cpurestoremode((u32*)(branchfpbu),&exRegs[0]);
 			
 			updatecpuflags(1,cpsrvirt,cpsrvirt&0x1f);
 			*/

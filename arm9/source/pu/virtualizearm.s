@@ -615,9 +615,6 @@ gbachunk:
 	.word 0x00000000
 
 @--------------------------------- emulator interruptable registers / variables
-.global cputotalticks
-cputotalticks:
-	.word 0x00000000
 
 @-- destroyable regs (for virtual stack opcodes)
 .global dummyreg

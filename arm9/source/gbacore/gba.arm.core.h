@@ -9,14 +9,20 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>//BRK(); SBRK();
+#include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <ctype.h>
-
-//GBASystem struct declaration
 #include "Util.h"
+
+#define bios (u8*)(&gbabios[0])
+#define internalRAM (u8*)(&gbaintram[0])
+#define workRAM (u8*)(&gbawram[0])
+#define paletteRAM (u8*)(&palram[0])
+#define vram (u8*)((u8*)0x06000000)
+#define bios (u8*)(&gbabios[0])
+#define oam (u8*)(&gbaoam[0])
 
 #endif
 
@@ -25,20 +31,20 @@ extern "C" {
 #endif
 
 //GBAProcess
-u32 cpu_fdexecute();
-u32 cpu_calculate();
-u32 cpuirq(u32 cpumode);
+extern u32 cpu_fdexecute();
+extern u32 cpu_calculate();
+extern u32 cpuirq(u32 cpumode);
 
 //IO GBA (virtual < -- > hardware) handlers
-u32 ndsvcounter();
+extern u32 ndsvcounter();
 
 //GBACore
 extern u32  gbachunk;		//gba read chunk
-extern u32  dummyreg;		//any purpose destroyable 4 byte dtcm chunk
-extern u32  dummyreg2;		//any purpose destroyable 4 byte dtcm chunk
-extern u32  dummyreg3;		//any purpose destroyable 4 byte dtcm chunk
-extern u32  dummyreg4;		//any purpose destroyable 4 byte dtcm chunk
-extern u32  dummyreg5;		//any purpose destroyable 4 byte dtcm chunk
+extern u32  dummyreg;		//any purpose destroyable 4 byte chunk
+extern u32  dummyreg2;		//any purpose destroyable 4 byte chunk
+extern u32  dummyreg3;		//any purpose destroyable 4 byte chunk
+extern u32  dummyreg4;		//any purpose destroyable 4 byte chunk
+extern u32  dummyreg5;		//any purpose destroyable 4 byte chunk
 extern u32  bios_irqhandlerstub_C;	//irq handler word aligned pointer for ARM9
 
 //gba virtualized r0-r15 registers
@@ -57,15 +63,11 @@ extern u32  gbavirtreg_r13abt[0x1];
 extern u32  gbavirtreg_r14abt[0x1];
 extern u32  gbavirtreg_r13und[0x1];
 extern u32  gbavirtreg_r14und[0x1];
-//extern u32  __attribute__((section(".dtcm"))) gbavirtreg_r14sys[0x1]; //usr/sys uses same stacks
-//extern u32  __attribute__((section(".dtcm"))) gbavirtreg_r14sys[0x1];
+//extern u32  gbavirtreg_r14sys[0x1]; //usr/sys uses same stacks
+//extern u32  gbavirtreg_r14sys[0x1];
 
 //original registers used by any PSR_MODE that do belong to FIQ r8-r12
-extern u32  gbavirtreg_fiq[0x5];
-
-//original registers used by any PSR_MODE that do not belong to FIQ r8-r12
-extern u32  gbavirtreg_nonfiq[0x5];
-
+extern u32  exRegs_fiq[0x5];
 
 //extern'd addresses for virtualizer calls
 // [(u32)&disthumbcode	] 
@@ -121,16 +123,6 @@ extern bool speedHack ;
 extern int cpuSaveType ;
 extern bool cheatsEnabled ;
 extern bool mirroringEnable;
-
-extern u8 *bios; //calloc
-extern u8 *rom; //calc
-
-extern u8 *internalRAM; 
-extern u8 *workRAM ;
-extern u8 *paletteRAM;
-
-extern u8 *vram;
-extern u8 *oam ;
 
 extern u8 ioMem[0x400];
 
@@ -217,7 +209,6 @@ extern u16 GBAIME;
 //gba arm core variables
 extern int SWITicks;
 extern int IRQTicks;
-
 extern int layerEnableDelay;
 extern bool busPrefetch;
 extern bool busPrefetchEnable;
@@ -229,7 +220,6 @@ extern u32 cpuDmaLast;
 extern int dummyAddress;
 extern bool cpuBreakLoop;
 extern int cpuNextEvent;
-
 extern int gbaSaveType; // used to remember the save type on reset
 extern bool intState ;
 extern bool stopState ;
@@ -239,13 +229,9 @@ extern bool cpuSramEnabled ;
 extern bool cpuFlashEnabled ;
 extern bool cpuEEPROMEnabled;
 extern bool cpuEEPROMSensorEnabled;
-
 extern u32 cpuPrefetch[2];
-
 extern int cpuTotalTicks;                  //cycle count for each opcode processed
-
 extern int lcdTicks;
-
 extern u8 timerOnOffDelay;
 extern u16 timer0Value;
 extern bool timer0On ;
@@ -275,78 +261,133 @@ extern u32 dma2Source ;
 extern u32 dma2Dest ;
 extern u32 dma3Source ;
 extern u32 dma3Dest ;
-
 extern void (*cpuSaveGameFunc)(u32,u8);
-//void (*renderLine)() = mode0RenderLine;
-extern bool fxOn ;
 extern bool windowOn;
 extern int frameCount ;
 extern char buffer[1024];
 extern u8 biosProtected[4];
 
-//thread vectors (for ASM irq)
-
 //input
-u32 systemreadjoypad(int which);
+extern u32 systemreadjoypad(int which);
 
 //fetch
-u32 armnextpc(u32 address);
-u32 armfetchpc_arm(u32 address);
-u16 armfetchpc_thumb(u32 address);
+extern u32 armnextpc(u32 address);
+extern u32 armfetchpc_arm(u32 address);
+extern u16 armfetchpc_thumb(u32 address);
 
 //swi
-u32 swi_virt(u32 swinum);
-
-//LUT that updates the base index depending on the opcode base
+extern u32 swi_virt(u32 swinum);
 extern u8 cpuBitsSet[256];
 extern u8 cpuLowestBitSet[256];
 
 //CPU GBA:
 extern s16 CPUReadHalfWordSigned_stack(u32 address);
 extern s8 CPUReadByteSigned_stack(u32 address);
-
 extern s16 CPUReadHalfWordSigned(u32 address);
 extern s8 CPUReadByteSigned(u32 address);
-
 extern u8 CPUReadByte(u32 address);
 extern u16 CPUReadHalfWord(u32 address);
 extern u32 CPUReadMemory(u32 address);
-
 extern u8 CPUReadByte_stack(u32 address);
 extern u16 CPUReadHalfWord_stack(u32 address);
 extern u32 CPUReadMemory_stack(u32 address);
-
 extern void CPUWriteByte(u32 address, u8 value);
 extern void CPUWriteHalfWord(u32 address, u16 value);
 extern void CPUWriteMemory(u32 address, u32 value);
-
 extern void CPUWriteByte_stack(u32 address, u8 value);
 extern void CPUWriteHalfWord_stack(u32 address, u16 value);
 extern void CPUWriteMemory_stack(u32 address, u32 value);
-
-//stacked is safe but slow (we dont want speed but accuracy for this debugger)
-/*
-extern u8 gbawram[(256*1024)];
-extern u8 palram[0x400];
-extern u8 gbabios[0x4000];
-extern u8 gbaintram[0x8000];
-extern u8 gbaoam[0x400];
-extern u8 gbacaioMem[0x400];
-//extern u8 iomem[0x400]; //already defined
-extern u8 saveram[512*1024]; //512K
-*/
-
 extern int hblank_ticks;
-
 extern void  CPUUpdateRegister(u32 address, u16 value);
 extern void  CPUCheckDMA(int reason, int dmamask);
 extern void  doDMA(u32 * s, u32 * d, u32 si, u32 di, u32 c, int transfer32);
-
 extern u32 myROM[173];
-
 extern int romSize;
+extern int   sound_clock_ticks;
+extern int   soundtTicks;
 
-extern struct GBASystem gbaSystemGlobal;
+extern u16 GBADISPSTAT;
+extern u16 GBAVCOUNT;
+extern u16 GBABG0CNT;
+extern u16 GBABG1CNT;
+extern u16 GBABG2CNT;
+extern u16 GBABG3CNT;
+extern u16 GBABG0HOFS;
+extern u16 GBABG0VOFS;
+extern u16 GBABG1HOFS;
+extern u16 GBABG1VOFS;
+extern u16 GBABG2HOFS;
+extern u16 GBABG2VOFS;
+extern u16 GBABG3HOFS;
+extern u16 GBABG3VOFS;
+extern u16 GBABG2PA;
+extern u16 GBABG2PB;
+extern u16 GBABG2PC;
+extern u16 GBABG2PD;
+extern u16 GBABG2X_L;
+extern u16 GBABG2X_H;
+extern u16 GBABG2Y_L;
+extern u16 GBABG2Y_H;
+extern u16 GBABG3PA;
+extern u16 GBABG3PB;
+extern u16 GBABG3PC;
+extern u16 GBABG3PD;
+extern u16 GBABG3X_L;
+extern u16 GBABG3X_H;
+extern u16 GBABG3Y_L;
+extern u16 GBABG3Y_H;
+extern u16 GBAWIN0H;
+extern u16 GBAWIN1H;
+extern u16 GBAWIN0V;
+extern u16 GBAWIN1V;
+extern u16 GBAWININ;
+extern u16 GBAWINOUT;
+extern u16 GBAMOSAIC;
+extern u16 GBABLDMOD;
+extern u16 GBACOLEV;
+extern u16 GBACOLY;
+extern u16 GBADM0SAD_L;
+extern u16 GBADM0SAD_H;
+extern u16 GBADM0DAD_L;
+extern u16 GBADM0DAD_H;
+extern u16 GBADM0CNT_L;
+extern u16 GBADM0CNT_H;
+extern u16 GBADM1SAD_L;
+extern u16 GBADM1SAD_H;
+extern u16 GBADM1DAD_L;
+extern u16 GBADM1DAD_H;
+extern u16 GBADM1CNT_L;
+extern u16 GBADM1CNT_H;
+extern u16 GBADM2SAD_L;
+extern u16 GBADM2SAD_H;
+extern u16 GBADM2DAD_L;
+extern u16 GBADM2DAD_H;
+extern u16 GBADM2CNT_L;
+extern u16 GBADM2CNT_H;
+extern u16 GBADM3SAD_L;
+extern u16 GBADM3SAD_H;
+extern u16 GBADM3DAD_L;
+extern u16 GBADM3DAD_H;
+extern u16 GBADM3CNT_L;
+extern u16 GBADM3CNT_H;
+extern u16 GBATM0D;
+extern u16 GBATM0CNT;
+extern u16 GBATM1D;
+extern u16 GBATM1CNT;
+extern u16 GBATM2D;
+extern u16 GBATM2CNT;
+extern u16 GBATM3D;
+extern u16 GBATM3CNT;
+extern u16 GBAP1;
+extern u16 GBADISPCNT;
+extern u16 GBAVCOUNT;
+
+extern u8 memoryWait[16];
+extern u8 memoryWait32[16];
+extern u8 memoryWaitSeq[16];
+extern u8 memoryWaitSeq32[16];
+
+extern bool cpuStart;
 
 #ifdef __cplusplus
 }

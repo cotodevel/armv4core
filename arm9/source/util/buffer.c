@@ -6,7 +6,7 @@
 #include "buffer.h"
 
 
-volatile u32 gbawram[(256*1024)/4];
+volatile u8 gbawram[256*1024];
 volatile u8 __attribute__ ((aligned (1))) palram[0x400];
 volatile u8 __attribute__ ((aligned (1))) gbabios[0x4000];
 volatile u8 __attribute__ ((aligned (1))) gbaintram[0x8000];

@@ -48,9 +48,6 @@
 #include "translator.h"
 #include "gba.arm.core.h"
 
-
-extern struct GBASystem gba;
-
 s16 sinetable[256] = {
   (s16)0x0000, (s16)0x0192, (s16)0x0323, (s16)0x04B5, (s16)0x0645, (s16)0x07D5, (s16)0x0964, (s16)0x0AF1,
   (s16)0x0C7C, (s16)0x0E05, (s16)0x0F8C, (s16)0x1111, (s16)0x1294, (s16)0x1413, (s16)0x158F, (s16)0x1708,
@@ -89,11 +86,11 @@ s16 sinetable[256] = {
 
 //swi 0
 u32 bios_cpureset(){
-	//refresh jump opcode in biosprotected vector
-	gba.biosprotected[0] = 0x00;
-	gba.biosprotected[1] = 0xf0;
-	gba.biosprotected[2] = 0x29;
-	gba.biosprotected[3] = 0xe1;
+	//refresh jump opcode in biosProtected vector
+	biosProtected[0] = 0x00;
+	biosProtected[1] = 0xf0;
+	biosProtected[2] = 0x29;
+	biosProtected[3] = 0xe1;
 	
 	//set CPU-stack to usermode
 	cpsrvirt=0x0;
@@ -101,43 +98,42 @@ u32 bios_cpureset(){
 	
 	//flush working CPU registers
 	for(i=0;i<0x10;i++){
-		gbavirtreg_cpu[i]=0x0;
+		exRegs[i]=0x0;
 	}
-	gbavirtreg_cpu[0x0]=0;
+	exRegs[0x0]=0;
 
 	// clean caioMem memory
-	memset(gba.caioMem, 0, 0x400);
+	memset(gbacaioMem, 0, 0x400);
 	
 	// clean io memory
-	memset(gba.iomem, 0, 0x400);
+	memset(iomem, 0, 0x400);
 	
 	// clean bios memory
-	//memset(gba.bios,0, 0x4000);
+	//memset(bios,0, 0x4000);
 	
 	// clean internal work ram
-	memset(gba.intram,0, 0x8000);
+	memset(internalRAM,0, 0x8000);
 	
 	// clean palette
-	memset(gba.palram, 0, 0x400);
+	memset(palram, 0, 0x400);
 	
 	// clean OAM
-	memset(gba.oam, 0, 0x400);
+	memset(oam, 0, 0x400);
 	
 	// clean vram
-	//memset(gba.vidram, 0, 0x20000);	//test later
+	//memset(vram, 0, 0x20000);	//test later
 	
 	//gbamap reset
-	//struct: map[index].address[(u8*)address] <- (u8*)(u32)&gba.dummysrc
 	for(i = 0; i < 256; i++) {
-		gba.map[i].address = (u8 *)(u32)gba.dummysrc;
-		gba.map[i].mask = 0;
+		map[i].address = (u8 *)(u32)0;
+		map[i].mask = 0;
 	}
 return 0;	
 }
 
 //swi 1
 u32 bios_registerramreset(u32 flags){
-// no need to trace here. this is only called directly from GBA.cpp
+// no need to trace here. this is only called directly from cpp
 // to emulate bios initialization
 
 cpu_updateregisters(0x0, 0x80);	//CPUUpdateRegister(0x0, 0x80);
@@ -145,17 +141,17 @@ cpu_updateregisters(0x0, 0x80);	//CPUUpdateRegister(0x0, 0x80);
 if(flags) {
 	if(flags & 0x01) {
 		// clear work RAM
-		memset(gba.workram, 0, 0x40000);
+		memset(workRAM, 0, 0x40000);
 		//printf("do clean wram!");
 	}
 	if(flags & 0x02) {
 		// clear internal RAM
-		memset(gba.intram, 0, 0x7e00); // don't clear 0x7e00-0x7fff
+		memset(internalRAM, 0, 0x7e00); // don't clear 0x7e00-0x7fff
 		//printf("do clean iwram!");
 	}
 	if(flags & 0x04) {
 		// clear palette RAM
-		memset(gba.palram, 0, 0x400);
+		memset(palram, 0, 0x400);
 		//printf("do clean palram!");
 	}
 	if(flags & 0x08) {
@@ -164,7 +160,7 @@ if(flags) {
 	}
 	if(flags & 0x10) {
 		// clean OAM
-		memset(gba.oam, 0, 0x400);
+		memset(oam, 0, 0x400);
 		//printf("do clean oam!");
 	}
 	
@@ -228,10 +224,9 @@ return 0;
 
 //swi 2 (halt not emulated?)
 u32 bios_cpuhalt(){
-fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); 		//+r0
-gba.cpustate=dummyreg;
-faststr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); 		//=r0
-return 0;
+	fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); 		//+r0
+	faststr((u8*)&dummyreg, exRegs, (0x0), 32,0); 		//=r0
+	return 0;
 }
 
 
@@ -252,8 +247,8 @@ u32 bios_div(){
 //int number = exRegs[0];
 //int denom = exRegs[1];
 
-fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); 		//+r0
-fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0x1), 32,0); 		//+r1
+fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); 		//+r0
+fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); 		//+r1
 
 int number = dummyreg;
 int denom = dummyreg2;
@@ -264,9 +259,9 @@ if(denom != 0) {
 	s32 temp =	(s32)dummyreg;						//s32 temp = (s32)exRegs[0];
 	dummyreg3 = temp < 0 ? (u32)-temp : (u32)temp;//exRegs[3] = temp < 0 ? (u32)-temp : (u32)temp;
 	
-	faststr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0);
-	faststr((u8*)&dummyreg2, gbavirtreg_cpu, (0x1), 32,0);
-	faststr((u8*)&dummyreg3, gbavirtreg_cpu, (0x3), 32,0); 	//=r3
+	faststr((u8*)&dummyreg, exRegs, (0x0), 32,0);
+	faststr((u8*)&dummyreg2, exRegs, (0x1), 32,0);
+	faststr((u8*)&dummyreg3, exRegs, (0x3), 32,0); 	//=r3
 }
 
 //#ifdef DEV_VERSION
@@ -280,13 +275,13 @@ return 0;
 
 //swi 7
 u32 bios_divarm(){
-	fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); 	//r0
-	fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0x1), 32,0); 	//r1
+	fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); 	//r0
+	fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); 	//r1
 	
 	dummyreg3=dummyreg;		//tmp = r0
 	
-	faststr((u8*)&dummyreg2, gbavirtreg_cpu, (0x0), 32,0);	//r0=r1
-	faststr((u8*)&dummyreg3, gbavirtreg_cpu, (0x1), 32,0);	//r1=r0
+	faststr((u8*)&dummyreg2, exRegs, (0x0), 32,0);	//r0=r1
+	faststr((u8*)&dummyreg3, exRegs, (0x1), 32,0);	//r1=r0
 	
 	//u32 temp = exRegs[0];
 	//exRegs[0] = exRegs[1];
@@ -298,15 +293,15 @@ return 0;
 
 //swi 8
 u32 bios_sqrt(){
-	fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0);
+	fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0);
 	dummyreg2 = (u16)sqrtasm((int)dummyreg);//(u32)sqrt((double)dummyreg);
-	faststr((u8*)&dummyreg2, gbavirtreg_cpu, (0x0), 32,0);
+	faststr((u8*)&dummyreg2, exRegs, (0x0), 32,0);
 return 0;
 }
 
 //swi 9
 u32 bios_arctan(){
-fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); //+r0
+fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
 
 s32 a =  -( ((s32)(dummyreg*dummyreg)) >> 14);
 s32 b = ((0xA9 * a) >> 14) + 0x390;
@@ -319,15 +314,15 @@ b = ((b * a) >> 14) + 0xA2F9;
 a = ((s32)dummyreg * b) >> 16;
 dummyreg = a;
 
-faststr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); //=r0
+faststr((u8*)&dummyreg, exRegs, (0x0), 32,0); //=r0
 return 0;
 }
 
 
 //swi 0xa
 u32 bios_arctan2(){
-fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0x1), 32,0); //+r1
+fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
+fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); //+r1
 
 s32 x = dummyreg;
 s32 y = dummyreg2;
@@ -359,16 +354,16 @@ else{
 	}
 }
 dummyreg = res;
-faststr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0);
+faststr((u8*)&dummyreg, exRegs, (0x0), 32,0);
 return 0;
 }
 
 //swi 0xb
 u32 bios_cpuset(){
 
-fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0x1), 32,0); //+r1
-fastldr((u8*)&dummyreg3, gbavirtreg_cpu, (0x2), 32,0); //+r2
+fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
+fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); //+r1
+fastldr((u8*)&dummyreg3, exRegs, (0x2), 32,0); //+r2
 
 u32 source = dummyreg;
 u32 dest = dummyreg2;
@@ -432,9 +427,9 @@ return 0;
 //swi 0xc
 u32 bios_cpufastset(){
 
-fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0x1), 32,0); //+r1
-fastldr((u8*)&dummyreg3, gbavirtreg_cpu, (0x2), 32,0); //+r2
+fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
+fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); //+r1
+fastldr((u8*)&dummyreg3, exRegs, (0x2), 32,0); //+r2
 
 u32 source = dummyreg;
 u32 dest = dummyreg2;
@@ -480,7 +475,7 @@ return 0;
 //swi 0xd
 u32 bios_getbioschecksum(){
 	dummyreg=0xBAAE187F;
-	faststr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0);
+	faststr((u8*)&dummyreg, exRegs, (0x0), 32,0);
 return 0;
 }
 
@@ -493,9 +488,9 @@ u32 bios_bgaffineset(){
 //        exRegs[2]);
 //#endif
 
-fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0x1), 32,0); //+r1
-fastldr((u8*)&dummyreg3, gbavirtreg_cpu, (0x2), 32,0); //+r2
+fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
+fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); //+r1
+fastldr((u8*)&dummyreg3, exRegs, (0x2), 32,0); //+r2
 
 u32 src = dummyreg;
 u32 dest = dummyreg2;
@@ -553,10 +548,10 @@ u32 bios_objaffineset(){
 //        exRegs[2],
 //        exRegs[3]);
 //#endif
-fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0x1), 32,0); //+r1
-fastldr((u8*)&dummyreg3, gbavirtreg_cpu, (0x2), 32,0); //+r2
-fastldr((u8*)&dummyreg4, gbavirtreg_cpu, (0x3), 32,0); //+r3
+fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
+fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); //+r1
+fastldr((u8*)&dummyreg3, exRegs, (0x2), 32,0); //+r2
+fastldr((u8*)&dummyreg4, exRegs, (0x3), 32,0); //+r3
   
 	u32 src = dummyreg; 		//r0
 	u32 dest = dummyreg2;		//r1
@@ -598,9 +593,9 @@ u32 source=0; 	//u32 source = exRegs[0];
 u32 dest=0;		//u32 dest = exRegs[1];
 u32 header=0;	//u32 header = exRegs[2];
 
-fastldr((u8*)&source, gbavirtreg_cpu, (0x0), 32,0); 	//r0
-fastldr((u8*)&dest, gbavirtreg_cpu, (0x1), 32,0); 	//r1
-fastldr((u8*)&header, gbavirtreg_cpu, (0x2), 32,0); 	//r2
+fastldr((u8*)&source, exRegs, (0x0), 32,0); 	//r0
+fastldr((u8*)&dest, exRegs, (0x1), 32,0); 	//r1
+fastldr((u8*)&header, exRegs, (0x2), 32,0); 	//r2
 
 int len=cpuread_hword(header); 			//int len = CPUReadHalfWord(header);
 
@@ -660,8 +655,8 @@ u32 bios_lz77uncompwram(){
 //#ifdef DEV_VERSION
 //    log("LZ77UnCompWram: 0x%08x,0x%08x", exRegs[0], exRegs[1]);
 //#endif
-fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0x1), 32,0);//+r1
+fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
+fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0);//+r1
 
 u32 source = dummyreg; 	//exRegs[0];
 u32 dest = dummyreg2;	//exRegs[1];
@@ -720,8 +715,8 @@ u32 bios_lz77uncompvram(){
 //        exRegs[0],
 //        exRegs[1]);
 //#endif
-fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0x1), 32,0); //+r1
+fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
+fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); //+r1
   
 u32 source = dummyreg; 	//exRegs[0];
 u32 dest = dummyreg2;	//exRegs[1];
@@ -813,8 +808,8 @@ u32 bios_huffuncomp(){
 //        exRegs[0],
 //        exRegs[1]);
 //#endif
-fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0);
-fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0x1), 32,0);
+fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0);
+fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0);
 
 u32 source = dummyreg; //exRegs[0];
 u32 dest = dummyreg2; //exRegs[1];
@@ -962,8 +957,8 @@ u32 bios_rluncompwram(){
 //        exRegs[0],
 //        exRegs[1]);
 //#endif
-fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0x1), 32,0); //+r1
+fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
+fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); //+r1
 
 u32 source = dummyreg; 	//exRegs[0];
 u32 dest = dummyreg2;	//exRegs[1];
@@ -1010,8 +1005,8 @@ u32 bios_rluncompvram(){
 //        exRegs[0],
 //        exRegs[1]);
 //#endif
-fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); 
-fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0x1), 32,0); 
+fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); 
+fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); 
 
 u32 source = dummyreg; 	//exRegs[0];
 u32 dest = dummyreg2;	//exRegs[1];
@@ -1080,8 +1075,8 @@ u32 bios_diff8bitunfilterwram(){
 //        exRegs[1]);
 //#endif
 
-fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0x1), 32,0); //+r1
+fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
+fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); //+r1
 
 u32 source = dummyreg; 	//exRegs[0];
 u32 dest = dummyreg2;	//exRegs[1];
@@ -1115,8 +1110,8 @@ u32 bios_diff8bitunfiltervram(){
 //    log("Diff8bitUnFilterVram: 0x%08x,0x%08x", exRegs[0],
 //        exRegs[1]);
 //#endif
-fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0x1), 32,0); //+r1
+fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
+fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); //+r1
 
 u32 source = dummyreg;	//exRegs[0];
 u32 dest = dummyreg2;	//exRegs[1];
@@ -1160,8 +1155,8 @@ u32 bios_diff16bitunfilter(){
 //    log("Diff16bitUnFilter: 0x%08x,0x%08x", exRegs[0],
 //        exRegs[1]);
 //#endif
-fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); 
-fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0x1), 32,0); 
+fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); 
+fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); 
 
 u32 source = dummyreg;	//exRegs[0];
 u32 dest = dummyreg2;	//exRegs[1];
@@ -1199,16 +1194,16 @@ u32 bios_midikey2freq(){
 //        exRegs[1],
 //        exRegs[2]);
 //#endif
-fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0);
-fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0x1), 32,0);
-fastldr((u8*)&dummyreg3, gbavirtreg_cpu, (0x2), 32,0);
+fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0);
+fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0);
+fastldr((u8*)&dummyreg3, exRegs, (0x2), 32,0);
 
 int freq = cpuread_word(dummyreg+4);	//CPUReadMemory(exRegs[0]+4);
 double tmp;
 tmp = ((double)(180 - dummyreg2)) - ((double)dummyreg3 / 256.f);
 tmp = pow((double)2.f, tmp / 12.f);
 dummyreg = (int)((double)freq / tmp); //save to r0
-faststr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0);
+faststr((u8*)&dummyreg, exRegs, (0x0), 32,0);
 
 //#ifdef DEV_VERSION
 //    log("MidiKey2Freq: return %08x",
@@ -1223,7 +1218,7 @@ u32 bios_snddriverjmptablecopy(){
 //    log("SndDriverJmpTableCopy: dest=%08x",
 //        exRegs[0]);
 //#endif
-fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0x0), 32,0); 
+fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); 
 
 for(i = 0; i < 0x24; i++) {
 	cpuwrite_word(dummyreg, 0x9c);	//CPUWriteMemory(dummyreg, 0x9c);

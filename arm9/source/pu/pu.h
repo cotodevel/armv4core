@@ -84,7 +84,6 @@ FIQ				0x1C							FIQ					Disabled			Disabled			Disabled
 
 //THESE MEMORY AREAS AREN'T ON PU DEFAULT SETTINGS!
 //Any r/w beyond 0x02xxxxxx will cause CPU to change to ABT mode + unresolved PU address 
-//(guru meditation error with the default debug handler)
 //#define ioMem caioMem //hack todo
 //GBA Slot ROM 08000000h (max. 32MB) parts of gba code to execute is mapped here with various tricks
 

@@ -30,74 +30,71 @@
 #include <errno.h>
 #include <ctype.h>
 
-
-extern u32  __attribute__((section(".dtcm")))  	romsize;		//gba romsize loaded 
-extern u32  __attribute__((section(".dtcm"))) * 	rom_entrypoint; //entrypoint
+extern u32  romsize;		//gba romsize loaded 
+extern u32  rom_entrypoint; //entrypoint
 
 //GBA stack (on dtcm because fast)
-extern u8 __attribute__((section(".dtcm"))) gbastck_usr[0x200];
-extern u8 __attribute__((section(".dtcm"))) gbastck_fiq[0x200];
-extern u8 __attribute__((section(".dtcm"))) gbastck_irq[0x200];
-extern u8 __attribute__((section(".dtcm"))) gbastck_svc[0x200];
-extern u8 __attribute__((section(".dtcm"))) gbastck_abt[0x200];
-extern u8 __attribute__((section(".dtcm"))) gbastck_und[0x200];
-//extern u8 __attribute__((section(".dtcm"))) gbastck_sys[0x200]; //stack shared with usr
+extern u8 gbastck_usr[0x200];
+extern u8 gbastck_fiq[0x200];
+extern u8 gbastck_irq[0x200];
+extern u8 gbastck_svc[0x200];
+extern u8 gbastck_abt[0x200];
+extern u8 gbastck_und[0x200];
+//extern u8 gbastck_sys[0x200]; //stack shared with usr
 
 //GBA stack base addresses
-extern u32 __attribute__((section(".dtcm"))) * gbastckadr_usr;
-extern u32 __attribute__((section(".dtcm"))) * gbastckadr_fiq;
-extern u32 __attribute__((section(".dtcm"))) * gbastckadr_irq;
-extern u32 __attribute__((section(".dtcm"))) * gbastckadr_svc;
-extern u32 __attribute__((section(".dtcm"))) * gbastckadr_abt;
-extern u32 __attribute__((section(".dtcm"))) * gbastckadr_und;
-//extern u32 __attribute__((section(".dtcm"))) * gbastckadr_sys;	//stack shared with usr
+extern u32 * gbastckadr_usr;
+extern u32 * gbastckadr_fiq;
+extern u32 * gbastckadr_irq;
+extern u32 * gbastckadr_svc;
+extern u32 * gbastckadr_abt;
+extern u32 * gbastckadr_und;
+//extern u32 * gbastckadr_sys;	//stack shared with usr
 
 //GBA stack address frame pointer (or offset pointer)
-extern u32 __attribute__((section(".dtcm"))) * gbastckfp_usr;
-extern u32 __attribute__((section(".dtcm"))) * gbastckfp_fiq;
-extern u32 __attribute__((section(".dtcm"))) * gbastckfp_irq;
-extern u32 __attribute__((section(".dtcm"))) * gbastckfp_svc;
-extern u32 __attribute__((section(".dtcm"))) * gbastckfp_abt;
-extern u32 __attribute__((section(".dtcm"))) * gbastckfp_und;
-//extern u32 __attribute__((section(".dtcm"))) * gbastckfp_sys; //shared with usr
+extern u32 * gbastckfp_usr;
+extern u32 * gbastckfp_fiq;
+extern u32 * gbastckfp_irq;
+extern u32 * gbastckfp_svc;
+extern u32 * gbastckfp_abt;
+extern u32 * gbastckfp_und;
+//extern u32 * gbastckfp_sys; //shared with usr
 
 //SPSR slot for GBA stack frame pointer (single cpu<mode> to framepointer operations)
-extern u32 __attribute__((section(".dtcm"))) gbastckfpadr_spsr;
+extern u32 gbastckfpadr_spsr;
 
 //current slot for GBA stack <mode> base pointer
-extern u32 __attribute__((section(".dtcm"))) * gbastckmodeadr_curr;
+extern u32 * gbastckmodeadr_curr;
 
 //current slot for GBA stack frame pointer
-extern u32 __attribute__((section(".dtcm"))) * gbastckfpadr_curr;
+extern u32 * gbastckfpadr_curr;
 
 //gba virtualized r0-r14 registers
-extern u32  __attribute__((section(".dtcm"))) gbavirtreg_cpu[0x10]; //placeholder for actual CPU mode registers
+
 
 //each sp,lr for cpu<mode>
 
-
 //and cpu<mode> all the other backup registers when restoring from FIQ r8-r12
-extern u32  __attribute__((section(".dtcm"))) gbavirtreg_cpubup[0x5];
-
+extern u32  gbavirtreg_cpubup[0x5];
 
 
 //branchslot calls (up to 32 groups of * 17 elements * 4 depth size (u32) addresses)
 //for cpu save working registers when branch mode enters
 //////////////////////////////////////////////////////////////////////////////////////
 //this is for storing current CPU mode fully when branching calls from the virtualizer
-extern u32  __attribute__((section(".dtcm"))) branch_stack[17*32]; //32 slots
+extern u32  branch_stack[17*32]; //32 slots
 
 //branch framepointer
-extern u32 * __attribute__((section(".dtcm"))) branch_stackfp;
+extern u32 * branch_stackfp;
 //////////////////////////////////////////////////////////////////////////////////////
 
 
 ////////branch address returning values for when entering//////////
 //branch address stack for LR (PC+ (opcodes to be executed * 4)) addresses
-extern u32  __attribute__((section(".dtcm"))) branch_adrstack[0x10];
+extern u32  branch_adrstack[0x10];
 
 //branch address stack framepointer
-extern u32 * __attribute__((section(".dtcm"))) branch_adrstack_fp;
+extern u32 *branch_adrstack_fp;
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -110,10 +107,10 @@ extern u32 * __attribute__((section(".dtcm"))) branch_adrstack_fp;
 // [					]
 // [					]
 // [					]
-extern u32  __attribute__((section(".dtcm"))) call_adrstack[0x10];
+extern u32  call_adrstack[0x10];
 
 //GBA Interrupts
-//4000200h - gbaSystemGlobal.GBAIE - Interrupt Enable Register (R/W)
+//4000200h - GBAIE - Interrupt Enable Register (R/W)
 //  Bit   Expl.
 //  0     LCD V-Blank                    (0=Disable)
 //  1     LCD H-Blank                    (etc.)
@@ -132,111 +129,104 @@ extern u32  __attribute__((section(".dtcm"))) call_adrstack[0x10];
 
 //virtual environment Interruptable Bits
 
-//CPUtotalticker
-extern u32  __attribute__((section(".dtcm"))) cputotalticks;
+//CPUtotaltick
+extern u32  cputotalticks;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 //lookup address tables
-const u32 __attribute__ ((hot)) addresslookup(u32 srcaddr, u32 blacklist[], u32 whitelist[]);
+extern const u32 addresslookup(u32 srcaddr, u32 blacklist[], u32 whitelist[]);
 
 //swi
-u32 swi_virt(u32 swinum);
+extern u32 swi_virt(u32 swinum);
 
-u32 gbaboot(u32); //main jumper
-u32 thumbcode(u32); //jump to thumbmode gba
-u32 armcode(u32); //jump to thumbmode gba
+extern u32 gbaboot(u32); //main jumper
+extern u32 thumbcode(u32); //jump to thumbmode gba
+extern u32 armcode(u32); //jump to thumbmode gba
 
 //virtual stack management
-u32 ldmiavirt(u8 * output_buf, u32 stackptr, u16 regs, u8 access, u8 byteswapped, u8 order);
-u32 stmiavirt(u8 * input_buf, u32 stackptr, u16 regs, u8 access, u8 byteswapped, u8 order);
+extern u32 ldmiavirt(u8 * output_buf, u32 stackptr, u16 regs, u8 access, u8 byteswapped, u8 order);
+extern u32 stmiavirt(u8 * input_buf, u32 stackptr, u16 regs, u8 access, u8 byteswapped, u8 order);
 
 //fast single ldr/str opcodes
-u32 fastldr(u8 * output_buf, u32 gbaregs[], u16 regs, u8 access, u8 byteswapped);
-u32 faststr(u8 * input_buf, u32 gbaregs[], u16 regs, u8 access, u8 byteswapped);
+extern u32 fastldr(u8 * output_buf, u32 gbaregs[], u16 regs, u8 access, u8 byteswapped);
+extern u32 faststr(u8 * input_buf, u32 gbaregs[], u16 regs, u8 access, u8 byteswapped);
 
-u32 addspvirt(u32 stackptr,int ammount);
-u32 subspvirt(u32 stackptr,int ammount);
+extern u32 addspvirt(u32 stackptr,int ammount);
+extern u32 subspvirt(u32 stackptr,int ammount);
 
 //IO GBA (virtual < -- > hardware) handlers
-u32 gbacpu_refreshvcount();	//CPUCompareVCOUNT(gba);
-u32 cpu_updateregisters(u32 address, u16 value);		//CPUUpdateRegister(0xn, 0xnn);
+extern u32 gbacpu_refreshvcount();	//CPUCompareVCOUNT(gba);
+extern u32 cpu_updateregisters(u32 address, u16 value);		//CPUUpdateRegister(0xn, 0xnn);
 
 //CPU GBA:
 
 //direct GBA CPU reads
-u32 virtread_word(u32 address);
-u16 virtread_hword(u32 address);
-u8 virtread_byte(u32 address);
+extern u32 virtread_word(u32 address);
+extern u16 virtread_hword(u32 address);
+extern u8 virtread_byte(u32 address);
 
 ////direct GBA CPU writes
-u32 virtwrite_word(u32 address,u32 data);
-u16 virtwrite_hword(u32 address,u16 data);
-u8 virtwrite_byte(u32 address,u8 data);
+extern u32 virtwrite_word(u32 address,u32 data);
+extern u16 virtwrite_hword(u32 address,u16 data);
+extern u8 virtwrite_byte(u32 address,u8 data);
 
 //GBA addressing hamming weight approach fast
-u8 	cpuread_bytefast(u8 address); 		//CPUReadByteQuick(gba, addr)
-u16 cpuread_hwordfast(u16 address);		//CPUReadHalfWordQuick(gba, addr)
-u32 cpuread_wordfast(u32 address);		//CPUReadMemoryQuick(gba, addr)
+extern u8 	cpuread_bytefast(u8 address); 		//CPUReadByteQuick(gba, addr)
+extern u16 cpuread_hwordfast(u16 address);		//CPUReadHalfWordQuick(gba, addr)
+extern u32 cpuread_wordfast(u32 address);		//CPUReadMemoryQuick(gba, addr)
 
 //process list GBA load
-u8 cpuread_byte(u32 address);	//old:	CPUReadByte(GBASystem *gba, u32 address);
-u16 cpuread_hword(u32 address);	//old:	CPUReadHalfWord(GBASystem *gba, u32 address)
-u32 cpuread_word(u32 address); 	//old:	CPUReadMemory(GBASystem *gba, u32 address)
+extern u8 cpuread_byte(u32 address);	//old:	CPUReadByte(GBASystem *gba, u32 address);
+extern u16 cpuread_hword(u32 address);	//old:	CPUReadHalfWord(GBASystem *gba, u32 address)
+extern u32 cpuread_word(u32 address); 	//old:	CPUReadMemory(GBASystem *gba, u32 address)
 
 //process list GBA writes
-u32 cpuwrite_byte(u32 address,u8 b);			//old: CPUWriteByte(GBASystem *gba, u32 address, u8 b)
-u32 cpuwrite_hword(u32 address, u16 value);	//old: CPUWriteHalfWord(GBASystem *gba, u32 address, u16 value)
-u32 cpuwrite_word(u32 address, u32 value);		//old: CPUWriteMemory(GBASystem *gba, u32 address, u32 value)
+extern u32 cpuwrite_byte(u32 address,u8 b);			//old: CPUWriteByte(GBASystem *gba, u32 address, u8 b)
+extern u32 cpuwrite_hword(u32 address, u16 value);	//old: CPUWriteHalfWord(GBASystem *gba, u32 address, u16 value)
+extern u32 cpuwrite_word(u32 address, u32 value);		//old: CPUWriteMemory(GBASystem *gba, u32 address, u32 value)
 
 //IRQ
 extern u32 irqbiosinst();
 
 //other
-int sqrtasm(int);
-u32 wramtstasm(u32 address,u32 top);
-u32 debuggeroutput();
-u32 branchtoaddr(u32 value,u32 address);
-u32 video_render(u32 * gpubuffer);
-u32 sound_render();
-void save_thread(u32 * srambuf);
-
-//other & opcode from disk
-//deprecated:u32 read32to8(u32 value,u32 offset); //usage: (value big endian,u32 rom offset) -> stream_readu8
-
-//u32 cback_entry(u32); //r0 = stack pointer
-//u32 cback_exit(u32);
+extern int sqrtasm(int);
+extern u32 wramtstasm(u32 address,u32 top);
+extern u32 debuggeroutput();
+extern u32 branchtoaddr(u32 value,u32 address);
+extern u32 video_render(u32 * gpubuffer);
+extern u32 sound_render();
+extern void save_thread(u32 * srambuf);
 
 // NDS Interrupts
 
 //r0    0=Return immediately if an old flag was already set (NDS9: bugged!)
 //      1=Discard old flags, wait until a NEW flag becomes set
-//r1    Interrupt flag(s) to wait for (same format as gbaSystemGlobal.GBAIE/IF registers)
-u32 nds9intrwait(u32 behaviour,u32 GBAIF);
-u32 setirq(u32 irqtoset);
+//r1    Interrupt flag(s) to wait for (same format as GBAIE/IF registers)
+extern u32 nds9intrwait(u32 behaviour, u32 GBAIF);
+extern u32 setirq(u32 irqtoset);
 
 // end NDS Interrupts
 
-
-u32 cpuloop(int ticks);
-int cpuupdateticks();
-u32 cpuirq(u32 cpumode);
-u32 systemreadjoypad(int which);
+extern u32 cpuloop(int ticks);
+extern int cpuupdateticks();
+extern u32 cpuirq(u32 cpumode);
+extern u32 systemreadjoypad(int which);
 
 //fetch
-u32 armnextpc(u32 address);
-u32 armfetchpc(u32 address);
+extern u32 armnextpc(u32 address);
+extern u32 armfetchpc(u32 address);
 
 //nds threads
-void vblank_thread();
-void hblank_thread();
-void vcount_thread();
-void fifo_thread();
+extern void vblank_thread();
+extern void hblank_thread();
+extern void vcount_thread();
+extern void fifo_thread();
 
 //gba threads
-u32 gbavideorender();
+extern u32 gbavideorender();
 
 #ifdef __cplusplus
 }

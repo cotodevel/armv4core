@@ -1,8 +1,6 @@
-
 #include "typedefsTGDS.h"
 #include "dsregs.h"
 #include "dsregs_asm.h"
-
 
 #include "Util.h"
 #include "opcode.h"
@@ -77,18 +75,18 @@ const bool isInRom [16]=
 
 
 u32 dummycall(u32 arg){
-//printf ("hi i am a dummy call whose arg is: [%x] ",(unsigned int)arg);
-return arg;
+	//printf ("hi i am a dummy call whose arg is: [%x] ",(unsigned int)arg);
+	return arg;
 }
 
 // swaps a 16-bit value
-inline u16 swap16(u16 v){
+u16 swap16(u16 v){
 	return (v<<8)|(v>>8);
 }
 
 
 u32 UPDATE_REG(u32 address, u32 value){
-	WRITE16LE(gba.iomem[address],(u16)value);
+	WRITE16LE(iomem[address],(u16)value);
 return 0;
 }
 
@@ -146,7 +144,7 @@ if(testmode==0){
 		}
 
 		else {
-			//gbavirtreg_cpu[j]=0xc070+(j<<8);
+			//exRegs[j]=0xc070+(j<<8);
 			//printf("stack: @ %x for save data",(unsigned int)((u32)(u32*)stackfpbu+(ctr*4)));
 			cpuwrite_word((unsigned int)(((u32)stackfpbu)+(ctr*4)),0xc070+(j<<8));
 			//printf("(%x)[%x]",(unsigned int)((u32)(u32*)stackfpbu+(ctr*4)), (unsigned int) cpuread_word((u32)((u32)(u32*)stackfpbu+(ctr*4))));
@@ -198,12 +196,12 @@ else if(testmode==1){
 		}
 
 		else {
-			gbavirtreg_cpu[j]=0xc070+(j<<8);
+			exRegs[j]=0xc070+(j<<8);
 			j++;
 		}
 
 		if ( ((ctr % (gba_branch_block_size)) == 0) && (ctr != 0)) {
-			stackfpbu=cpubackupmode((u32*)(stackfpbu),gbavirtreg_cpu,cpsrvirt); //already increases fp
+			stackfpbu=cpubackupmode((u32*)(stackfpbu),exRegs,cpsrvirt); //already increases fp
 			//printf("b.ofset:%x ",(unsigned int)branchfpbu);
 			//ofset+=0x1;
 		}
@@ -212,7 +210,7 @@ else if(testmode==1){
 	//printf("1/2 stack test fp set to: %x ",(unsigned int)(u32*)branchfpbu);
 	//flush workreg
 	for(j=0;j<0x10;j++){
-		*((u32*)(u32)&gbavirtreg_cpu+j)=0x0;
+		*((u32*)(u32)&exRegs+j)=0x0;
 	}
 
 	//debug
@@ -227,26 +225,26 @@ else if(testmode==1){
 	for(ctr=0;ctr<((int)(size) - (0x4*17));ctr++){
 
 		if ( ((ctr % (gba_branch_block_size)) == 0)) {
-			stackfpbu=cpurestoremode((u32*)(stackfpbu),gbavirtreg_cpu);
+			stackfpbu=cpurestoremode((u32*)(stackfpbu),exRegs);
 			//printf("b.ofset->restore :%x ",(unsigned int)(u32*)branchfpbu);
 			//ofset+=0x4;
 		}
 
 		//reset cnt!
 		if( (ctr % 0x10) == 0){
-			//printf(" <r%d:[%x]>",j,(unsigned int)gbavirtreg_cpu[j]);
+			//printf(" <r%d:[%x]>",j,(unsigned int)exRegs[j]);
 			j=0;
 		}
 
 		else {
-			if ( gbavirtreg_cpu[j] == (u32)(0xc070+(j<<8)))
+			if ( exRegs[j] == (u32)(0xc070+(j<<8)))
 				j++;
 			else {
 				//check why if 16 regs address are recv OK
 				for(i=0;i<16;i++){
-					//printf(" REG%d[%x]",i,(unsigned int)gbavirtreg_cpu[i]);
+					//printf(" REG%d[%x]",i,(unsigned int)exRegs[i]);
 				}
-				printf(" [branchstack] STUCK AT: %x:%x",(unsigned int)(u32*)(stackfpbu+1),(unsigned int)gbavirtreg_cpu[j]);
+				printf(" [branchstack] STUCK AT: %x:%x",(unsigned int)(u32*)(stackfpbu+1),(unsigned int)exRegs[j]);
 				while(1);
 			}
 		}
@@ -376,17 +374,7 @@ int VolumeFromString(const char * volumestring) {
 }
 
 
-void initmemory(struct GBASystem *gba){
-	//coto
-	//void *memset(void *sourcemem, int value, size_t n)
-	gba->caioMem = (u8*)&gbacaioMem[0];
-	gba->workram=(u8*)&gbawram[0];		//((int)&__ewram_end + 0x1);
-	gba->iomem = (u8 *)&iomem[0];  //IO memory         (1 KBytes)
-	gba->bios = (u8 *)&gbabios[0]; //BIOS - System ROM         (16 KBytes)
-	gba->intram=(u8*)&gbaintram[0]; //On-chip Work RAM - IRAM (32K)
-	gba->palram=(u8*)palram; //BG/OBJ Palette RAM (1K)
-	gba->oam=(u8 *)&gbaoam[0]; //OAM - OBJ Attributes      (1 Kbyte)
-	
+void initmemory(){
 		//4000240h - NDS9 - VRAMCNT_A - 8bit - VRAM-A (128K) Bank Control (W)
 	//  0-2   VRAM MST              ;Bit2 not used by VRAM-A,B,H,I
 	//  3-4   VRAM Offset (0-3)     ;Offset not used by VRAM-E,H,I
@@ -406,74 +394,74 @@ void initmemory(struct GBASystem *gba){
 	u32store(0x04000240,vrammst|vramofs|(1<<7)); //MST 1 , vram offset 0 (A), VRAM enable
 	
 	//NDS vram A bank 6000000h+(20000h*OFS)
-	gba->vidram=(u8 *)0x06000000+(0x20000*vramofs); //OAM - OBJ Attributes      (1 Kbyte)
+	u8 * vramtest=(u8 *)0x06000000+(0x20000*vramofs); //OAM - OBJ Attributes      (1 Kbyte)
 
-	if(((u8*)gba->vidram)!=NULL)
-		printf(" VRAM: OK :[%x]!",(unsigned int)(u8*)gba->vidram); 
+	if(((u8*)vramtest)!=NULL)
+		printf(" VRAM: OK :[%x]!",(unsigned int)(u8*)vramtest); 
 	else{
-		printf(" VRAM FAIL! @:%x",(unsigned int)(u8*)gba->vidram);
+		printf(" VRAM FAIL! @:%x",(unsigned int)(u8*)vramtest);
 		while(1);
 	}
 
 	int ramtestsz=0;
 	
-	ramtestsz=wramtstasm((int)gba->workram,256*1024);
+	ramtestsz=wramtstasm((int)workRAM,256*1024);
 	if(ramtestsz==alignw(256*1024))
-		printf(" GBAWRAM tst: OK :[%x]!",(unsigned int)(u8*)gba->workram); 
+		printf(" GBAWRAM tst: OK :[%x]!",(unsigned int)(u8*)workRAM); 
 	else{
 		printf(" FAILED ALLOCING GBAEWRAM[%x]:@%d (bytes: %d)",(unsigned int)(u8*)gbawram,ramtestsz,0x10000);
 		while(1);
 	}
-	memset((void*)gba->workram,0x0,0x10000);
+	memset((void*)workRAM,0x0,0x10000);
 
 	//OK
-	ramtestsz=wramtstasm((int)gba->iomem,0x400);
+	ramtestsz=wramtstasm((int)iomem,0x400);
 	if(ramtestsz==alignw(0x400))
-		printf(" IOMEM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->iomem,ramtestsz);
+		printf(" IOMEM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)iomem,ramtestsz);
 	else 
-		printf(" IOMEM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->iomem,ramtestsz);
-	memset((void*)gba->iomem,0x0,0x400);
+		printf(" IOMEM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)iomem,ramtestsz);
+	memset((void*)iomem,0x0,0x400);
 
 
 	//this is OK
-	ramtestsz=wramtstasm((int)gba->bios,0x4000);
+	ramtestsz=wramtstasm((int)bios,0x4000);
 	if(ramtestsz==alignw(0x4000))
-		printf(" BIOS tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->bios,ramtestsz);
+		printf(" BIOS tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)bios,ramtestsz);
 	else 
-		printf(" BIOS tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->bios,ramtestsz);
-	memset((void*)gba->bios,0x0,0x4000);
+		printf(" BIOS tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)bios,ramtestsz);
+	memset((void*)bios,0x0,0x4000);
 
 	//this is OK
-	ramtestsz=wramtstasm((int)gba->intram,0x8000);
+	ramtestsz=wramtstasm((int)internalRAM,0x8000);
 	if(ramtestsz==alignw(0x8000))
-		printf(" IRAM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->intram,ramtestsz);
+		printf(" IRAM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)internalRAM,ramtestsz);
 	else 
-		printf(" IRAM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->intram,ramtestsz);
-	memset((void*)gba->intram,0x0,0x8000);
+		printf(" IRAM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)internalRAM,ramtestsz);
+	memset((void*)internalRAM,0x0,0x8000);
 
 	//this is OK
-	ramtestsz=wramtstasm((int)(u8*)gba->palram,0x400);
+	ramtestsz=wramtstasm((int)(u8*)palram,0x400);
 	if(ramtestsz==alignw(0x400))
-		printf(" PaletteRAM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->palram,ramtestsz);
+		printf(" PaletteRAM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)palram,ramtestsz);
 	else 
-		printf(" PaletteRAM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->palram,ramtestsz);
-	memset((void*)gba->palram,0x0,0x400);
+		printf(" PaletteRAM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)palram,ramtestsz);
+	memset((void*)palram,0x0,0x400);
 
 	//this is OK
-	ramtestsz=wramtstasm((int)gba->oam,0x400);
+	ramtestsz=wramtstasm((int)oam,0x400);
 	if(ramtestsz==alignw(0x400))
-		printf(" OAM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->oam,ramtestsz);
+		printf(" OAM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)oam,ramtestsz);
 	else 
-		printf(" OAM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gba->oam,ramtestsz);
-	memset((void*)gba->oam,0x0,0x400);
+		printf(" OAM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)oam,ramtestsz);
+	memset((void*)oam,0x0,0x400);
 
 	//this is OK
-	ramtestsz=wramtstasm((int)&gba->caioMem[0x0],0x400);
+	ramtestsz=wramtstasm((int)&gbacaioMem[0x0],0x400);
 	if(ramtestsz==alignw(0x400))
-		printf(" caioMem tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)&gba->caioMem[0x0],ramtestsz);
+		printf(" caioMem tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)&gbacaioMem[0x0],ramtestsz);
 	else 
-		printf(" caioMem tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)&gba->caioMem[0x0],ramtestsz);
-	memset((void*)&gba->caioMem[0x0],0x0,0x400);
+		printf(" caioMem tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)&gbacaioMem[0x0],ramtestsz);
+	memset((void*)&gbacaioMem[0x0],0x0,0x400);
 
 	//gba stack test
 	for(i=0;i<sizeof(gbastck_usr)/2;i++){
@@ -555,386 +543,365 @@ void initmemory(struct GBASystem *gba){
 	//usr/sys are same stacks, so removed
 }
 
-void initemu(struct GBASystem *gba){
+void initemu(){
 
-gba->sound_clock_ticks = 167772; // 1/100 second
-gba->bios=(u8*)0;//bios
-gba->oam=(u8*)0;//oam
-gba->vidram=(u8*)0;//vram
-gba->iomem=(u8*)0;//ioMem
-gba->intram=(u8*)0;//internalRAM
-gba->workram=(u8*)0;//workRAM
-gba->palram=(u8*)0;//paletteRAM
+	sound_clock_ticks = 167772; // 1/100 second
+	
+	//refresh jump opcode in biosProtected vector
+	biosProtected[0] = 0x00;
+	biosProtected[1] = 0xf0;
+	biosProtected[2] = 0x29;
+	biosProtected[3] = 0xe1;
+	  
 
-//refresh jump opcode in biosprotected vector
-gba->biosprotected[0] = 0x00;
-gba->biosprotected[1] = 0xf0;
-gba->biosprotected[2] = 0x29;
-gba->biosprotected[3] = 0xe1;
-  
+	/*				 allocate segments
+	 GBA Memory Map
 
-/*				 allocate segments
- GBA Memory Map
+	General Internal Memory
+	  00000000-00003FFF   BIOS - System ROM         (16 KBytes)
+	  00004000-01FFFFFF   Not used
+	  02000000-0203FFFF   WRAM - On-board Work RAM  (256 KBytes) 2 Wait
+	  02040000-02FFFFFF   Not used
+	  03000000-03007FFF   WRAM - On-chip Work RAM   (32 KBytes)
+	  03008000-03FFFFFF   Not used
+	  04000000-040003FE   I/O Registers
+	  04000400-04FFFFFF   Not used
+	Internal Display Memory
+	  05000000-050003FF   BG/OBJ Palette RAM        (1 Kbyte)
+	  05000400-05FFFFFF   Not used
+	  06000000-06017FFF   VRAM - Video RAM          (96 KBytes)
+	  06018000-06FFFFFF   Not used
+	  07000000-070003FF   OAM - OBJ Attributes      (1 Kbyte)
+	  07000400-07FFFFFF   Not used
+	External Memory (Game Pak)
+	  08000000-09FFFFFF   Game Pak ROM/FlashROM (max 32MB) - Wait State 0
+	  0A000000-0BFFFFFF   Game Pak ROM/FlashROM (max 32MB) - Wait State 1
+	  0C000000-0DFFFFFF   Game Pak ROM/FlashROM (max 32MB) - Wait State 2
+	  0E000000-0E00FFFF   Game Pak SRAM    (max 64 KBytes) - 8bit Bus width
+	  0E010000-0FFFFFFF   Not used
+	*/
 
-General Internal Memory
-  00000000-00003FFF   BIOS - System ROM         (16 KBytes)
-  00004000-01FFFFFF   Not used
-  02000000-0203FFFF   WRAM - On-board Work RAM  (256 KBytes) 2 Wait
-  02040000-02FFFFFF   Not used
-  03000000-03007FFF   WRAM - On-chip Work RAM   (32 KBytes)
-  03008000-03FFFFFF   Not used
-  04000000-040003FE   I/O Registers
-  04000400-04FFFFFF   Not used
-Internal Display Memory
-  05000000-050003FF   BG/OBJ Palette RAM        (1 Kbyte)
-  05000400-05FFFFFF   Not used
-  06000000-06017FFF   VRAM - Video RAM          (96 KBytes)
-  06018000-06FFFFFF   Not used
-  07000000-070003FF   OAM - OBJ Attributes      (1 Kbyte)
-  07000400-07FFFFFF   Not used
-External Memory (Game Pak)
-  08000000-09FFFFFF   Game Pak ROM/FlashROM (max 32MB) - Wait State 0
-  0A000000-0BFFFFFF   Game Pak ROM/FlashROM (max 32MB) - Wait State 1
-  0C000000-0DFFFFFF   Game Pak ROM/FlashROM (max 32MB) - Wait State 2
-  0E000000-0E00FFFF   Game Pak SRAM    (max 64 KBytes) - 8bit Bus width
-  0E010000-0FFFFFFF   Not used
-*/
+	initmemory();
+	printf("init&teststacks OK");
 
-initmemory(gba); //healthy OK
-printf("init&teststacks OK");
+	//GBA address MAP setup
+	for(i = 0; i < 256; i++){
+		map[i].address = (u8 *)(u32)0;
+		map[i].mask = 0;
+	}
 
-//GBA address MAP setup
-//gbamap set format-> struct map[index].address[(u8*)address] <- (u8*)(u32)&gba.dummysrc
-for(i = 0; i < 256; i++){
-	gba->map[i].address = (u8 *)(u32)&gba->dummysrc;
-	gba->map[i].mask = 0;
-}
+	for(i = 0; i < 0x400; i++)
+		ioReadable[i] = true;
+	for(i = 0x10; i < 0x48; i++)
+		ioReadable[i] = false;
+	for(i = 0x4c; i < 0x50; i++)
+		ioReadable[i] = false;
+	for(i = 0x54; i < 0x60; i++)
+		ioReadable[i] = false;
+	for(i = 0x8c; i < 0x90; i++)
+		ioReadable[i] = false;
+	for(i = 0xa0; i < 0xb8; i++)
+		ioReadable[i] = false;
+	for(i = 0xbc; i < 0xc4; i++)
+		ioReadable[i] = false;
+	for(i = 0xc8; i < 0xd0; i++)
+		ioReadable[i] = false;
+	for(i = 0xd4; i < 0xdc; i++)
+		ioReadable[i] = false;
+	for(i = 0xe0; i < 0x100; i++)
+		ioReadable[i] = false;
+	for(i = 0x110; i < 0x120; i++)
+		ioReadable[i] = false;
+	for(i = 0x12c; i < 0x130; i++)
+		ioReadable[i] = false;
+	for(i = 0x138; i < 0x140; i++)
+		ioReadable[i] = false;
+	for(i = 0x144; i < 0x150; i++)
+		ioReadable[i] = false;
+	for(i = 0x15c; i < 0x200; i++)
+		ioReadable[i] = false;
+	for(i = 0x20c; i < 0x300; i++)
+		ioReadable[i] = false;
+	for(i = 0x304; i < 0x400; i++)
+		ioReadable[i] = false;
 
-for(i = 0; i < 0x400; i++)
-	gba->ioreadable[i] = true;
-for(i = 0x10; i < 0x48; i++)
-    gba->ioreadable[i] = false;
-for(i = 0x4c; i < 0x50; i++)
-    gba->ioreadable[i] = false;
-for(i = 0x54; i < 0x60; i++)
-    gba->ioreadable[i] = false;
-for(i = 0x8c; i < 0x90; i++)
-    gba->ioreadable[i] = false;
-for(i = 0xa0; i < 0xb8; i++)
-    gba->ioreadable[i] = false;
-for(i = 0xbc; i < 0xc4; i++)
-    gba->ioreadable[i] = false;
-for(i = 0xc8; i < 0xd0; i++)
-    gba->ioreadable[i] = false;
-for(i = 0xd4; i < 0xdc; i++)
-    gba->ioreadable[i] = false;
-for(i = 0xe0; i < 0x100; i++)
-    gba->ioreadable[i] = false;
-for(i = 0x110; i < 0x120; i++)
-    gba->ioreadable[i] = false;
-for(i = 0x12c; i < 0x130; i++)
-    gba->ioreadable[i] = false;
-for(i = 0x138; i < 0x140; i++)
-    gba->ioreadable[i] = false;
-for(i = 0x144; i < 0x150; i++)
-    gba->ioreadable[i] = false;
-for(i = 0x15c; i < 0x200; i++)
-    gba->ioreadable[i] = false;
-for(i = 0x20c; i < 0x300; i++)
-    gba->ioreadable[i] = false;
-for(i = 0x304; i < 0x400; i++)
-    gba->ioreadable[i] = false;
+	//vba core init
+	GBADISPCNT  = 0x0080;
+	GBADISPSTAT = 0x0000;
 
-//vba core init
-gba->GBADISPCNT  = 0x0080;
-gba->GBADISPSTAT = 0x0000;
+	#ifdef NOBIOS
+		GBAVCOUNT   =  0 ;
+	#else
+		GBAVCOUNT 	=  0x007E;
+	#endif
 
-#ifdef NOBIOS
-	gba->GBAVCOUNT   =  0 ;
-#else
-	gba->GBAVCOUNT 	=  0x007E;
-#endif
+	GBABG0CNT   = 0x0000;
+	GBABG1CNT   = 0x0000;
+	GBABG2CNT   = 0x0000;
+	GBABG3CNT   = 0x0000;
+	GBABG0HOFS  = 0x0000;
+	GBABG0VOFS  = 0x0000;
+	GBABG1HOFS  = 0x0000;
+	GBABG1VOFS  = 0x0000;
+	GBABG2HOFS  = 0x0000;
+	GBABG2VOFS  = 0x0000;
+	GBABG3HOFS  = 0x0000;
+	GBABG3VOFS  = 0x0000;
+	GBABG2PA    = 0x0100;
+	GBABG2PB    = 0x0000;
+	GBABG2PC    = 0x0000;
+	GBABG2PD    = 0x0100;
+	GBABG2X_L   = 0x0000;
+	GBABG2X_H   = 0x0000;
+	GBABG2Y_L   = 0x0000;
+	GBABG2Y_H   = 0x0000;
+	GBABG3PA    = 0x0100;
+	GBABG3PB    = 0x0000;
+	GBABG3PC    = 0x0000;
+	GBABG3PD    = 0x0100;
+	GBABG3X_L   = 0x0000;
+	GBABG3X_H   = 0x0000;
+	GBABG3Y_L   = 0x0000;
+	GBABG3Y_H   = 0x0000;
+	GBAWIN0H    = 0x0000;
+	GBAWIN1H    = 0x0000;
+	GBAWIN0V    = 0x0000;
+	GBAWIN1V    = 0x0000;
+	GBAWININ    = 0x0000;
+	GBAWINOUT   = 0x0000;
+	GBAMOSAIC   = 0x0000;
+	GBABLDMOD   = 0x0000;
+	GBACOLEV    = 0x0000;
+	GBACOLY     = 0x0000;
+	GBADM0SAD_L = 0x0000;
+	GBADM0SAD_H = 0x0000;
+	GBADM0DAD_L = 0x0000;
+	GBADM0DAD_H = 0x0000;
+	GBADM0CNT_L = 0x0000;
+	GBADM0CNT_H = 0x0000;
+	GBADM1SAD_L = 0x0000;
+	GBADM1SAD_H = 0x0000;
+	GBADM1DAD_L = 0x0000;
+	GBADM1DAD_H = 0x0000;
+	GBADM1CNT_L = 0x0000;
+	GBADM1CNT_H = 0x0000;
+	GBADM2SAD_L = 0x0000;
+	GBADM2SAD_H = 0x0000;
+	GBADM2DAD_L = 0x0000;
+	GBADM2DAD_H = 0x0000;
+	GBADM2CNT_L = 0x0000;
+	GBADM2CNT_H = 0x0000;
+	GBADM3SAD_L = 0x0000;
+	GBADM3SAD_H = 0x0000;
+	GBADM3DAD_L = 0x0000;
+	GBADM3DAD_H = 0x0000;
+	GBADM3CNT_L = 0x0000;
+	GBADM3CNT_H = 0x0000;
+	GBATM0D     = 0x0000;
+	GBATM0CNT   = 0x0000;
+	GBATM1D     = 0x0000;
+	GBATM1CNT   = 0x0000;
+	GBATM2D     = 0x0000;
+	GBATM2CNT   = 0x0000;
+	GBATM3D     = 0x0000;
+	GBATM3CNT   = 0x0000;
+	GBAP1       = 0x03FF;
+	GBAIE=0x0000;			//  IE       = 0x0000;
+	GBAIF=0x0000;			//  IF       = 0x0000;
+	GBAIME=0x0000;			// IME      = 0x0000;
 
-gba->GBABG0CNT   = 0x0000;
-gba->GBABG1CNT   = 0x0000;
-gba->GBABG2CNT   = 0x0000;
-gba->GBABG3CNT   = 0x0000;
-gba->GBABG0HOFS  = 0x0000;
-gba->GBABG0VOFS  = 0x0000;
-gba->GBABG1HOFS  = 0x0000;
-gba->GBABG1VOFS  = 0x0000;
-gba->GBABG2HOFS  = 0x0000;
-gba->GBABG2VOFS  = 0x0000;
-gba->GBABG3HOFS  = 0x0000;
-gba->GBABG3VOFS  = 0x0000;
-gba->GBABG2PA    = 0x0100;
-gba->GBABG2PB    = 0x0000;
-gba->GBABG2PC    = 0x0000;
-gba->GBABG2PD    = 0x0100;
-gba->GBABG2X_L   = 0x0000;
-gba->GBABG2X_H   = 0x0000;
-gba->GBABG2Y_L   = 0x0000;
-gba->GBABG2Y_H   = 0x0000;
-gba->GBABG3PA    = 0x0100;
-gba->GBABG3PB    = 0x0000;
-gba->GBABG3PC    = 0x0000;
-gba->GBABG3PD    = 0x0100;
-gba->GBABG3X_L   = 0x0000;
-gba->GBABG3X_H   = 0x0000;
-gba->GBABG3Y_L   = 0x0000;
-gba->GBABG3Y_H   = 0x0000;
-gba->GBAWIN0H    = 0x0000;
-gba->GBAWIN1H    = 0x0000;
-gba->GBAWIN0V    = 0x0000;
-gba->GBAWIN1V    = 0x0000;
-gba->GBAWININ    = 0x0000;
-gba->GBAWINOUT   = 0x0000;
-gba->GBAMOSAIC   = 0x0000;
-gba->GBABLDMOD   = 0x0000;
-gba->GBACOLEV    = 0x0000;
-gba->GBACOLY     = 0x0000;
-gba->GBADM0SAD_L = 0x0000;
-gba->GBADM0SAD_H = 0x0000;
-gba->GBADM0DAD_L = 0x0000;
-gba->GBADM0DAD_H = 0x0000;
-gba->GBADM0CNT_L = 0x0000;
-gba->GBADM0CNT_H = 0x0000;
-gba->GBADM1SAD_L = 0x0000;
-gba->GBADM1SAD_H = 0x0000;
-gba->GBADM1DAD_L = 0x0000;
-gba->GBADM1DAD_H = 0x0000;
-gba->GBADM1CNT_L = 0x0000;
-gba->GBADM1CNT_H = 0x0000;
-gba->GBADM2SAD_L = 0x0000;
-gba->GBADM2SAD_H = 0x0000;
-gba->GBADM2DAD_L = 0x0000;
-gba->GBADM2DAD_H = 0x0000;
-gba->GBADM2CNT_L = 0x0000;
-gba->GBADM2CNT_H = 0x0000;
-gba->GBADM3SAD_L = 0x0000;
-gba->GBADM3SAD_H = 0x0000;
-gba->GBADM3DAD_L = 0x0000;
-gba->GBADM3DAD_H = 0x0000;
-gba->GBADM3CNT_L = 0x0000;
-gba->GBADM3CNT_H = 0x0000;
-gba->GBATM0D     = 0x0000;
-gba->GBATM0CNT   = 0x0000;
-gba->GBATM1D     = 0x0000;
-gba->GBATM1CNT   = 0x0000;
-gba->GBATM2D     = 0x0000;
-gba->GBATM2CNT   = 0x0000;
-gba->GBATM3D     = 0x0000;
-gba->GBATM3CNT   = 0x0000;
-gba->GBAP1       = 0x03FF;
-GBAIE=0x0000;			//  gba->IE       = 0x0000;
-GBAIF=0x0000;			//  gba->IF       = 0x0000;
-GBAIME=0x0000;			// gba->IME      = 0x0000;
+	cpu_updateregisters(0x00, GBADISPCNT);	//UPDATE_REG(0x00, GBADISPCNT);
+	cpu_updateregisters(0x06, GBAVCOUNT);	//UPDATE_REG(0x06, VCOUNT);
+	cpu_updateregisters(0x20, GBABG2PA);		//UPDATE_REG(0x20, GBABG2PA);
+	cpu_updateregisters(0x26, GBABG2PD);		//UPDATE_REG(0x26, GBABG2PD);
+	cpu_updateregisters(0x30, GBABG3PA);		//UPDATE_REG(0x30, GBABG3PA);
+	cpu_updateregisters(0x36, GBABG3PD);		//UPDATE_REG(0x36, GBABG3PD);
+	cpu_updateregisters(0x130, GBAP1);		//UPDATE_REG(0x130, GBAP1);
+	cpu_updateregisters(0x88, 0x200);			//UPDATE_REG(0x88, 0x200);
 
-cpu_updateregisters(0x00, gba->GBADISPCNT);	//UPDATE_REG(0x00, gba->GBADISPCNT);
-cpu_updateregisters(0x06, gba->GBAVCOUNT);	//UPDATE_REG(0x06, gba->VCOUNT);
-cpu_updateregisters(0x20, gba->GBABG2PA);		//UPDATE_REG(0x20, gba->gbaSystemGlobal.GBABG2PA);
-cpu_updateregisters(0x26, gba->GBABG2PD);		//UPDATE_REG(0x26, gba->gbaSystemGlobal.GBABG2PD);
-cpu_updateregisters(0x30, gba->GBABG3PA);		//UPDATE_REG(0x30, gba->gbaSystemGlobal.GBABG3PA);
-cpu_updateregisters(0x36, gba->GBABG3PD);		//UPDATE_REG(0x36, gba->gbaSystemGlobal.GBABG3PD);
-cpu_updateregisters(0x130, gba->GBAP1);		//UPDATE_REG(0x130, gba->gbaSystemGlobal.GBAP1);
-cpu_updateregisters(0x88, 0x200);			//UPDATE_REG(0x88, 0x200);
+	#ifndef NOBIOS
+	lcdTicks = 1008;
+	#else
+	lcdTicks = 208;
+	#endif
 
-#ifndef NOBIOS
-gba->lcdticks = 1008;
-#else
-gba->lcdticks = 208;
-#endif
+	timer0On = false;
+	timer0Ticks = 0;
+	timer0Reload = 0;
+	timer0ClockReload  = 0;
+	timer1On = false;
+	timer1Ticks = 0;
+	timer1Reload = 0;
+	timer1ClockReload  = 0;
+	timer2On = false;
+	timer2Ticks = 0;
+	timer2Reload = 0;
+	timer2ClockReload  = 0;
+	timer3On = false;
+	timer3Ticks = 0;
+	timer3Reload = 0;
+	timer3ClockReload  = 0;
+	dma0Source = 0;
+	dma0Dest = 0;
+	dma1Source = 0;
+	dma1Dest = 0;
+	dma2Source = 0;
+	dma2Dest = 0;
+	dma3Source = 0;
+	dma3Dest = 0;
+	windowOn = false;
+	frameCount = 0;
+	saveType = 0;
+	layerEnable = GBADISPCNT & layerSettings;
 
-gba->timer0on = false;
-gba->timer0ticks = 0;
-gba->timer0reload = 0;
-gba->timer0clockreload  = 0;
-gba->timer1on = false;
-gba->timer1ticks = 0;
-gba->timer1reload = 0;
-gba->timer1clockreload  = 0;
-gba->timer2on = false;
-gba->timer2ticks = 0;
-gba->timer2reload = 0;
-gba->timer2clockreload  = 0;
-gba->timer3on = false;
-gba->timer3ticks = 0;
-gba->timer3reload = 0;
-gba->timer3clockreload  = 0;
-gba->dma0source = 0;
-gba->dma0dest = 0;
-gba->dma1source = 0;
-gba->dma1dest = 0;
-gba->dma2source = 0;
-gba->dma2dest = 0;
-gba->dma3source = 0;
-gba->dma3dest = 0;
-gba->fxon = false;
-gba->windowon = false;
-gba->framecount = 0;
-gba->savetype = 0;
-gba->layerenable = gba->GBADISPCNT & gba->layersettings;
-
-//OK so far
-gba->map[0].address = gba->bios;
-gba->map[0].mask = 0x3FFF;
-gba->map[2].address = gba->workram;
-gba->map[2].mask = 0x3FFFF;
-gba->map[3].address = gba->intram; 
-gba->map[3].mask = 0x7FFF;
-gba->map[4].address = gba->iomem;
-gba->map[4].mask = 0x3FF;
-gba->map[5].address = gba->palram;
-gba->map[5].mask = 0x3FF;
-gba->map[6].address = gba->vidram;
-gba->map[6].mask = 0x1FFFF;
-gba->map[7].address = gba->oam;
-gba->map[7].mask = 0x3FF;
-gba->map[8].address = (u8*)(u32)rom;	// gba->rom; 	 //ROM entrypoint
-gba->map[8].mask = 0x1FFFFFF;			// 0x1FFFFFF; 	/ //MASK for GBA addressable ROMDATA
-gba->map[9].address = (u8*)(u32)rom;	// gba->rom; 	/
-gba->map[9].mask = 0x1FFFFFF;			// 0x1FFFFFF; 	/
-gba->map[10].address = (u8*)(u32)rom;	// gba->rom; 	/
-gba->map[10].mask = 0x1FFFFFF;			// 0x1FFFFFF; 	/
-gba->map[12].address = (u8*)(u32)rom;	// gba->rom; 	/
-gba->map[12].mask = 0x1FFFFFF;			// 0x1FFFFFF; 	/
+	//OK so far
+	map[0].address = bios;
+	map[0].mask = 0x3FFF;
+	map[2].address = workRAM;
+	map[2].mask = 0x3FFFF;
+	map[3].address = internalRAM; 
+	map[3].mask = 0x7FFF;
+	map[4].address = iomem;
+	map[4].mask = 0x3FF;
+	map[5].address = palram;
+	map[5].mask = 0x3FF;
+	map[6].address = vram;
+	map[6].mask = 0x1FFFF;
+	map[7].address = oam;
+	map[7].mask = 0x3FF;
+	map[8].address = (u8*)(u32)(exRegs[0xf]&0xfffffffe);	// rom; 	 //ROM entrypoint
+	map[8].mask = 0x1FFFFFF;			// 0x1FFFFFF; 	/ //MASK for GBA addressable ROMDATA
+	map[9].address = (u8*)(u32)(exRegs[0xf]&0xfffffffe);	// rom; 	/
+	map[9].mask = 0x1FFFFFF;			// 0x1FFFFFF; 	/
+	map[10].address = (u8*)(u32)(exRegs[0xf]&0xfffffffe);	// rom; 	/
+	map[10].mask = 0x1FFFFFF;			// 0x1FFFFFF; 	/
+	map[12].address = (u8*)(u32)(exRegs[0xf]&0xfffffffe);	// rom; 	/
+	map[12].mask = 0x1FFFFFF;			// 0x1FFFFFF; 	/
 
 
-//setup patches for gbaoffsets into emulator offsets 
-addrfixes[0]=(u32)(u8*)gba->bios;				//@bios
-addrfixes[1]=(u32)0x4000;
-addrfixes[2]=(u32)(u8*)gba->workram;	//((int)&__ewram_end + 0x1);	//@ewram
-addrfixes[3]=(u32)0x10000;
-addrfixes[4]=(u32)(u8*)gba->intram;	//&gbaintram[0];				//@internal wram
-addrfixes[5]=(u32)0x8000;
-addrfixes[6]=(u32)(u8*)gba->iomem;					//@GBA I/O map
-addrfixes[7]=(u32)0x00000800;
-addrfixes[8]=(u32)(u8*)gba->palram;		//palram;				//@BG/OBJ Palette RAM
-addrfixes[9]=(u32)0x400;
-addrfixes[0xa]=(u32)(u8*)gba->vidram;	//0x06000000+(0x20000*vramofs);	//@vram
-addrfixes[0xb]=(u32)(1024*128);
-addrfixes[0xc]=(u32)(u8*)gba->oam;	//&gbaoam[0];				//@object attribute memory
-addrfixes[0xd]=(u32)0x400;
-addrfixes[0xe]=(u32)0x0;						//(u32)0x08000000;		//@rom
-addrfixes[0xf]=(u32)0x0;						//romsize;				//@rom top
+	//setup patches for gbaoffsets into emulator offsets 
+	addrfixes[0]=(u32)(u8*)bios;				//@bios
+	addrfixes[1]=(u32)0x4000;
+	addrfixes[2]=(u32)(u8*)workRAM;	//((int)&__ewram_end + 0x1);	//@ewram
+	addrfixes[3]=(u32)0x10000;
+	addrfixes[4]=(u32)(u8*)internalRAM;	///internal wram
+	addrfixes[5]=(u32)0x8000;
+	addrfixes[6]=(u32)(u8*)iomem;					//@GBA I/O map
+	addrfixes[7]=(u32)0x00000800;
+	addrfixes[8]=(u32)(u8*)palram;		//palram;				//@BG/OBJ Palette RAM
+	addrfixes[9]=(u32)0x400;
+	addrfixes[0xa]=(u32)(u8*)vram;	//0x06000000+(0x20000*vramofs);	//@vram
+	addrfixes[0xb]=(u32)(1024*128);
+	addrfixes[0xc]=(u32)(u8*)oam;	//&gbaoam[0];				//@object attribute memory
+	addrfixes[0xd]=(u32)0x400;
+	addrfixes[0xe]=(u32)0x0;						//(u32)0x08000000;		//@rom
+	addrfixes[0xf]=(u32)0x0;						//romsize;				//@rom top
 
-//Cpu_Stack_USR EQU 0x03007F00 ; GBA USR stack adress
-//Cpu_Stack_IRQ EQU 0x03007FA0 ; GBA IRQ stack adress
-//Cpu_Stack_SVC EQU 0x03007FE0 ; GBA SVC stack adress
+	//Cpu_Stack_USR EQU 0x03007F00 ; GBA USR stack adress
+	//Cpu_Stack_IRQ EQU 0x03007FA0 ; GBA IRQ stack adress
+	//Cpu_Stack_SVC EQU 0x03007FE0 ; GBA SVC stack adress
 
-//gba->reg[13].I = 0x03007F00;
-//gba->reg[15].I = 0x08000000;
-//gba->reg[16].I = 0x00000000;
-//gba->reg[R13_IRQ].I = 0x03007FA0;
-//gba->reg[R13_SVC].I = 0x03007FE0;
-//gba->armIrqEnable = true;
+	//reg[13].I = 0x03007F00;
+	//reg[15].I = 0x08000000;
+	//reg[16].I = 0x00000000;
+	//reg[R13_IRQ].I = 0x03007FA0;
+	//reg[R13_SVC].I = 0x03007FE0;
+	//armIrqEnable = true;
 
-//new stack setup
-//1) set stack base 2) to detect stack top just sizeof(gbastck_mode), framepointer has the current pos (from 0 to n) used so far
-gbastckadr_usr=(u32*)0x03007F00; //0x100 size & 0x10 as CPU <mode> start (usr/sys shared stack)
-gbavirtreg_cpu[0xd]=gbavirtreg_r13usr[0]=(u32)(u32*)gbastckadr_usr;
+	//new stack setup
+	//1) set stack base 2) to detect stack top just sizeof(gbastck_mode), framepointer has the current pos (from 0 to n) used so far
+	gbastckadr_usr=(u32*)0x03007F00; //0x100 size & 0x10 as CPU <mode> start (usr/sys shared stack)
+	exRegs[0xd]=gbavirtreg_r13usr[0]=(u32)(u32*)gbastckadr_usr;
 
-gbastckfp_usr=(u32*)0x03007F00;
-#ifdef STACKTEST
-	if((int)stack_test(gbastckadr_usr,0xff,0x0)==(int)0xff)
-		printf("USR stack OK!");
-	else
-		printf("USR stack WRONG!");
-#endif
+	gbastckfp_usr=(u32*)0x03007F00;
+	#ifdef STACKTEST
+		if((int)stack_test(gbastckadr_usr,0xff,0x0)==(int)0xff)
+			printf("USR stack OK!");
+		else
+			printf("USR stack WRONG!");
+	#endif
 
-gbastckadr_fiq=(u32*)(gbastckadr_usr-GBASTACKSIZE); //custom fiq stack
-gbavirtreg_r13fiq[0]=(u32)(u32*)gbastckadr_fiq;
+	gbastckadr_fiq=(u32*)(gbastckadr_usr-GBASTACKSIZE); //custom fiq stack
+	gbavirtreg_r13fiq[0]=(u32)(u32*)gbastckadr_fiq;
 
-gbastckfp_fiq=(u32*)(gbastckadr_usr-GBASTACKSIZE); //#GBASTACKSIZE size
-#ifdef STACKTEST
-	if((int)stack_test(gbastckadr_fiq,(int)GBASTACKSIZE,0x0)==(int)GBASTACKSIZE)
-		printf("FIQ stack OK!");
-	else
-		printf("FIQ stack WRONG!");
-#endif
+	gbastckfp_fiq=(u32*)(gbastckadr_usr-GBASTACKSIZE); //#GBASTACKSIZE size
+	#ifdef STACKTEST
+		if((int)stack_test(gbastckadr_fiq,(int)GBASTACKSIZE,0x0)==(int)GBASTACKSIZE)
+			printf("FIQ stack OK!");
+		else
+			printf("FIQ stack WRONG!");
+	#endif
 
-gbastckadr_irq=(u32*)0x03007FA0;
-gbavirtreg_r13irq[0]=(u32)(u32*)gbastckadr_irq;
+	gbastckadr_irq=(u32*)0x03007FA0;
+	gbavirtreg_r13irq[0]=(u32)(u32*)gbastckadr_irq;
 
-gbastckfp_irq=(u32*)0x03007FA0;
-#ifdef STACKTEST
-	if((int)stack_test(gbastckadr_irq,0xff,0x0)==(int)0xff)
-		printf("IRQ stack OK!");
-	else
-		printf("IRQ stack WRONG!");
-#endif
+	gbastckfp_irq=(u32*)0x03007FA0;
+	#ifdef STACKTEST
+		if((int)stack_test(gbastckadr_irq,0xff,0x0)==(int)0xff)
+			printf("IRQ stack OK!");
+		else
+			printf("IRQ stack WRONG!");
+	#endif
 
-gbastckadr_svc=(u32*)0x03007FE0;
-gbavirtreg_r13svc[0]=(u32)(u32*)gbastckadr_svc;
+	gbastckadr_svc=(u32*)0x03007FE0;
+	gbavirtreg_r13svc[0]=(u32)(u32*)gbastckadr_svc;
 
-gbastckfp_svc=(u32*)0x03007FE0;
-#ifdef STACKTEST
-	if((int)stack_test(gbastckadr_svc,0xff,0x0)==(int)0xff)
-		printf("SVC stack OK!");
-	else
-		printf("SVC stack WRONG!");
-#endif
+	gbastckfp_svc=(u32*)0x03007FE0;
+	#ifdef STACKTEST
+		if((int)stack_test(gbastckadr_svc,0xff,0x0)==(int)0xff)
+			printf("SVC stack OK!");
+		else
+			printf("SVC stack WRONG!");
+	#endif
 
-gbastckadr_abt=(u32*)(gbastckadr_fiq-GBASTACKSIZE); //custom abt stack
-gbavirtreg_r13abt[0]=(u32)(u32*)gbastckadr_abt;
+	gbastckadr_abt=(u32*)(gbastckadr_fiq-GBASTACKSIZE); //custom abt stack
+	gbavirtreg_r13abt[0]=(u32)(u32*)gbastckadr_abt;
 
-gbastckfp_abt=(u32*)(gbastckadr_fiq-GBASTACKSIZE);
-#ifdef STACKTEST
-	if((int)stack_test(gbastckadr_abt,(int)GBASTACKSIZE,0x0)==(int)GBASTACKSIZE)
-		printf("ABT stack OK!");
-	else
-		printf("ABT stack WRONG!");
-#endif
+	gbastckfp_abt=(u32*)(gbastckadr_fiq-GBASTACKSIZE);
+	#ifdef STACKTEST
+		if((int)stack_test(gbastckadr_abt,(int)GBASTACKSIZE,0x0)==(int)GBASTACKSIZE)
+			printf("ABT stack OK!");
+		else
+			printf("ABT stack WRONG!");
+	#endif
 
-gbastckadr_und=(u32*)(gbastckadr_abt-GBASTACKSIZE); //custom und stack
-gbavirtreg_r13und[0]=(u32)(u32*)gbastckadr_und;
+	gbastckadr_und=(u32*)(gbastckadr_abt-GBASTACKSIZE); //custom und stack
+	gbavirtreg_r13und[0]=(u32)(u32*)gbastckadr_und;
 
-gbastckfp_und=(u32*)(gbastckadr_abt-GBASTACKSIZE);
-#ifdef STACKTEST
-	if((int)stack_test(gbastckadr_und,(int)GBASTACKSIZE,0x0)==(int)GBASTACKSIZE)
-		printf("UND stack OK!");
-	else
-		printf("UND stack WRONG!");
-#endif
-
-/*
-
-//kill me pls / BROKEN CODE
-
-call_adrstack[0x0]=(u32)&disthumbcode;
-call_adrstack[0x1]=(u32)0xc0707357;
-call_adrstack[0x2]=(u32)&dummycall;
-call_adrstack[0x3]=(u32)&emulatorgba;	//slot 3 is for branching (and requires arguments passed so branch opcodes can set bit 0 to run thumb/arm mode)
-
-//printf("branchstack OK & branchstackadrfp->:%x ", (unsigned int)set_adr_stacks()); 
-*/
+	gbastckfp_und=(u32*)(gbastckadr_abt-GBASTACKSIZE);
+	#ifdef STACKTEST
+		if((int)stack_test(gbastckadr_und,(int)GBASTACKSIZE,0x0)==(int)GBASTACKSIZE)
+			printf("UND stack OK!");
+		else
+			printf("UND stack WRONG!");
+	#endif
 
 }
 
 
 int utilload(const char *file,u8 *data,int size,bool extram){ //*file is filename (.gba)
 																//*data is pointer to store rom  / always ~256KB &size at load
-//printf("ewram top: %x ", (unsigned int)(((int)&__ewram_end) - 0x1));
-//while(1);
-#ifndef NOBIOS
-//bios copy to biosram
-FILE *f = fopen("gba.bios", "r");
-if(!f){ 
-	printf("there is no gba.bios in root!"); while(1);
-}
-
-int fileSize=fread((void*)(u8*)gba.bios, 1, 0x4000,f);
-
-fclose(f);
-if(fileSize!=0x4000){
-	printf("failed gba.bios copy @ %x! so far:%d bytes",(unsigned int)gba.bios,fileSize);
-	while(1);
+	//printf("ewram top: %x ", (unsigned int)(((int)&__ewram_end) - 0x1));
+	//while(1);
+	#ifndef NOBIOS
+	//bios copy to biosram
+	FILE *f = fopen("0:/bios.bin", "r");
+	if(!f){ 
+		printf("there is no bios.bin in SD root!"); while(1);
 	}
-else
-	//printf("bios OK!");
+
+	int fileSize=fread((void*)(u8*)bios, 1, 0x4000,f);
+
+	fclose(f);
+	if(fileSize!=0x4000){
+		printf("failed bios.bin copy @ %x! so far:%d bytes",(unsigned int)bios,fileSize);
+		while(1);
+	}
+	
+	printf("bios OK!");
 	/*
 		// tempbuffer2 
-		printf(" /// GBABIOS @ %x //",(unsigned int)(u8*)gba.bios);
+		printf(" /// GBABIOS @ %x //",(unsigned int)(u8*)bios);
 			
 		for(i=0;i<16;i++){
 			printf(" %x:[%d] ",i,(unsigned int)*((u32*)gbabios+i));
@@ -944,89 +911,78 @@ else
 		}
 		while(1);
 	*/
-#else
-int fileSize=0;
-FILE *f;
-#endif
+	#else
+	int fileSize=0;
+	FILE *f;
+	#endif
 
-//gbarom setup
-f = fopen(file, "rb");
-if(!f) {
-	printf("Error opening image %s",file);
-	return 0;
-}
+	//gbarom setup
+	f = fopen(file, "rb");
+	if(!f) {
+		printf("Error opening image %s",file);
+		return 0;
+	}
 
-fseek(f,0,SEEK_END);
-fileSize = ftell(f);
-fseek(f,0,SEEK_SET);
+	fseek(f,0,SEEK_END);
+	fileSize = ftell(f);
+	fseek(f,0,SEEK_SET);
 
-/* //header part that is not required anymore
-fread((char*)&gbaheader, 1, sizeof(gbaheader),f);
+	/* //header part that is not required anymore
+	fread((char*)&gbaheader, 1, sizeof(gbaheader),f);
 
-//size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
-int temp = fread((void*)gbaheaderbuf,sizeof(gbaheaderbuf[0]),0x200,f);
-if (temp != 0x200){
-	printf(" error ret. gbaheader (size rd: %d)",temp);
-	while(1);
-}
+	//size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
+	int temp = fread((void*)gbaheaderbuf,sizeof(gbaheaderbuf[0]),0x200,f);
+	if (temp != 0x200){
+		printf(" error ret. gbaheader (size rd: %d)",temp);
+		while(1);
+	}
 
-//printf(" util.c filesize: %d ",fileSize);
-//printf(" util.c entrypoint: %x ",(unsigned int)0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
-
-*/
-
-generatefilemap(f,fileSize);
-
-if(data == 0){ //null rom destination pointer? allocate space for it	
-	/*8K for futur alloc 0x2000 unused*/
-	//gba.romSize = (((int)&__ewram_end) - 0x1) - ((int)sbrk(0) + 0x5000 + 0x2000); // availablesize = NDSRAMuncSZ - c_progbrk + (20480 +  8192) : 20480 romsize
+	//printf(" util.c filesize: %d ",fileSize);
+	//printf(" util.c entrypoint: %x ",(unsigned int)0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
+	*/
 	
-	//filesize
-	gba.romsize=fileSize;	//size readjusted for final alloc'd rom
-	romsize=fileSize;
-	
-	//rom entrypoint
-	rom_entrypoint=(u32*)(0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
-	
-	//set rom address
-	rom=(u32)0x08000000;	
-	
-	//printf("entrypoint @ %x! ",(unsigned int)(u32*)rom_entrypoint);
+	generatefilemap(f,fileSize);
+	if(data == 0){ //null rom destination pointer? allocate space for it	
+		/*8K for futur alloc 0x2000 unused*/
+		//romSize = (((int)&__ewram_end) - 0x1) - ((int)sbrk(0) + 0x5000 + 0x2000); // availablesize = NDSRAMuncSZ - c_progbrk + (20480 +  8192) : 20480 romsize
+		
+		//filesize
+		romsize=fileSize;	//size readjusted for final alloc'd rom
+		romsize=fileSize;
+		
+		//rom entrypoint
+		rom_entrypoint=(u32*)(0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
+		
+		//set rom address
+		exRegs[0xf]=(u32)0x08000000;	
+		
+		//printf("entrypoint @ %x! ",(unsigned int)(u32*)rom_entrypoint);
+	}
+	fclose(f);
+	printf("generated filemap! OK:");
+	return romsize; //rom buffer size
 }
 
-fclose(f);
+int loadrom(const char *filename, bool extram){	
+	//#ifdef ROMTEST
+	//rom = (u8*) &rom_pl_bin;
+	//romsize = (int) rom_pl_bin_size;
+	//#endif
 
-printf("generated filemap! OK:");
+	romsize = 0x40000; //256KB partial romsize
 
-return gba.romsize; //rom buffer size
+	u8 *whereToLoad;
+	whereToLoad=(u8*)0;
+
+	if(cpuIsMultiBoot) whereToLoad = workRAM;
+
+	romsize = utilload(filename,whereToLoad,romsize,extram);
+	if(romsize==0){ //set ups u8 * rom to point to allocated buffer and returns *partial* or full romSize
+		printf("error retrieving romSize ");
+		return 0;
+	}
+	return romsize;
 }
-
-int loadrom(struct GBASystem * gba,const char *filename,bool extram){
-	
-//#ifdef ROMTEST
-//rom = (u8*) &rom_pl_bin;
-//gba->romsize = (int) rom_pl_bin_size;
-//#endif
-
-gba->romsize = 0x40000; //256KB partial romsize
-
-u8 *whereToLoad;
-whereToLoad=(u8*)0;
-
-if(gba->cpuismultiboot) whereToLoad = gba->workram;
-
-gba->romsize = utilload(filename,whereToLoad,gba->romsize,extram);
-if(gba->romsize==0){ //set ups u8 * rom to point to allocated buffer and returns *partial* or full romSize
-	printf("error retrieving romSize ");
-return 0;
-}
-
-return gba->romsize;
-}
-
-
-///new util
-
 
 void u32store(u32 address, u32 value){
 	*(u32*)(address)=value;
@@ -1068,12 +1024,8 @@ void WRITE16LE(u8 * x,u16 v){
 	u16store((u32)x,v);
 }
 
-//#define debuggerReadHalfWord(addr)  READ16LE(((u8*)&map[(addr)>>24].address[(addr) & map[(addr)>>24].mask]))
-
-
 //counts leading zeroes :)
-u8 clzero(u32 var){
-   
+u8 clzero(u32 var){   
     u8 cnt=0;
     u32 var3;
     if (var>0xffffffff) return 0;
@@ -1090,7 +1042,7 @@ u8 clzero(u32 var){
                 cnt++; var=var>>1;
             }
     }
-return cnt;
+	return cnt;
 }
 
 //debugging:
@@ -1114,53 +1066,32 @@ u8 was_debugemu_enabled=0;
 
 //toggles if debugemu is specified. Run at startup ONLY.
 void isdebugemu_defined(){
-
-#ifdef DEBUGEMU
-	was_debugemu_enabled=1;
-#endif
-
+	#ifdef DEBUGEMU
+		was_debugemu_enabled=1;
+	#endif
 }
 
 
 //loops-executes the emulator until pc specified
 int executeuntil_pc(u32 target_pc){
+	int opcodes_executed=0;
+	
+	#ifdef DEBUGEMU
+	#undef DEBUGEMU
+	#endif
 
-int opcodes_executed=0;
+	//execute until desired opcode:
+	while(target_pc != exRegs[0xf]){
+		cpu_fdexecute();
+		opcodes_executed++;
+	}
 
-#ifdef DEBUGEMU
-#undef DEBUGEMU
-#endif
+	if(was_debugemu_enabled==1){
+		#define DEBUGEMU
+	}
 
-//execute until desired opcode:
-while(target_pc != exRegs[0xf]){
-
-	cpu_fdexecute();
-	opcodes_executed++;
+	return opcodes_executed;
 }
-
-
-if(was_debugemu_enabled==1){
-	#define DEBUGEMU
-}
-
-return opcodes_executed;
-}
-
-
-
-
-u32 bit(u32 val){
-int bitcnt=0;
-for(bitcnt=31;bitcnt>=0;bitcnt--){
-    if((1<<bitcnt)&val) printf("1");
-	else printf("0");
-    }
-    printf("");
-return 0;
-}
-
-
-
 
 void CPUInit(const char *biosFileName, bool useBiosFile,bool extram)
 {
@@ -1268,9 +1199,9 @@ int utilLoad(const char *file,u8 *data,int size,bool extram){ //*file is filenam
 
 #ifdef BIOSHANDLER
     //bios copy to biosram
-    FILE *f = fopen("gba.bios", "r");
+    FILE *f = fopen("0:/bios.bin", "r");
     if(!f){ 
-        printf("there is no gba.bios in root!"); while(1);
+        printf("there is no bios.bin in root!"); while(1);
     }
 
     int fileSize=fread((void*)(u8*)bios, 1, 0x4000,f);
@@ -1286,131 +1217,112 @@ int utilLoad(const char *file,u8 *data,int size,bool extram){ //*file is filenam
     FILE *f;
 #endif
 
-            //gbarom setup
-            f = fopen(file, "rb");
-            if(!f) {
-                printf("Error opening image %s",file);
-                return 0;
-            }
+	//gbarom setup
+	f = fopen(file, "rb");
+	if(!f) {
+		printf("Error opening image %s",file);
+		return 0;
+	}
 
-            //copy first32krom/ because gba4ds's first 32k sector is bugged (returns 0 reads)
-            //fread(buffer, strlen(c)+1, 1, fp);
-            fread((u8*)&first32krom[0],sizeof(first32krom),1,f);
+	//copy first32krom/ because gba4ds's first 32k sector is bugged (returns 0 reads)
+	//fread(buffer, strlen(c)+1, 1, fp);
+	fread((u8*)&first32krom[0],sizeof(first32krom),1,f);
 
-            fseek(f,0,SEEK_END);
-            fileSize = ftell(f);
-            fseek(f,0,SEEK_SET);
+	fseek(f,0,SEEK_END);
+	fileSize = ftell(f);
+	fseek(f,0,SEEK_SET);
 
-            generatefilemap(f,fileSize);
+	generatefilemap(f,fileSize);
 
-            if(data == 0){ //null rom destination pointer? allocate space for it	
-                
-                //filesize
-                romSize=fileSize;	//size readjusted for final alloc'd rom
-                
-                //gba header rom entrypoint
-                //(u32*)(0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
-                
-                //printf("entrypoint @ %x! ",(unsigned int)(u32*)rom);
-            }
+	if(data == 0){ //null rom destination pointer? allocate space for it	
+		
+		//filesize
+		romSize=fileSize;	//size readjusted for final alloc'd rom
+		
+		//gba header rom entrypoint
+		//(u32*)(0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
+		
+		//printf("entrypoint @ %x! ",(unsigned int)(u32*)rom);
+	}
 
-            ichflyfilestream = f; //pass the filestreampointer and make it global
-            ichflyfilestreamsize = fileSize;
-                
-            printf("generated filemap! OK:");
+	ichflyfilestream = f; //pass the filestreampointer and make it global
+	ichflyfilestreamsize = fileSize;
+		
+	printf("generated filemap! OK:");
 
-            #else
-                romSize = puzzle_original_size;
-            #endif
-            
-            //set usual rom entrypoint
-            rom=(u8*)(u32)0x08000000;	
+	#else
+		romSize = puzzle_original_size;
+	#endif
+	
+	//set usual rom entrypoint
+	exRegs[0xf]=(u8*)(u32)0x08000000;	
 
-return romSize; //rom buffer size
+	return romSize; //rom buffer size
 }
 
 
 
 
-int CPULoadRom(const char *szFile,bool extram)
-{
-
-  //bios = (u8 *)calloc(1,0x4000);
-  bios = gbabios;
-  if(bios == NULL) {
-    printf("Failed to allocate memory for %s",(char*)"BIOS");
-    //CPUCleanUp();
-    return 0;
-  }    
-
-  systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
-  
-	rom = 0;
+int CPULoadRom(const char *szFile,bool extram){
+	systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
+	exRegs[0xf] = 0;
 	romSize = 0x40000;
-  /*workRAM = (u8*)0x02000000;(u8 *)calloc(1, 0x40000);
-  if(workRAM == NULL) {
-    systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),
-                  "WRAM");
-    return 0;
-  }*/
+	/*workRAM = (u8*)0x02000000;(u8 *)calloc(1, 0x40000);
+	if(workRAM == NULL) {
+		systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),
+					  "WRAM");
+		return 0;
+	}*/
 
-  u8 *whereToLoad = rom;
-  if(cpuIsMultiBoot)whereToLoad = workRAM;
+	u8 *whereToLoad = exRegs[0xf];
+	if(cpuIsMultiBoot)whereToLoad = workRAM;
+	if(!utilLoad(szFile,whereToLoad,romSize,extram))
+	{
+		return 0;
+	}
 
-		if(!utilLoad(szFile,whereToLoad,romSize,extram))
-		{
-			return 0;
-		}
+	/*internalRAM = (u8 *)0x03000000;//calloc(1,0x8000);
+	if(internalRAM == NULL) {
+		systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),"IRAM");
+		//CPUCleanUp();
+		return 0;
+	}*/
+	/*paletteRAM = (u8 *)0x05000000;//calloc(1,0x400);
+	if(paletteRAM == NULL) {
+		systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),"PRAM");
+		//CPUCleanUp();
+		return 0;
+	}*/
+	/*vram = (u8 *)0x06000000;//calloc(1, 0x20000);
+	if(vram == NULL) {
+		systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),"VRAM");
+		//CPUCleanUp();
+		return 0;
+	}*/      
+	/*oam = (u8 *)0x07000000;calloc(1, 0x400); //ichfly test
+	if(oam == NULL) {
+		systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),"oam");
+		//CPUCleanUp();
+		return 0;
+	}   
+	pix = (u8 *)calloc(1, 4 * 241 * 162);
+	if(pix == NULL) {
+		systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),"PIX");
+		//CPUCleanUp();
+		return 0;
+	}  */
+	/*ioMem = (u8 *)calloc(1, 0x400);
+	if(ioMem == NULL) {
+		systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),"IO");
+		//CPUCleanUp();
+		return 0;
+	}*/      
+	
+	flashInit();
+	eepromInit();
 
-  /*internalRAM = (u8 *)0x03000000;//calloc(1,0x8000);
-  if(internalRAM == NULL) {
-    systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),
-                  "IRAM");
-    //CPUCleanUp();
-    return 0;
-  }*/
-  /*paletteRAM = (u8 *)0x05000000;//calloc(1,0x400);
-  if(paletteRAM == NULL) {
-    systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),
-                  "PRAM");
-    //CPUCleanUp();
-    return 0;
-  }*/      
-  /*vram = (u8 *)0x06000000;//calloc(1, 0x20000);
-  if(vram == NULL) {
-    systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),
-                  "VRAM");
-    //CPUCleanUp();
-    return 0;
-  }*/      
-  /*oam = (u8 *)0x07000000;calloc(1, 0x400); //ichfly test
-  if(oam == NULL) {
-    systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),
-                  "oam");
-    //CPUCleanUp();
-    return 0;
-  }      
-  pix = (u8 *)calloc(1, 4 * 241 * 162);
-  if(pix == NULL) {
-    systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),
-                  "PIX");
-    //CPUCleanUp();
-    return 0;
-  }  */
-  /*ioMem = (u8 *)calloc(1, 0x400);
-  if(ioMem == NULL) {
-    systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),
-                  "IO");
-    //CPUCleanUp();
-    return 0;
-  }*/      
-
-  flashInit();
-  eepromInit();
-
-  //CPUUpdateRenderBuffers(true);
-
-  return romSize;
+	//CPUUpdateRenderBuffers(true);
+	return romSize;
 }
 
 

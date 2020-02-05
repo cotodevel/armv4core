@@ -45,15 +45,6 @@
 
 char __outstr[__DOUTBUFSIZE];
 
-/*#include "../GBA.h"
-#include "../gb/GB.h"
-#include "../gb/gbGlobals.h"
-#include "../Util.h"
-#include "../Sound.h"*/
-
-//#include "window.h"
-//#include "intl.h"
-
 // Required vars, used by the emulator core
 //
 int  systemRedShift;
@@ -66,7 +57,6 @@ int  systemSaveUpdateCounter;
 int  systemFrameSkip;
 bool systemSoundOn;
 
-int  emulating;
 bool debugger;
 int  RGB_LOW_BITS_MASK;
 

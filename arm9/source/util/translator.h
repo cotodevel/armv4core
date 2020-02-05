@@ -47,8 +47,6 @@ External Memory (Game Pak)
   0E010000-0FFFFFFF   Not used
 */
 
-extern struct GBASystem gba;
-
 //address whitelist to be patched
 extern u32  addrpatches[0x10];
 

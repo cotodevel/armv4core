@@ -11,7 +11,7 @@
 
 #define DEBUGEMU	//enables LR tracing / debugging by printf
 
-//#define BIOSHANDLER		//Activate this to jump to BIOS and do handling there (can cause problems if bad bios or corrupted) / require a gba.bios at root
+//#define BIOSHANDLER		//Activate this to jump to BIOS and do handling there (can cause problems if bad bios or corrupted) / require a bios at root
 							//Deactivating this will BX LR as soon as swi code is executed
 
 //#define NONDS9HANDLERS //disable: set vectors @ 0xffff0000 // enable : set vectors @0x00000000

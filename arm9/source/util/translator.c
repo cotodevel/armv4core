@@ -51,8 +51,6 @@ External Memory (Game Pak)
   0E010000-0FFFFFFF   Not used
 */
 
-extern struct GBASystem gba;
-
 u32 * cpubackupmode(u32 * branch_stackfp, u32 cpuregvector[0x16], u32 cpsr){
 
 	//if frame pointer reaches TOP don't increase SP anymore
@@ -177,8 +175,8 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 					
 					//gbastckadr_usr=gbastckmodeadr_curr=; //not required this is to know base stack usr/sys
 					gbastckfp_usr=gbastckfpadr_curr;
-					gbavirtreg_r13usr[0x0]=gbavirtreg_cpu[0xd]; //user/sys is the same stacks
-					gbavirtreg_r14usr[0x0]=gbavirtreg_cpu[0xe];
+					gbavirtreg_r13usr[0x0]=exRegs[0xd]; //user/sys is the same stacks
+					gbavirtreg_r14usr[0x0]=exRegs[0xe];
 					#ifdef DEBUGEMU
 						printf("stacks backup usr_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13usr[0x0]);
 					#endif
@@ -189,12 +187,12 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 						if((u32)updatestackfp(gbastckfp_usr,gbastckadr_usr) != (u32)0){
 					
 						//store LR to actual (pre-SPSR'd) Stack
-						dummyreg=gbavirtreg_cpu[0xe];
+						dummyreg=exRegs[0xe];
 						//stmiavirt((u8*)&dummyreg, (u32)(u32*)gbastckfp_usr, 1 << 0xe, 32, 0);
 						faststr((u8*)&dummyreg, ((u32*)gbastckfp_usr[0]), (0xe), 32,0);
 						
 						//store PC to actual (pre-SPSR'd stack)
-						dummyreg=(u32)(u32*)rom; //PC
+						dummyreg=(u32)(u32*)(exRegs[0xf]&0xfffffffe); //PC
 						//stmiavirt((u8*)&dummyreg, (u32)(u32*)gbastckfp_usr+0x1, 1 << 0xf, 32, 0);
 						faststr((u8*)&dummyreg, 
 						//(u32)(u32*)gbastckfp_usr+0x1
@@ -209,23 +207,23 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 				else if((cpsrvirt&0x1f)==0x11){
 					spsr_last=spsr_fiq=cpsrvirt;
 					gbastckfp_fiq=gbastckfpadr_curr;
-					gbavirtreg_r13fiq[0x0]=gbavirtreg_cpu[0xd];
-					gbavirtreg_r14fiq[0x0]=gbavirtreg_cpu[0xe];
+					gbavirtreg_r13fiq[0x0]=exRegs[0xd];
+					gbavirtreg_r14fiq[0x0]=exRegs[0xe];
 					
 					//save
 					//5 extra regs r8-r12 for fiq
-					gbavirtreg_fiq[0x0] = gbavirtreg_cpu[0x0 + 8];
-					gbavirtreg_fiq[0x1] = gbavirtreg_cpu[0x1 + 8];
-					gbavirtreg_fiq[0x2] = gbavirtreg_cpu[0x2 + 8];
-					gbavirtreg_fiq[0x3] = gbavirtreg_cpu[0x3 + 8];
-					gbavirtreg_fiq[0x4] = gbavirtreg_cpu[0x4 + 8];
+					exRegs_fiq[0x0] = exRegs[0x0 + 8];
+					exRegs_fiq[0x1] = exRegs[0x1 + 8];
+					exRegs_fiq[0x2] = exRegs[0x2 + 8];
+					exRegs_fiq[0x3] = exRegs[0x3 + 8];
+					exRegs_fiq[0x4] = exRegs[0x4 + 8];
 					
 					//restore 5 extra reg subset for other modes
-					gbavirtreg_cpu[0x0 + 8]=gbavirtreg_cpubup[0x0];
-					gbavirtreg_cpu[0x1 + 8]=gbavirtreg_cpubup[0x1];
-					gbavirtreg_cpu[0x2 + 8]=gbavirtreg_cpubup[0x2];
-					gbavirtreg_cpu[0x3 + 8]=gbavirtreg_cpubup[0x3];
-					gbavirtreg_cpu[0x4 + 8]=gbavirtreg_cpubup[0x4];
+					exRegs[0x0 + 8]=gbavirtreg_cpubup[0x0];
+					exRegs[0x1 + 8]=gbavirtreg_cpubup[0x1];
+					exRegs[0x2 + 8]=gbavirtreg_cpubup[0x2];
+					exRegs[0x3 + 8]=gbavirtreg_cpubup[0x3];
+					exRegs[0x4 + 8]=gbavirtreg_cpubup[0x4];
 					#ifdef DEBUGEMU
 						printf("stacks backup fiq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13fiq[0x0]);
 					#endif
@@ -233,8 +231,8 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 				else if((cpsrvirt&0x1f)==0x12){
 					spsr_last=spsr_irq=cpsrvirt;
 					gbastckfp_irq=gbastckfpadr_curr;
-					gbavirtreg_r13irq[0x0]=gbavirtreg_cpu[0xd];
-					gbavirtreg_r14irq[0x0]=gbavirtreg_cpu[0xe];
+					gbavirtreg_r13irq[0x0]=exRegs[0xd];
+					gbavirtreg_r14irq[0x0]=exRegs[0xe];
 					#ifdef DEBUGEMU
 						printf("stacks backup irq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13irq[0x0]);
 					#endif
@@ -243,8 +241,8 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 				else if((cpsrvirt&0x1f)==0x13){
 					spsr_last=spsr_svc=cpsrvirt;
 					gbastckfp_svc=gbastckfpadr_curr;
-					gbavirtreg_r13svc[0x0]=gbavirtreg_cpu[0xd];
-					gbavirtreg_r14svc[0x0]=gbavirtreg_cpu[0xe];
+					gbavirtreg_r13svc[0x0]=exRegs[0xd];
+					gbavirtreg_r14svc[0x0]=exRegs[0xe];
 					#ifdef DEBUGEMU
 						printf("stacks backup svc_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13svc[0x0]);
 					#endif
@@ -252,8 +250,8 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 				else if((cpsrvirt&0x1f)==0x17){
 					spsr_last=spsr_abt=cpsrvirt;
 					gbastckfp_abt=gbastckfpadr_curr;
-					gbavirtreg_r13abt[0x0]=gbavirtreg_cpu[0xd];
-					gbavirtreg_r14abt[0x0]=gbavirtreg_cpu[0xe];
+					gbavirtreg_r13abt[0x0]=exRegs[0xd];
+					gbavirtreg_r14abt[0x0]=exRegs[0xe];
 					#ifdef DEBUGEMU
 						printf("stacks backup abt_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13abt[0x0]);
 					#endif
@@ -262,8 +260,8 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 				else if((cpsrvirt&0x1f)==0x1b){
 					spsr_last=spsr_und=cpsrvirt;
 					gbastckfp_und=gbastckfpadr_curr;
-					gbavirtreg_r13und[0x0]=gbavirtreg_cpu[0xd];
-					gbavirtreg_r14und[0x0]=gbavirtreg_cpu[0xe];
+					gbavirtreg_r13und[0x0]=exRegs[0xd];
+					gbavirtreg_r14und[0x0]=exRegs[0xe];
 					#ifdef DEBUGEMU
 						printf("stacks backup und_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_r13und[0x0]);
 					#endif
@@ -273,7 +271,7 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 				else {
 				
 					// disable FIQ & set SVC
-					// gba->reg[16].I |= 0x40;
+					// reg[16].I |= 0x40;
 					cpsr|=0x40;
 					cpsr|=0x13;
 					
@@ -292,81 +290,81 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 			//case gbastckfp_mode  
 			//load LR & PC from regs then decrease #1 for each
 			
-			//unique cpu registers : gbavirtreg_cpu[n];
+			//unique cpu registers : exRegs[n];
 			
 			//user/sys
 			if ( ((cpumode&0x1f) == (0x10)) || ((cpumode&0x1f) == (0x1f)) ){	
 					
 					gbastckmodeadr_curr=gbastckadr_usr;
 					gbastckfpadr_curr=gbastckfp_usr;			//current framepointer address (setup in util.c) and updated here
-					gbavirtreg_cpu[0xd]=gbavirtreg_r13usr[0x0]; //user SP/LR registers for cpu<mode> (user/sys is the same stacks)
-					gbavirtreg_cpu[0xe]=gbavirtreg_r14usr[0x0];
+					exRegs[0xd]=gbavirtreg_r13usr[0x0]; //user SP/LR registers for cpu<mode> (user/sys is the same stacks)
+					exRegs[0xe]=gbavirtreg_r14usr[0x0];
 					#ifdef DEBUGEMU
-						printf("| stacks swap to usr_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
+						printf("| stacks swap to usr_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
 			}
 			
 			else if((cpumode&0x1f)==0x11){
 					gbastckmodeadr_curr=gbastckadr_fiq;
 					gbastckfpadr_curr=gbastckfp_fiq;			//current framepointer address (setup in util.c) and updated here
-					gbavirtreg_cpu[0xd]=gbavirtreg_r13fiq[0x0]; //fiq SP/LR registers for cpu<mode>
-					gbavirtreg_cpu[0xe]=gbavirtreg_r14fiq[0x0];
+					exRegs[0xd]=gbavirtreg_r13fiq[0x0]; //fiq SP/LR registers for cpu<mode>
+					exRegs[0xe]=gbavirtreg_r14fiq[0x0];
 					
 					//save register r8-r12 subset before entering fiq
-					gbavirtreg_cpubup[0x0]=gbavirtreg_cpu[0x0 + 8];
-					gbavirtreg_cpubup[0x1]=gbavirtreg_cpu[0x1 + 8];
-					gbavirtreg_cpubup[0x2]=gbavirtreg_cpu[0x2 + 8];
-					gbavirtreg_cpubup[0x3]=gbavirtreg_cpu[0x3 + 8];
-					gbavirtreg_cpubup[0x4]=gbavirtreg_cpu[0x4 + 8];
+					gbavirtreg_cpubup[0x0]=exRegs[0x0 + 8];
+					gbavirtreg_cpubup[0x1]=exRegs[0x1 + 8];
+					gbavirtreg_cpubup[0x2]=exRegs[0x2 + 8];
+					gbavirtreg_cpubup[0x3]=exRegs[0x3 + 8];
+					gbavirtreg_cpubup[0x4]=exRegs[0x4 + 8];
 					
 					//restore: 5 extra regs r8-r12 for fiq restore
-					gbavirtreg_cpu[0x0 + 8]=gbavirtreg_fiq[0x0];
-					gbavirtreg_cpu[0x1 + 8]=gbavirtreg_fiq[0x1];
-					gbavirtreg_cpu[0x2 + 8]=gbavirtreg_fiq[0x2];
-					gbavirtreg_cpu[0x3 + 8]=gbavirtreg_fiq[0x3];
-					gbavirtreg_cpu[0x4 + 8]=gbavirtreg_fiq[0x4];
+					exRegs[0x0 + 8]=exRegs_fiq[0x0];
+					exRegs[0x1 + 8]=exRegs_fiq[0x1];
+					exRegs[0x2 + 8]=exRegs_fiq[0x2];
+					exRegs[0x3 + 8]=exRegs_fiq[0x3];
+					exRegs[0x4 + 8]=exRegs_fiq[0x4];
 					#ifdef DEBUGEMU
-						printf("| stacks swap to fiq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
+						printf("| stacks swap to fiq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
 			}
 			//irq
 			else if((cpumode&0x1f)==0x12){
 					gbastckmodeadr_curr=gbastckadr_irq;
 					gbastckfpadr_curr=gbastckfp_irq;			//current framepointer address (setup in util.c) and updated here
-					gbavirtreg_cpu[0xd]=gbavirtreg_r13irq[0x0]; //irq SP/LR registers for cpu<mode>
-					gbavirtreg_cpu[0xe]=gbavirtreg_r14irq[0x0];
+					exRegs[0xd]=gbavirtreg_r13irq[0x0]; //irq SP/LR registers for cpu<mode>
+					exRegs[0xe]=gbavirtreg_r14irq[0x0];
 					#ifdef DEBUGEMU
-						printf("| stacks swap to irq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
+						printf("| stacks swap to irq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
 			}
 			//svc
 			else if((cpumode&0x1f)==0x13){
 					gbastckmodeadr_curr=gbastckadr_svc;
 					gbastckfpadr_curr=gbastckfp_svc;			//current framepointer address (setup in util.c) and updated here
-					gbavirtreg_cpu[0xd]=gbavirtreg_r13svc[0x0]; //svc SP/LR registers for cpu<mode> (user/sys is the same stacks)
-					gbavirtreg_cpu[0xe]=gbavirtreg_r14svc[0x0];
+					exRegs[0xd]=gbavirtreg_r13svc[0x0]; //svc SP/LR registers for cpu<mode> (user/sys is the same stacks)
+					exRegs[0xe]=gbavirtreg_r14svc[0x0];
 					#ifdef DEBUGEMU
-						printf("| stacks swap to svc_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
+						printf("| stacks swap to svc_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
 			}
 			//abort
 			else if((cpumode&0x1f)==0x17){
 					gbastckmodeadr_curr=gbastckadr_abt;
 					gbastckfpadr_curr=gbastckfp_abt;			//current framepointer address (setup in util.c) and updated here
-					gbavirtreg_cpu[0xd]=gbavirtreg_r13abt[0x0]; //abt SP/LR registers for cpu<mode>
-					gbavirtreg_cpu[0xe]=gbavirtreg_r14abt[0x0];
+					exRegs[0xd]=gbavirtreg_r13abt[0x0]; //abt SP/LR registers for cpu<mode>
+					exRegs[0xe]=gbavirtreg_r14abt[0x0];
 					#ifdef DEBUGEMU
-						printf("| stacks swap to abt_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
+						printf("| stacks swap to abt_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
 			}
 			//undef
 			else if((cpumode&0x1f)==0x1b){
 					gbastckmodeadr_curr=gbastckadr_und;
 					gbastckfpadr_curr=gbastckfp_und;			//current framepointer address (setup in util.c) and updated here
-					gbavirtreg_cpu[0xd]=gbavirtreg_r13und[0x0]; //und SP/LR registers for cpu<mode>
-					gbavirtreg_cpu[0xe]=gbavirtreg_r14und[0x0];
+					exRegs[0xd]=gbavirtreg_r13und[0x0]; //und SP/LR registers for cpu<mode>
+					exRegs[0xe]=gbavirtreg_r14und[0x0];
 					#ifdef DEBUGEMU
-						printf("| stacks swap to und_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)gbavirtreg_cpu[0xd]);
+						printf("| stacks swap to und_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
 			}
 			
@@ -446,7 +444,7 @@ switch(thumbinstr>>11){
 	//LSL opcode
 	case 0x0:
 		//extract reg
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&7), 32,0);
 		
 		dummyreg2=lslasm(dummyreg,((thumbinstr>>6)&0x1f));
 		#ifdef DEBUGEMU
@@ -456,14 +454,14 @@ switch(thumbinstr>>11){
 		updatecpuflags(0,cpsrasm,0x0);
 		
 		//update desired stack reg	
-		faststr((u8*)&dummyreg2, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	break;
 	
 	//LSR opcode
 	case 0x1: 
 		//extract reg
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&7), 32,0);
 		
 		dummyreg2=lsrasm(dummyreg,((thumbinstr>>6)&0x1f));
 		#ifdef DEBUGEMU
@@ -473,14 +471,14 @@ switch(thumbinstr>>11){
 		updatecpuflags(0,cpsrasm,0x0);
 		
 		//update desired stack reg	
-		faststr((u8*)&dummyreg2, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	break;
 	
 	//ASR opcode
 	case 0x2:
 		//extract reg
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&7), 32,0);
 		
 		dummyreg2=(u32)asrasm((int)dummyreg,((thumbinstr>>6)&0x1f)); //dummyreg=lslasm(dummyreg,((thumbinstr>>6)&0x1f));
 		#ifdef DEBUGEMU
@@ -490,7 +488,7 @@ switch(thumbinstr>>11){
 		updatecpuflags(0,cpsrasm,0x0);
 		
 		//update desired stack reg	
-		faststr((u8*)&dummyreg2, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	break;
 	
@@ -507,14 +505,14 @@ switch(thumbinstr>>11){
 		updatecpuflags(0,cpsrasm,0x0);
 		
 		//update desired stack reg	
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
+		faststr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
 	return 0;
 	break;
 	
 	//cmp / compare contents of rd with #imm bit[0-8] / gba flags affected
 	case 0x5:
 		//rs
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("cmp r%d[%x],#0x%x (5.3)",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg,(unsigned int)(thumbinstr&0xff));
 		#endif
@@ -528,7 +526,7 @@ switch(thumbinstr>>11){
 	//add / add #imm bit[7] value to contents of rd and then place result on rd
 	case 0x6:
 		//rn
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("add r%d[%x], #%x (5.3)", (int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg,(unsigned int)(thumbinstr&0xff));
 		#endif
@@ -538,14 +536,14 @@ switch(thumbinstr>>11){
 		updatecpuflags(0,cpsrasm,0x0);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
+		faststr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
 	return 0;
 	break;
 	
 	//sub / sub #imm bit[0-8] value from contents of rd and then place result on rd
 	case 0x7:	
 	//rn
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("sub r%d[%x], #%x (5.3)", (int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg,(unsigned int)(thumbinstr&0xff));
 		#endif
@@ -555,19 +553,19 @@ switch(thumbinstr>>11){
 		updatecpuflags(0,cpsrasm,0x0);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
+		faststr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
 	return 0;
 	break;
 
 	//5.6
 	//PC relative load WORD 10-bit Imm
 	case 0x9:
-		dummyreg2=cpuread_word((rom+0x4)+((thumbinstr&0xff)<<2)); //[PC+0x4,#(8<<2)Imm] / because prefetch and alignment
+		dummyreg2=cpuread_word(((exRegs[0xf]&0xfffffffe)+0x4)+((thumbinstr&0xff)<<2)); //[PC+0x4,#(8<<2)Imm] / because prefetch and alignment
 		#ifdef DEBUGEMU
 		printf("(WORD) LDR r%d[%x], [PC:%x,#%x] (5.6) ",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg2,(unsigned int)dummyreg,(unsigned int)(thumbinstr&0xff));
 		#endif
 		//store read onto Rd
-		faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
+		faststr((u8*)&dummyreg2, exRegs, ((thumbinstr>>8)&0x7), 32,0);
 	return 0;
 	break;
 	
@@ -577,10 +575,10 @@ switch(thumbinstr>>11){
 	case(0xc):{
 		//1)read address (from reg) into dummy reg (RD) 
 		//--> BTW chunk data must not be modified (if ever it's an address it will be patched at ldr/str opcodes)
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
 		
 		//2a)read address (from reg) into dummy reg (RB) <-- this NEEDS to be checked for address patch as it's the destination physical address
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf(" STR r%d(%x), [r%d(%x),#0x%x] (5.9)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)(((thumbinstr>>6)&0x1f)<<2));
 		#endif
@@ -604,7 +602,7 @@ switch(thumbinstr>>11){
 		#endif
 		
 		//RB
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		
 		//get #Imm
 		dummyreg4=(((thumbinstr>>6)&0x1f)<<2);
@@ -613,7 +611,7 @@ switch(thumbinstr>>11){
 		dummyreg2=addsasm(dummyreg,dummyreg4);
 		
 		dummyreg=cpuread_word(dummyreg2);
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -622,10 +620,10 @@ switch(thumbinstr>>11){
 	case(0xe):{
 		//1)read address (from reg) into dummy reg (RD) 
 		//--> BTW chunk data must not be modified (if ever it's an address it will be patched at ldr/str opcodes)
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
 		
 		//2a)read address (from reg) into dummy reg (RB) <-- this NEEDS to be checked for address patch as it's the destination physical address
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
 			printf(" strb r%d(%x), [r%d(%x),#0x%x] (5.9)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)((thumbinstr>>6)&0x1f)<<2);
 		#endif
@@ -644,7 +642,7 @@ switch(thumbinstr>>11){
 	//LDRB rd, [Rb,#IMM] (5.9)
 	case(0xf):{ //byte quantity (#Imm is 5 bits)
 		//RB
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		
 		//get #Imm
 		dummyreg2=(((thumbinstr>>6)&0x1f)<<2);
@@ -660,7 +658,7 @@ switch(thumbinstr>>11){
 			(unsigned int)(((thumbinstr>>6)&0x1f)<<2)); //if freeze undo this
 		#endif
 		
-		faststr((u8*)&dummyreg3, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg3, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -670,10 +668,10 @@ switch(thumbinstr>>11){
 	// STRH rd, [rb,#IMM] (5.10)
 	case(0x10):{
 		//RB
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		
 		//RD
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
 		
 		dummyreg3=addsasm(dummyreg,(((thumbinstr>>6)&0x1f)<<1)); // Rb + #Imm bit[6] depth (adds >>0)
 		
@@ -693,7 +691,7 @@ switch(thumbinstr>>11){
 	//LDRH Rd, [Rb,#IMM] (5.10)
 	case(0x11):{
 		//RB
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		
 		//get #Imm
 		dummyreg2=(((thumbinstr>>6)&0x1f)<<1);
@@ -709,7 +707,7 @@ switch(thumbinstr>>11){
 			(unsigned int)(((thumbinstr>>6)&0x1f)<<1)); //if freeze undo this
 		#endif
 		//Rd
-		faststr((u8*)&dummyreg3, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg3, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -718,10 +716,10 @@ switch(thumbinstr>>11){
 	//STR RD, [SP,#IMM]
 	case(0x12):{
 		//retrieve SP
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0xd), 32,0); 
+		fastldr((u8*)&dummyreg, exRegs, (0xd), 32,0); 
 		
 		//RD
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0); 
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>8)&0x7), 32,0); 
 		
 		//#imm 
 		dummyreg3=((thumbinstr&0xff)<<2);
@@ -741,7 +739,7 @@ switch(thumbinstr>>11){
 	//LDR RD, [SP,#IMM]
 	case(0x13):{
 		//retrieve SP
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0xd), 32,0); 
+		fastldr((u8*)&dummyreg, exRegs, (0xd), 32,0); 
 		
 		//#imm 
 		dummyreg2=((thumbinstr&0xff)<<2);
@@ -753,19 +751,19 @@ switch(thumbinstr>>11){
 		#endif
 		
 		//save Rd
-		faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
+		faststr((u8*)&dummyreg3, exRegs, ((thumbinstr>>8)&0x7), 32,0);
 		//note: this opcode doesn't increase SP
-	return 0;
+		return 0;
 	}
 	break;
 	
 	
 	/////////////////////5.12
 	//add #Imm to the current PC value and load the result in rd
-	//ADD  Rd, [PC,#IMM] (5.12)	/*VERY HEALTHY AND TESTED GBAREAD CODE*/
+	//ADD  Rd, [PC,#IMM] (5.12)
 	case(0x14):{
 		//PC
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0xf), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (0xf), 32,0);
 		
 		//get #Imm
 		dummyreg2=((thumbinstr&0xff)<<2);
@@ -779,7 +777,7 @@ switch(thumbinstr>>11){
 			printf("add rd(%d)[%x], [PC:(%x),#[%x]] (5.12) ",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg3,(unsigned int)dummyreg,(unsigned int)dummyreg2);
 		#endif
 		
-		faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
+		faststr((u8*)&dummyreg3, exRegs, ((thumbinstr>>8)&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -788,7 +786,7 @@ switch(thumbinstr>>11){
 	//ADD  Rd, [SP,#IMM] (5.12)
 	case(0x15):{	
 		//SP
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0xd), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (0xd), 32,0);
 		
 		//get #Imm
 		dummyreg2=((thumbinstr&0xff)<<2);
@@ -802,7 +800,7 @@ switch(thumbinstr>>11){
 			printf("add rd(%d)[%x], [r13:(%x),#[%x]] (5.12) ",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg3,(unsigned int)dummyreg,(unsigned int)dummyreg2);
 		#endif
 		
-		faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
+		faststr((u8*)&dummyreg3, exRegs, ((thumbinstr>>8)&0x7), 32,0);
 	return 0;
 	}	
 	break;
@@ -811,7 +809,7 @@ switch(thumbinstr>>11){
 	//STMIA rb!,{Rlist}
 	case(0x18):{
 			//Rb
-			fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
+			fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
 			
 			#ifdef DEBUGEMU
 			printf("STMIA r%d![%x], {R: %d %d %d %d %d %d %d %x }:regs op:%x (5.15)",
@@ -831,7 +829,7 @@ switch(thumbinstr>>11){
 			
 			//deprecated
 			//stack operation STMIA
-			//stmiavirt( ((u8*)(u32)&gbavirtreg_cpu[0]), (u32)dummyreg2, (thumbinstr&0xff), 32, 3, 0);	//special LDMIA/STMIA mode transfer	
+			//stmiavirt( ((u8*)(u32)&exRegs[0]), (u32)dummyreg2, (thumbinstr&0xff), 32, 3, 0);	//special LDMIA/STMIA mode transfer	
 			
 			//new
 			int cntr=0;	//enum thumb regs
@@ -839,7 +837,7 @@ switch(thumbinstr>>11){
 			while(cntr<0x8){ //8 working low regs for thumb cpu 
 					if( ((1<<cntr) & (thumbinstr&0xff)) > 0 ){
 						//stmia reg! is (forcefully for thumb) descendent
-						cpuwrite_word(dummyreg-(offset*4), gbavirtreg_cpu[(1<<cntr)]); //word aligned
+						cpuwrite_word(dummyreg-(offset*4), exRegs[(1<<cntr)]); //word aligned
 						offset++;
 					}
 				cntr++;
@@ -849,7 +847,7 @@ switch(thumbinstr>>11){
 			dummyreg=(u32)subsasm((u32)dummyreg,(lutu16bitcnt(thumbinstr&0xff))*4);		//get decimal value from registers selected
 			
 			//writeback always the new Rb
-			faststr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
+			faststr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -857,7 +855,7 @@ switch(thumbinstr>>11){
 	//LDMIA rd!,{Rlist}
 	case(0x19):{
 			//Rb
-			fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
+			fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
 			
 			#ifdef DEBUGEMU
 			printf("LDMIA r%d![%x], {R: %d %d %d %d %d %d %d %d }:regs op:%x (5.15)",
@@ -881,7 +879,7 @@ switch(thumbinstr>>11){
 			while(cntr<0x8){ //8 working low regs for thumb cpu 
 					if( ((1<<cntr) & (thumbinstr&0xff)) > 0 ){
 						//ldmia reg! is (forcefully for thumb) ascendent
-						cpuwrite_word(dummyreg+(offset*4), gbavirtreg_cpu[(1<<cntr)]); //word aligned
+						cpuwrite_word(dummyreg+(offset*4), exRegs[(1<<cntr)]); //word aligned
 						offset++;
 					}
 				cntr++;
@@ -890,7 +888,7 @@ switch(thumbinstr>>11){
 			dummyreg=(u32)addsasm((u32)dummyreg,(lutu16bitcnt(thumbinstr&0xff))*4);		//get decimal value from registers selected
 			
 			//update Rb
-			faststr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>8)&0x7), 32,0);
+			faststr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -902,9 +900,9 @@ switch(thumbinstr>>11){
 			//address patch is required for virtual environment
 			//hword=addresslookup(hword, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (hword & 0x3FFFF);
 			
-			rom=cpuread_word((thumbinstr&0x3ff)<<1)+0x4; //bit[11] but word-aligned so assembler puts 0>>1
+			exRegs[0xf]=(cpuread_word((thumbinstr&0x3ff)<<1)+0x4&0xfffffffe); //bit[11] but word-aligned so assembler puts 0>>1
 			#ifdef DEBUGEMU
-			printf("[BAL] label[%x] THUMB mode / CPSR:%x (5.18) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BAL] label[%x] THUMB mode / CPSR:%x (5.18) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
 			#endif
 	return 0;	
 	}
@@ -924,7 +922,7 @@ switch(thumbinstr>>11){
 		//the current PC address. The resulting address is placed in LR.
 	
 		//offset high part
-		gbavirtreg_cpu[0xe]=((thumbinstr&0x7ff)<<12)+(rom);
+		exRegs[0xe]=((thumbinstr&0x7ff)<<12)+((exRegs[0xf]&0xfffffffe));
 	
 		//2 / 2
 		//H bit[11<1]
@@ -941,21 +939,21 @@ switch(thumbinstr>>11){
 		//fetch 2/2
 		//(dual u16 reads are broken so we cast a u32 read once again for the sec part)
 		#ifndef ROMTEST
-			u32 u32read=stream_readu32(rom ^ 0x08000000);
+			u32 u32read=stream_readu32((exRegs[0xf]&0xfffffffe) ^ 0x08000000);
 		#endif
 		#ifdef ROMTEST
-			u32 u32read=(u32)*(u32*)(&rom_pl_bin+((rom ^ 0x08000000)/4 ));
+			u32 u32read=(u32)*(u32*)(&rom_pl_bin+(((exRegs[0xf]&0xfffffffe) ^ 0x08000000)/4 ));
 		#endif
 		
-		u32 temppc=rom;
+		u32 temppc=(exRegs[0xf]&0xfffffffe);
 	
 		//rebuild PC from LR + (low part) + prefetch (0x4-2 because PC will +2 after this)
-		rom=gbavirtreg_cpu[0xe]+(((u32read>>16)&0x7ff)<<1)+(0x2);
+		exRegs[0xf]=(exRegs[0xe]+(((u32read>>16)&0x7ff)<<1)+(0x2)&0xfffffffe);
 	
 		//update LR
-		gbavirtreg_cpu[0xe]=((temppc+(0x4)) | (1<<0));
+		exRegs[0xe]=((temppc+(0x4)) | (1<<0));
 		#ifdef DEBUGEMU
-			printf("LONG BRANCH WITH LINK: PC:[%x],LR[%x] (5.19) ",(unsigned int)(rom+(0x2)),(unsigned int)gbavirtreg_cpu[0xe]);
+			printf("LONG BRANCH WITH LINK: PC:[%x],LR[%x] (5.19) ",(unsigned int)((exRegs[0xf]&0xfffffffe)+(0x2)),(unsigned int)exRegs[0xe]);
 		#endif
 	
 		*/
@@ -964,19 +962,19 @@ switch(thumbinstr>>11){
 		
 		/* //deprecated in favour of cpuread_word
 		#ifndef ROMTEST
-			u32 u32read=stream_readu32(rom ^ 0x08000000);
+			u32 u32read=stream_readu32((exRegs[0xf]&0xfffffffe) ^ 0x08000000);
 			u32read=rorasm(u32read,0x10); // :) fix
 		#endif
 		#ifdef ROMTEST
-			u32 u32read=(u32)*(u32*)(&rom_pl_bin+((rom ^ 0x08000000)/4 ));
+			u32 u32read=(u32)*(u32*)(&rom_pl_bin+(((exRegs[0xf]&0xfffffffe) ^ 0x08000000)/4 ));
 		#endif
 		*/
 		u32 u32read=0;
 		//if only a gbarom area read..
-		if( (((uint32)rom>>24) == 0x8) || (((uint32)rom>>24) == 0x9) ){
+		if( (((uint32)(exRegs[0xf]&0xfffffffe)>>24) == 0x8) || (((uint32)(exRegs[0xf]&0xfffffffe)>>24) == 0x9) ){
 			
 			//new read method (reads from gba cpu core)
-			u32read=cpuread_word((uint32)rom);
+			u32read=cpuread_word((uint32)(exRegs[0xf]&0xfffffffe));
 			
 			#ifndef ROMTEST //gbareads (stream) are byte swapped, we swap bytes here if streamed data
 				printf("byteswap gbaread! ");
@@ -986,28 +984,28 @@ switch(thumbinstr>>11){
 		else{
 			
 			//new read method (reads from gba cpu core)
-			u32read=cpuread_word(( ((uint32)rom >>2) )<<2);
+			u32read=cpuread_word(( ((uint32)(exRegs[0xf]&0xfffffffe) >>2) )<<2);
 			
 		}
 		
-		printf("BL rom @(%x):[%x] ",(unsigned int)rom,(unsigned int)u32read);
+		printf("BL rom @(%x):[%x] ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)u32read);
 		
 		//original PC
-		u32 oldpc=rom;
+		u32 oldpc=(exRegs[0xf]&0xfffffffe);
 		
 		//H = 0 (high ofst)
-		u32 part1=rom+((((u32read>>16)&0xffff)&0x7ff)<<12);
-		gbavirtreg_cpu[0xe]=part1;
+		u32 part1=(exRegs[0xf]&0xfffffffe)+((((u32read>>16)&0xffff)&0x7ff)<<12);
+		exRegs[0xe]=part1;
 		
 		//H = 1 (low ofst)
-		u32 part2=((((((u32read))&0xffff)&0x7ff) << 1) + gbavirtreg_cpu[0xe] );
-		rom = part2+(0x4)-0x2; //prefetch - emulator alignment
+		u32 part2=((((((u32read))&0xffff)&0x7ff) << 1) + exRegs[0xe] );
+		exRegs[0xf] = (part2+(0x4)-0x2)&0xfffffffe; //prefetch - emulator alignment
 		
-		gbavirtreg_cpu[0xe]=(oldpc+(0x4)) | 1; //+0x4 for prefetch
+		exRegs[0xe]= ((oldpc+(0x4)) | 1) &0xfffffffe; //+0x4 for prefetch
 		
 		#ifdef DEBUGEMU
 			printf("LONG BRANCH WITH LINK: PC:[%x],LR[%x] (5.19) ",
-			(unsigned int)(rom+0x2),(unsigned int)gbavirtreg_cpu[0xe]); //+0x2 (pc++ fixup)
+			(unsigned int)((exRegs[0xf]&0xfffffffe)+0x2),(unsigned int)exRegs[0xe]); //+0x2 (pc++ fixup)
 		#endif
 		
 		return 0;
@@ -1023,10 +1021,10 @@ switch(thumbinstr>>9){
 	case(0xc):{
 		//stored regs have already checked values / address translated, they don't need to be re-checked when retrieved
 		//rs
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0); 
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0); 
 
 		//rn
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>6)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>6)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("add rd(%d),rs(%d)[%x],rn(%d)[%x] (5.2)", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg);
 		#endif
@@ -1036,7 +1034,7 @@ switch(thumbinstr>>9){
 		updatecpuflags(0,cpsrasm,0x0);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg2, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -1047,10 +1045,10 @@ switch(thumbinstr>>9){
 	
 		//stored regs have already checked values / address translated, they don't need to be re-checked when retrieved
 		//rs
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		
 		//rn
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>6)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>6)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("sub r%d,r%d[%x],r%d[%x] (5.2)", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg);
 		#endif
@@ -1060,7 +1058,7 @@ switch(thumbinstr>>9){
 		updatecpuflags(0,cpsrasm,0x0);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg2, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -1070,7 +1068,7 @@ switch(thumbinstr>>9){
 	
 		//stored regs have already checked values / address translated, they don't need to be re-checked when retrieved
 		//rs
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("add r%d,r%d[%x],#0x%x (5.2)", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2,(unsigned int)((thumbinstr>>6)&0x7));
 		#endif
@@ -1080,7 +1078,7 @@ switch(thumbinstr>>9){
 		updatecpuflags(0,cpsrasm,0x0);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg2, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -1090,7 +1088,7 @@ switch(thumbinstr>>9){
 	
 		//stored regs have already checked values / address translated, they don't need to be re-checked when retrieved
 		//rs
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("sub r(%d),r(%d)[%x],#0x%x (5.2)", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2,(unsigned int)((thumbinstr>>6)&0x7));
 		#endif
@@ -1100,7 +1098,7 @@ switch(thumbinstr>>9){
 		updatecpuflags(0,cpsrasm,0x0);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg2, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -1111,13 +1109,13 @@ switch(thumbinstr>>9){
 	//STR RD, [Rb,Ro]
 	case(0x28):{ //40dec
 		//Rb
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		
 		//Ro
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>6)&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>6)&0x7), 32,0);
 		
 		//Rd
-		fastldr((u8*)&dummyreg3, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg3, exRegs, (thumbinstr&0x7), 32,0);
 		
 		//dummyreg4=addsasm(dummyreg,dummyreg2);
 		
@@ -1138,13 +1136,13 @@ switch(thumbinstr>>9){
 	//STRB RD ,[Rb,Ro] (5.7) (little endian lsb <-)
 	case(0x2a):{ //42dec
 		//Rb
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		
 		//Ro
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>6)&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>6)&0x7), 32,0);
 		
 		//Rd
-		fastldr((u8*)&dummyreg3, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg3, exRegs, (thumbinstr&0x7), 32,0);
 		
 		//dummyreg4=addsasm(dummyreg,dummyreg2);
 		
@@ -1166,9 +1164,9 @@ switch(thumbinstr>>9){
 	//LDR rd,[rb,ro] (correct method for reads)
 	case(0x2c):{ //44dec
 		//Rb
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		//Ro
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>6)&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>6)&0x7), 32,0);
 		
 		dummyreg3=cpuread_word((dummyreg+dummyreg2));
 		
@@ -1181,7 +1179,7 @@ switch(thumbinstr>>9){
 		#endif
 		
 		//Rd
-		faststr((u8*)&dummyreg3, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg3, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -1189,9 +1187,9 @@ switch(thumbinstr>>9){
 	//ldrb rd,[rb,ro]
 	case(0x2e):{ //46dec
 		//Rb
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		//Ro
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>6)&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>6)&0x7), 32,0);
 		
 		dummyreg3=cpuread_byte((dummyreg+dummyreg2));
 		
@@ -1204,7 +1202,7 @@ switch(thumbinstr>>9){
 		#endif
 		
 		//Rd
-		faststr((u8*)&dummyreg3, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg3, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -1215,13 +1213,13 @@ switch(thumbinstr>>9){
 	//printf("STRH RD ,[Rb,Ro] (5.8) "); //thumbinstr
 	case(0x29):{ //41dec strh
 		//Rb
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		
 		//Ro
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>6)&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>6)&0x7), 32,0);
 		
 		//Rd
-		fastldr((u8*)&dummyreg3, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg3, exRegs, (thumbinstr&0x7), 32,0);
 		
 		#ifdef DEBUGEMU
 		printf("strh rd(%d)[%x] ,rb(%d)[%x],ro(%d)[%x] (5.7)",
@@ -1240,9 +1238,9 @@ switch(thumbinstr>>9){
 	// LDRH RD ,[Rb,Ro] (5.8)
 	case(0x2b):{ //43dec ldrh
 		//Rb
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		//Ro
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>6)&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>6)&0x7), 32,0);
 		
 		dummyreg3=cpuread_hword((dummyreg+dummyreg2));
 		
@@ -1255,7 +1253,7 @@ switch(thumbinstr>>9){
 		#endif
 		
 		//Rd
-		faststr((u8*)&dummyreg3, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg3, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -1264,9 +1262,9 @@ switch(thumbinstr>>9){
 	
 	case(0x2d):{ //45dec ldsb	
 		//Rb
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		//Ro
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>6)&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>6)&0x7), 32,0);
 		
 		s8 sbyte=cpuread_byte(dummyreg+dummyreg2);
 		
@@ -1278,7 +1276,7 @@ switch(thumbinstr>>9){
 		#endif
 		
 		//Rd
-		faststr((u8*)&sbyte, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&sbyte, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -1286,9 +1284,9 @@ switch(thumbinstr>>9){
 	//LDSH RD ,[RS0,RS1] (5.8) //kept to use hardware opcode
 	case(0x2f):{ //47dec ldsh
 		//Rb
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		//Ro
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>6)&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>6)&0x7), 32,0);
 		
 		s16 shword=cpuread_hword(dummyreg+dummyreg2);
 		
@@ -1300,7 +1298,7 @@ switch(thumbinstr>>9){
 		#endif
 		
 		//Rd
-		faststr((u8*)&shword, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&shword, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -1312,7 +1310,7 @@ switch(thumbinstr>>8){
 	case(0xB4):{
 		
 		//gba stack method (stack pointer) / requires descending pointer
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0xd), 32,0); 
+		fastldr((u8*)&dummyreg, exRegs, (0xd), 32,0); 
 		
 		#ifdef DEBUGEMU
 		printf("[THUMB] PUSH {R: %d %d %d %d %d %d %d %x }:regout:%x (5.14)",
@@ -1333,7 +1331,7 @@ switch(thumbinstr>>8){
 			while(cntr<0x8){ //8 working low regs for thumb cpu 
 					if( ((1<<cntr) & (thumbinstr&0xff)) > 0 ){
 						//ldmia reg! is (forcefully for thumb) descendent
-						cpuwrite_word(dummyreg-(offset*4), gbavirtreg_cpu[(1<<cntr)]); //word aligned
+						cpuwrite_word(dummyreg-(offset*4), exRegs[(1<<cntr)]); //word aligned
 						offset++;
 					}
 				cntr++;
@@ -1342,7 +1340,7 @@ switch(thumbinstr>>8){
 		//full descending stack
 		dummyreg=subsasm(dummyreg,(lutu16bitcnt(thumbinstr&0xff))*4); 
 		
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, (0xd) , 32,0);
+		faststr((u8*)&dummyreg, exRegs, (0xd) , 32,0);
 		
 	return 0;
 	}
@@ -1352,7 +1350,7 @@ switch(thumbinstr>>8){
 	case(0xB5):{
 		
 		//gba r13 descending stack operation
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0xd), 32,0); 
+		fastldr((u8*)&dummyreg, exRegs, (0xd), 32,0); 
 		
 		int cntr=0;	//enum thumb regs
 		int offset=0; //enum found regs
@@ -1360,12 +1358,12 @@ switch(thumbinstr>>8){
 			if(cntr!=0x8){
 				if( ((1<<cntr) & (thumbinstr&0xff)) > 0 ){
 					//push is descending stack
-					cpuwrite_word(dummyreg-(offset*4), gbavirtreg_cpu[(1<<cntr)]); //word aligned
+					cpuwrite_word(dummyreg-(offset*4), exRegs[(1<<cntr)]); //word aligned
 					offset++;
 				}
 			}
 			else{ //our lr operator
-				cpuwrite_word(dummyreg-(offset*4), gbavirtreg_cpu[0xe]); //word aligned
+				cpuwrite_word(dummyreg-(offset*4), exRegs[0xe]); //word aligned
 				//#ifdef DEBUGEMU
 				//	printf("offset(%x):LR! ",(int)cntr);
 				//#endif
@@ -1374,7 +1372,7 @@ switch(thumbinstr>>8){
 		}
 		
 		dummyreg=subsasm(dummyreg,(lutu16bitcnt(thumbinstr&0xff)+1)*4); //+1 because LR push
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, (0xd) , 32,0);
+		faststr((u8*)&dummyreg, exRegs, (0xd) , 32,0);
 		
 		#ifdef DEBUGEMU
 		printf("[THUMB] PUSH {R: %x %x %x %x %x %x %x %x },LR :regout:%x (5.14)",
@@ -1397,7 +1395,7 @@ switch(thumbinstr>>8){
 	//b: 10111100 = POP  {Rlist} low regs (0-7)
 	case(0xBC):{
 		//gba r13 ascending stack operation
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0xd), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (0xd), 32,0);
 		
 		//restore is ascending (so Fixup stack offset address, to restore n registers)
 		dummyreg=addsasm(dummyreg,(lutu16bitcnt(thumbinstr&0xff))*4);
@@ -1407,13 +1405,13 @@ switch(thumbinstr>>8){
 		while(cntr<0x8){ //8 working low regs for thumb cpu
 			if( ((1<<cntr) & (thumbinstr&0xff)) > 0 ){
 				//pop is ascending
-				gbavirtreg_cpu[(1<<cntr)]=cpuread_word(dummyreg+(offset*4)); //word aligned
+				exRegs[(1<<cntr)]=cpuread_word(dummyreg+(offset*4)); //word aligned
 				offset++;
 			}
 			cntr++;
 		}
 		
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, (0xd) , 32,0);
+		faststr((u8*)&dummyreg, exRegs, (0xd) , 32,0);
 	return 0;
 	}
 	break;
@@ -1421,7 +1419,7 @@ switch(thumbinstr>>8){
 	//b: 10111101 = POP  {Rlist,PC} low regs (0-7) & PC
 	case(0xBD):{
 		//gba r13 ascending stack operation
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0xd), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (0xd), 32,0);
 		
 		//restore is ascending (so fixup offset to restore n registers)
 		dummyreg=addsasm(dummyreg,(lutu16bitcnt(thumbinstr&0xff))*4);
@@ -1432,12 +1430,12 @@ switch(thumbinstr>>8){
 			if(cntr!=0x8){
 				if(((1<<cntr) & (thumbinstr&0xff)) > 0){
 					//restore is ascending (so Fixup stack offset address, to restore n registers)
-					gbavirtreg_cpu[(1<<cntr)]=cpuread_word(dummyreg+(offset*4)); //word aligned
+					exRegs[(1<<cntr)]=cpuread_word(dummyreg+(offset*4)); //word aligned
 					offset++;
 				}
 			}
 			else{//our pc operator
-				rom=gbavirtreg_cpu[0xf]=cpuread_word(dummyreg+(offset*4)); //word aligned
+				exRegs[0xf]=(cpuread_word(dummyreg+(offset*4))&0xfffffffe); //word aligned
 			}
 			cntr++;
 		}
@@ -1457,10 +1455,10 @@ switch(thumbinstr>>8){
 			//address patch is required for virtual environment
 			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
 		
-			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
+			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BEQ] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BEQ] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
 			#endif
 		}
 		else {
@@ -1479,10 +1477,10 @@ switch(thumbinstr>>8){
 			//address patch is required for virtual environment
 			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
 			
-			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
+			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BNE] label[%x] THUMB mode (5.16) ",(unsigned int)rom); 
+			printf("[BNE] label[%x] THUMB mode (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe)); 
 			#endif
 			
 		}
@@ -1503,10 +1501,10 @@ switch(thumbinstr>>8){
 			//address patch is required for virtual environment
 			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
 		
-			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
+			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BCS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BCS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
 			#endif
 			
 		}
@@ -1526,10 +1524,10 @@ switch(thumbinstr>>8){
 			//address patch is required for virtual environment
 			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
 	
-			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
+			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BCC] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BCC] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
 			#endif
 		
 		}
@@ -1549,10 +1547,10 @@ switch(thumbinstr>>8){
 			//address patch is required for virtual environment
 			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
 		
-			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
+			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BMI] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BMI] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
 			#endif
 	
 		}
@@ -1572,10 +1570,10 @@ switch(thumbinstr>>8){
 			//address patch is required for virtual environment
 			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
 		
-			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
+			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BPL] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BPL] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
 			#endif
 			
 		}
@@ -1595,10 +1593,10 @@ switch(thumbinstr>>8){
 			//address patch is required for virtual environment
 			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
 			
-			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
+			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BVS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BVS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
 			#endif
 			
 		}
@@ -1618,10 +1616,10 @@ switch(thumbinstr>>8){
 			//address patch is required for virtual environment
 			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
 			
-			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
+			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BVC] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BVC] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
 			#endif
 			
 		}
@@ -1641,10 +1639,10 @@ switch(thumbinstr>>8){
 			//address patch is required for virtual environment
 			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
 			
-			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
+			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BHI] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BHI] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
 			#endif
 			
 		}
@@ -1664,10 +1662,10 @@ switch(thumbinstr>>8){
 			//address patch is required for virtual environment
 			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
 			
-			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;	
+			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);	
 			
 			#ifdef DEBUGEMU
-			printf("[BLS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BLS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
 			#endif
 			
 		}
@@ -1687,10 +1685,10 @@ switch(thumbinstr>>8){
 			//address patch is required for virtual environment
 			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
 			
-			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
+			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BGE] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BGE] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
 			#endif
 		
 		}
@@ -1710,10 +1708,10 @@ switch(thumbinstr>>8){
 			//address patch is required for virtual environment
 			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);	
 			
-			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
+			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BLT] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BLT] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
 			#endif
 		}
 		else {
@@ -1732,10 +1730,10 @@ switch(thumbinstr>>8){
 			//address patch is required for virtual environment
 			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
 			
-			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
+			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BGT] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BGT] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
 			#endif
 		}
 		else {
@@ -1754,10 +1752,10 @@ switch(thumbinstr>>8){
 			//address patch is required for virtual environment
 			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
 			
-			rom=cpuread_word((thumbinstr&0xff)<<1)+0x4;
+			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BLE] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)rom,(unsigned int)cpsrvirt); 
+			printf("[BLE] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
 			#endif
 		}
 		else {
@@ -1775,14 +1773,14 @@ switch(thumbinstr>>8){
 	case(0xDF):{
 		
 		//printf("[thumb 1/2] SWI #(%x)",(unsigned int)cpsrvirt);
-		gba.armirqenable=false;
+		armIrqEnable=false;
 		
-		u32 stack2svc=gbavirtreg_cpu[0xe];	//ARM has r13,r14 per CPU <mode> but this is shared on gba
+		u32 stack2svc=exRegs[0xe];	//ARM has r13,r14 per CPU <mode> but this is shared on gba
 		
 		//ori: updatecpuflags(1,temp_arm_psr,0x13);
 		updatecpuflags(1,cpsrvirt,0x13);
 		
-		gbavirtreg_cpu[0xe]=stack2svc;		//ARM has r13,r14 per CPU <mode> but this is shared on gba
+		exRegs[0xe]=stack2svc;		//ARM has r13,r14 per CPU <mode> but this is shared on gba
 		
 		//we force ARM mode directly regardless cpsr
 		armstate=0x0; //1 thmb / 0 ARM
@@ -1797,15 +1795,15 @@ switch(thumbinstr>>8){
 			updatecpuflags(1,cpsrvirt | (((spsr_last>>5)&1)),spsr_last&0x1F);
 		#endif
 		
-		//-0x2 because PC THUMB rom alignment / -0x2 because prefetch
+		//-0x2 because PC THUMB (exRegs[0xf]&0xfffffffe) alignment / -0x2 because prefetch
 		#ifdef BIOSHANDLER
-			rom  = (u32)(0x08-0x2-0x2);
+			exRegs[0xf]  = (u32)(0x08-0x2-0x2)&0xfffffffe;
 		#else
 			//otherwise executes a possibly BX LR (callback ret addr) -> PC increases correctly later
-			//rom = gbavirtreg_cpu[0xf] = (u32)(gbavirtreg_cpu[0xe]-0x2-0x2);
+			//exRegs[0xf] = (u32)((exRegs[0xe]&0xfffffffe)-0x2-0x2);
 		#endif
 		
-		gba.armirqenable=true;
+		armIrqEnable=true;
 		
 		//restore correct SPSR (deprecated because we need the SPSR to remember SVC state)
 		//spsr_last=spsr_old;
@@ -1826,7 +1824,7 @@ switch(thumbinstr>>7){
 		//cvert to 8 bit + bit[9] for sign extend
 		s32 dbyte_tmp=((thumbinstr&0x7f)<<2);
 		
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0xd), 32,0); 
+		fastldr((u8*)&dummyreg, exRegs, (0xd), 32,0); 
 		
 		#ifdef DEBUGEMU
 		printf("ADD SP:%x, +#%d (5.13) ",(unsigned int)dummyreg,(signed int)dbyte_tmp);
@@ -1837,7 +1835,7 @@ switch(thumbinstr>>7){
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		faststr((u8*)&dummyreg2, gbavirtreg_cpu, (0xd), 32,0); 
+		faststr((u8*)&dummyreg2, exRegs, (0xd), 32,0); 
 	return 0;
 	}	
 	break;
@@ -1847,7 +1845,7 @@ switch(thumbinstr>>7){
 		//cvert to 8 bit + bit[9] for sign extend
 		s32 dbyte_tmp=((thumbinstr&0x7f)<<2);
 		
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (0xd), 32,0); 
+		fastldr((u8*)&dummyreg, exRegs, (0xd), 32,0); 
 		
 		#ifdef DEBUGEMU
 			printf("ADD SP:%x, -#%d (5.13) ",(unsigned int)dummyreg,(signed int) dbyte_tmp);
@@ -1858,7 +1856,7 @@ switch(thumbinstr>>7){
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		faststr((u8*)&dummyreg2, gbavirtreg_cpu, (0xd), 32,0); 
+		faststr((u8*)&dummyreg2, exRegs, (0xd), 32,0); 
 	return 0;
 	}
 	break;
@@ -1869,8 +1867,8 @@ switch(thumbinstr>>6){
 	//5.4
 	//ALU OP: AND rd(thumbinstr&0x7),rs((thumbinstr>>3)&0x7)
 	case(0x100):{
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("ALU OP: AND r%d[%x], r%d[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
@@ -1882,15 +1880,15 @@ switch(thumbinstr>>6){
 		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}	
 	break;
 	
 	//ALU OP: EOR rd(thumbinstr&0x7),rs((thumbinstr>>3)&0x7)
 	case(0x101):{
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("ALU OP: EOR rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
@@ -1902,15 +1900,15 @@ switch(thumbinstr>>6){
 		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
-	faststr((u8*)&dummyreg,gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+	faststr((u8*)&dummyreg,exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
 	
 	//ALU OP: LSL rd(thumbinstr&0x7),rs((thumbinstr>>3)&0x7)
 	case(0x102):{
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("ALU OP: LSL r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
@@ -1922,7 +1920,7 @@ switch(thumbinstr>>6){
 		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);	
+		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);	
 	return 0;
 	}
 	break;
@@ -1930,8 +1928,8 @@ switch(thumbinstr>>6){
 	//ALU OP: LSR rd, rs
 	case(0x103):{
 	
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("ALU OP: LSR r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
@@ -1943,7 +1941,7 @@ switch(thumbinstr>>6){
 		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -1951,8 +1949,8 @@ switch(thumbinstr>>6){
 	//ALU OP: ASR rd, rs (5.4)
 	case(0x104):{
 	
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("ALU OP: ASR r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
@@ -1964,15 +1962,15 @@ switch(thumbinstr>>6){
 		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
 	
 	//ALU OP: ADC rd, rs (5.4)
 	case(0x105):{
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("ALU OP: ADC r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
@@ -1984,15 +1982,15 @@ switch(thumbinstr>>6){
 		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
 	
 	//ALU OP: SBC rd, rs (5.4)
 	case(0x106):{
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("ALU OP: SBC r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
@@ -2004,7 +2002,7 @@ switch(thumbinstr>>6){
 		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -2012,8 +2010,8 @@ switch(thumbinstr>>6){
 	//ALU OP: ROR rd, rs (5.4)
 	case(0x107):{
 	
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("ALU OP: ROR r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
@@ -2025,7 +2023,7 @@ switch(thumbinstr>>6){
 		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -2033,9 +2031,9 @@ switch(thumbinstr>>6){
 	//ALU OP: TST rd, rs (5.4) (and with cpuflag output only)
 	case(0x108):{
 	
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("ALU OP: TST rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg);
 		#endif
@@ -2052,7 +2050,7 @@ switch(thumbinstr>>6){
 	//ALU OP: NEG rd, rs (5.4)
 	case(0x109):{	
 	
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		
 		dummyreg=negasm(dummyreg2);
 		
@@ -2064,16 +2062,16 @@ switch(thumbinstr>>6){
 		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
 	
 	//ALU OP: CMP rd, rs (5.4)
 	case(0x10a):{	
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("ALU OP: CMP rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg);
 		#endif
@@ -2089,9 +2087,9 @@ switch(thumbinstr>>6){
 	
 	//ALU OP: CMN rd, rs (5.4)
 	case(0x10b):{	
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("ALU OP: CMN rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg);
 		#endif
@@ -2107,8 +2105,8 @@ switch(thumbinstr>>6){
 	
 	//ALU OP: ORR rd, rs (5.4)
 	case(0x10c):{	
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("ALU OP: ORR r%d[%x], r%d[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
@@ -2120,15 +2118,15 @@ switch(thumbinstr>>6){
 		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
 	
 	//ALU OP: MUL rd, rs (5.4)
 	case(0x10d):{	
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("ALU OP: MUL r%d[%x], r%d[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
@@ -2140,15 +2138,15 @@ switch(thumbinstr>>6){
 		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
 	
 	//ALU OP: BIC rd, rs (5.4)
 	case(0x10e):{	
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("ALU OP: BIC r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
@@ -2160,14 +2158,14 @@ switch(thumbinstr>>6){
 		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
 	
 	//ALU OP: MVN rd, rs (5.4)
 	case(0x10f):{	
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		
 		dummyreg=mvnasm(dummyreg2);
 		
@@ -2180,7 +2178,7 @@ switch(thumbinstr>>6){
 		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
@@ -2190,9 +2188,9 @@ switch(thumbinstr>>6){
 	////////////////////////////5.5
 	//ADD rd,hs (5.5)
 	case(0x111):{
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
 		
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (((thumbinstr>>3)&0x7)+8), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, (((thumbinstr>>3)&0x7)+8), 32,0);
 		
 		dummyreg=addasm(dummyreg,dummyreg2);
 		
@@ -2202,16 +2200,16 @@ switch(thumbinstr>>6){
 		printf("HI reg ADD rd(%d)[%x], hs(%d)[%x] (5.5)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)(((thumbinstr>>3)&0x7)+8),(unsigned int)dummyreg2);
 		#endif
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
 
 	//ADD hd,rs (5.5)	
 	case(0x112):{
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr&0x7)+0x8), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr&0x7)+0x8), 32,0);
 		
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		
 		dummyreg=addasm(dummyreg,dummyreg2);
 		
@@ -2221,15 +2219,15 @@ switch(thumbinstr>>6){
 		printf("HI reg op ADD hd%d[%x], rs%d[%x] (5.5)",(int)((thumbinstr&0x7)+8),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr&0x7)+0x8), 32,0);
+		faststr((u8*)&dummyreg, exRegs, ((thumbinstr&0x7)+0x8), 32,0);
 	return 0;
 	}
 	break;
 	
 	//ADD hd,hs (5.5) 
 	case(0x113):{
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr&0x7)+0x8), 32,0);
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (((thumbinstr>>3)&0x7)+0x8), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr&0x7)+0x8), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, (((thumbinstr>>3)&0x7)+0x8), 32,0);
 		#ifdef DEBUGEMU
 		printf("HI reg op ADD hd%d[%x], hs%d[%x] (5.5)",(int)((thumbinstr&0x7)+0x8),(unsigned int)dummyreg,(int)(((thumbinstr>>3)&0x7)+0x8),(unsigned int)dummyreg2);
 		#endif
@@ -2238,15 +2236,15 @@ switch(thumbinstr>>6){
 		//these don't update CPSR flags
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr&0x7)+0x8), 32,0);
+		faststr((u8*)&dummyreg, exRegs, ((thumbinstr&0x7)+0x8), 32,0);
 	return 0;
 	}
 	break;
 	
 	//CMP rd,hs (5.5)
 	case(0x115):{
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (((thumbinstr>>3)&0x7)+0x8), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, (((thumbinstr>>3)&0x7)+0x8), 32,0);
 		#ifdef DEBUGEMU
 		printf("HI reg op CMP rd%d[%x], hs%d[%x] (5.5)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)(((thumbinstr>>3)&0x7)+0x8),(unsigned int)dummyreg2);
 		#endif
@@ -2263,8 +2261,8 @@ switch(thumbinstr>>6){
 	//CMP hd,rs (5.5)
 	case(0x116):{
 	
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr&0x7)+0x8), 32,0);
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr>>3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr&0x7)+0x8), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("HI reg op CMP hd(%d)[%x], rs(%d)[%x] (5.5)",(int)((thumbinstr&0x7)+0x8),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
 		#endif
@@ -2281,8 +2279,8 @@ switch(thumbinstr>>6){
 	//CMP hd,hs (5.5)  /* only CMP opcodes set CPSR flags */
 	case(0x117):{
 		
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr&0x7)+0x8), 32,0);
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (((thumbinstr>>3)&0x7)+0x8), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr&0x7)+0x8), 32,0);
+		fastldr((u8*)&dummyreg2, exRegs, (((thumbinstr>>3)&0x7)+0x8), 32,0);
 		#ifdef DEBUGEMU
 		printf("HI reg op CMP hd%d[%x], hd%d[%x] (5.5)",(int)((thumbinstr&0x7)+0x8),(unsigned int)dummyreg,(int)(((thumbinstr>>3)&0x7)+0x8),(unsigned int)dummyreg2);
 		#endif
@@ -2299,7 +2297,7 @@ switch(thumbinstr>>6){
 	//MOV
 	//MOV rd,hs (5.5)	
 	case(0x119):{
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (((thumbinstr>>0x3)&0x7)+0x8), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (((thumbinstr>>0x3)&0x7)+0x8), 32,0);
 		
 		#ifdef DEBUGEMU
 		printf("mov rd(%d),hs(%d)[%x] ",(int)(thumbinstr&0x7),(int)(((thumbinstr>>0x3)&0x7)+0x8),(unsigned int)dummyreg);
@@ -2310,14 +2308,14 @@ switch(thumbinstr>>6){
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		faststr((u8*)&dummyreg2, gbavirtreg_cpu, (thumbinstr&0x7), 32,0);
+		faststr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
 	return 0;
 	}
 	break;
 	
 	//MOV Hd,Rs (5.5) 
 	case(0x11a):{
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>0x3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>0x3)&0x7), 32,0);
 		#ifdef DEBUGEMU
 		printf("mov hd%d,rs%d[%x] ",(int)(((thumbinstr)&0x7)+0x8),(int)(thumbinstr>>0x3)&0x7,(unsigned int)dummyreg);
 		#endif
@@ -2327,14 +2325,14 @@ switch(thumbinstr>>6){
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		faststr((u8*)&dummyreg2,gbavirtreg_cpu, ((thumbinstr&0x7)+0x8), 32,0);
+		faststr((u8*)&dummyreg2,exRegs, ((thumbinstr&0x7)+0x8), 32,0);
 	return 0;
 	}
 	break;
 	
 	//MOV hd,hs (5.5)
 	case(0x11b):{
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, (((thumbinstr>>0x3)&0x7)+0x8), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, (((thumbinstr>>0x3)&0x7)+0x8), 32,0);
 		#ifdef DEBUGEMU
 		printf("mov hd(%d),hs(%d)[%x] ",(int)(((thumbinstr)&0x7)+0x8),(int)(((thumbinstr>>0x3)&0x7)+0x8),(unsigned int)dummyreg);
 		#endif
@@ -2344,14 +2342,14 @@ switch(thumbinstr>>6){
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((thumbinstr&0x7)+0x8), 32,0);
+		faststr((u8*)&dummyreg2, exRegs, ((thumbinstr&0x7)+0x8), 32,0);
 	}
 	break;
 	
 	//						thumb BX branch exchange (rs)
 	case(0x11c):{
 		//rs
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>0x3)&0x7), 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>0x3)&0x7), 32,0);
 		
 		//unlikely (r0-r7) will never be r15
 		if(((thumbinstr>>0x3)&0x7)==0xf){
@@ -2369,7 +2367,7 @@ switch(thumbinstr>>6){
 		//set CPU <mode> (included bit[5])
 		updatecpuflags(1,temppsr,temppsr&0x1f);
 	
-		rom=(u32)(dummyreg&0xfffffffe);
+		exRegs[0xf]=(u32)(dummyreg&0xfffffffe);
 	
 		#ifdef DEBUGEMU
 			printf("BX rs(%d)[%x]! cpsr:%x",(int)((thumbinstr>>0x3)&0x7),(unsigned int)dummyreg,(unsigned int)temppsr);
@@ -2382,7 +2380,7 @@ switch(thumbinstr>>6){
 	//						thumb BX (hs)
 	case(0x11D):{
 		//hs
-		fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((thumbinstr>>0x3)&0x7)+0x8, 32,0);
+		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>0x3)&0x7)+0x8, 32,0);
 		
 		//BX PC sets bit[0] = 0 and adds 4
 		if((((thumbinstr>>0x3)&0x7)+0x8)==0xf){
@@ -2396,7 +2394,7 @@ switch(thumbinstr>>6){
 		//set CPU <mode> (included bit[5])
 		updatecpuflags(1,temppsr,temppsr&0x1f);
 	
-		rom=(u32)((dummyreg&0xfffffffe)-0x2); //prefetch & align two boundaries
+		exRegs[0xf]=(u32)((dummyreg&0xfffffffe)-0x2); //prefetch & align two boundaries
 	
 		#ifdef DEBUGEMU
 		printf("BX hs(%d)[%x]! cpsr:%x",(int)((thumbinstr>>0x3)&0x7),(unsigned int)dummyreg,(unsigned int)temppsr);
@@ -2589,11 +2587,11 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 	case(0x0a000000):{
 		if (z_flag==1){ 
 			
-			s32 s_word=(((arminstr&0xffffff)<<2)+(int)rom); //+/- 32MB of addressing. 
+			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
 			//also keep in mind prefetching (8 byte / 2 words ahead of current instruction for new address)
 		
-			rom=(u32)s_word;
+			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("(5.3) BEQ ");
@@ -2601,9 +2599,9 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 			//link bit
 			if( ((arminstr>>24)&1) == 1){
 				//LR=PC
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0xf), 32,0);
+				fastldr((u8*)&dummyreg2, exRegs, (0xf), 32,0);
 				dummyreg2+=0x8;
-				faststr((u8*)&dummyreg2,gbavirtreg_cpu, (0xe), 32,0);
+				faststr((u8*)&dummyreg2,exRegs, (0xe), 32,0);
 				#ifdef DEBUGEMU
 				printf("link bit!");
 				#endif
@@ -2617,11 +2615,11 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 	case(0x1a000000):
 		if (z_flag==0){ 
 			
-			s32 s_word=(((arminstr&0xffffff)<<2)+(int)rom); //+/- 32MB of addressing. 
+			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
 			//also keep in mind prefetching (8 byte / 2 words ahead of current instruction for new address)
 		
-			rom=(u32)s_word;
+			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("(5.3) BNE ");
@@ -2630,9 +2628,9 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 			//link bit
 			if( ((arminstr>>24)&1) == 1){
 				//LR=PC
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0xf), 32,0);
+				fastldr((u8*)&dummyreg2, exRegs, (0xf), 32,0);
 				dummyreg2+=0x8;
-				faststr((u8*)&dummyreg2,gbavirtreg_cpu, (0xe), 32,0);
+				faststr((u8*)&dummyreg2,exRegs, (0xe), 32,0);
 				#ifdef DEBUGEMU
 				printf("link bit!");
 				#endif
@@ -2645,11 +2643,11 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 	case(0x2a000000):
 		if (c_flag==1){
 			
-			s32 s_word=(((arminstr&0xffffff)<<2)+(int)rom); //+/- 32MB of addressing. 
+			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
 			//also keep in mind prefetching (8 byte / 2 words ahead of current instruction for new address)
 		
-			rom=(u32)s_word;
+			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("(5.3) BCS ");
@@ -2658,9 +2656,9 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 			//link bit
 			if( ((arminstr>>24)&1) == 1){
 				//LR=PC
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0xf), 32,0);
+				fastldr((u8*)&dummyreg2, exRegs, (0xf), 32,0);
 				dummyreg2+=0x8;
-				faststr((u8*)&dummyreg2,gbavirtreg_cpu, (0xe), 32,0);
+				faststr((u8*)&dummyreg2,exRegs, (0xe), 32,0);
 				#ifdef DEBUGEMU
 				printf("link bit!");
 				#endif
@@ -2673,11 +2671,11 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 	case(0x3a000000):
 		if (c_flag==0){ 
 			
-			s32 s_word=(((arminstr&0xffffff)<<2)+(int)rom); //+/- 32MB of addressing. 
+			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
 			//also keep in mind prefetching (8 byte / 2 words ahead of current instruction for new address)
 		
-			rom=(u32)s_word;
+			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("(5.3) BCC ");
@@ -2686,9 +2684,9 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 			//link bit
 			if( ((arminstr>>24)&1) == 1){
 				//LR=PC
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0xf), 32,0);
+				fastldr((u8*)&dummyreg2, exRegs, (0xf), 32,0);
 				dummyreg2+=0x8;
-				faststr((u8*)&dummyreg2,gbavirtreg_cpu, (0xe), 32,0);
+				faststr((u8*)&dummyreg2,exRegs, (0xe), 32,0);
 				#ifdef DEBUGEMU
 				printf("link bit!");
 				#endif
@@ -2701,11 +2699,11 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 	case(0x4a000000):
 	if (n_flag==1){ 
 			
-			s32 s_word=(((arminstr&0xffffff)<<2)+(int)rom); //+/- 32MB of addressing. 
+			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
 			//also keep in mind prefetching (8 byte / 2 words ahead of current instruction for new address)
 		
-			rom=(u32)s_word;
+			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("(5.3) BMI ");
@@ -2714,9 +2712,9 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 			//link bit
 			if( ((arminstr>>24)&1) == 1){
 				//LR=PC
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0xf), 32,0);
+				fastldr((u8*)&dummyreg2, exRegs, (0xf), 32,0);
 				dummyreg2+=0x8;
-				faststr((u8*)&dummyreg2,gbavirtreg_cpu, (0xe), 32,0);
+				faststr((u8*)&dummyreg2,exRegs, (0xe), 32,0);
 				#ifdef DEBUGEMU
 				printf("link bit!");
 				#endif
@@ -2729,11 +2727,11 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 	case(0x5a000000):
 		if (n_flag==0){ 
 			
-			s32 s_word=(((arminstr&0xffffff)<<2)+(int)rom); //+/- 32MB of addressing. 
+			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
 			//also keep in mind prefetching (8 byte / 2 words ahead of current instruction for new address)
 		
-			rom=(u32)s_word;
+			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("(5.3) BPL ");
@@ -2742,9 +2740,9 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 			//link bit
 			if( ((arminstr>>24)&1) == 1){
 				//LR=PC
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0xf), 32,0);
+				fastldr((u8*)&dummyreg2, exRegs, (0xf), 32,0);
 				dummyreg2+=0x8;
-				faststr((u8*)&dummyreg2,gbavirtreg_cpu, (0xe), 32,0);
+				faststr((u8*)&dummyreg2,exRegs, (0xe), 32,0);
 				#ifdef DEBUGEMU
 				printf("link bit!");
 				#endif
@@ -2757,11 +2755,11 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 	case(0x6a000000):
 		if (v_flag==1){
 			
-			s32 s_word=(((arminstr&0xffffff)<<2)+(int)rom); //+/- 32MB of addressing. 
+			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
 			//also keep in mind prefetching (8 byte / 2 words ahead of current instruction for new address)
 		
-			rom=(u32)s_word;
+			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("(5.3) BVS ");
@@ -2770,9 +2768,9 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 			//link bit
 			if( ((arminstr>>24)&1) == 1){
 				//LR=PC
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0xf), 32,0);
+				fastldr((u8*)&dummyreg2, exRegs, (0xf), 32,0);
 				dummyreg2+=0x8;
-				faststr((u8*)&dummyreg2,gbavirtreg_cpu, (0xe), 32,0);
+				faststr((u8*)&dummyreg2,exRegs, (0xe), 32,0);
 				#ifdef DEBUGEMU
 				printf("link bit!");
 				#endif
@@ -2785,11 +2783,11 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 	case(0x7a000000):
 		if (v_flag==0){ 
 			
-			s32 s_word=(((arminstr&0xffffff)<<2)+(int)rom); //+/- 32MB of addressing. 
+			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
 			//also keep in mind prefetching (8 byte / 2 words ahead of current instruction for new address)
 		
-			rom=(u32)s_word;
+			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("(5.3) BVC ");
@@ -2798,9 +2796,9 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 			//link bit
 			if( ((arminstr>>24)&1) == 1){
 				//LR=PC
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0xf), 32,0);
+				fastldr((u8*)&dummyreg2, exRegs, (0xf), 32,0);
 				dummyreg2+=0x8;
-				faststr((u8*)&dummyreg2,gbavirtreg_cpu, (0xe), 32,0);
+				faststr((u8*)&dummyreg2,exRegs, (0xe), 32,0);
 				#ifdef DEBUGEMU
 				printf("link bit!");
 				#endif
@@ -2813,11 +2811,11 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 	case(0x8a000000):
 		if ( (c_flag==1) && (z_flag==0) ){
 			
-			s32 s_word=(((arminstr&0xffffff)<<2)+(int)rom); //+/- 32MB of addressing. 
+			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
 			//also keep in mind prefetching (8 byte / 2 words ahead of current instruction for new address)
 		
-			rom=(u32)s_word;
+			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("(5.3) BHI ");
@@ -2826,9 +2824,9 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 			//link bit
 			if( ((arminstr>>24)&1) == 1){
 				//LR=PC
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0xf), 32,0);
+				fastldr((u8*)&dummyreg2, exRegs, (0xf), 32,0);
 				dummyreg2+=0x8;
-				faststr((u8*)&dummyreg2,gbavirtreg_cpu, (0xe), 32,0);
+				faststr((u8*)&dummyreg2,exRegs, (0xe), 32,0);
 				#ifdef DEBUGEMU
 				printf("link bit!");
 				#endif
@@ -2841,11 +2839,11 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 	case(0x9a000000):
 		if ( (c_flag==0) || (z_flag==1) ){ 
 			
-			s32 s_word=(((arminstr&0xffffff)<<2)+(int)rom); //+/- 32MB of addressing. 
+			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
 			//also keep in mind prefetching (8 byte / 2 words ahead of current instruction for new address)
 		
-			rom=(u32)s_word;
+			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("(5.3) BLS ");
@@ -2854,9 +2852,9 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 			//link bit
 			if( ((arminstr>>24)&1) == 1){
 				//LR=PC
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0xf), 32,0);
+				fastldr((u8*)&dummyreg2, exRegs, (0xf), 32,0);
 				dummyreg2+=0x8;
-				faststr((u8*)&dummyreg2,gbavirtreg_cpu, (0xe), 32,0);
+				faststr((u8*)&dummyreg2,exRegs, (0xe), 32,0);
 				#ifdef DEBUGEMU
 				printf("link bit!");
 				#endif
@@ -2869,11 +2867,11 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 	case(0xaa000000):
 		if ( ((n_flag==1) && (v_flag==1)) || ((n_flag==0) && (v_flag==0)) ){ 
 			
-			s32 s_word=(((arminstr&0xffffff)<<2)+(int)rom); //+/- 32MB of addressing. 
+			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
 			//also keep in mind prefetching (8 byte / 2 words ahead of current instruction for new address)
 		
-			rom=(u32)s_word;
+			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("(5.3) BGE ");
@@ -2882,9 +2880,9 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 			//link bit
 			if( ((arminstr>>24)&1) == 1){
 				//LR=PC
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0xf), 32,0);
+				fastldr((u8*)&dummyreg2, exRegs, (0xf), 32,0);
 				dummyreg2+=0x8;
-				faststr((u8*)&dummyreg2,gbavirtreg_cpu, (0xe), 32,0);
+				faststr((u8*)&dummyreg2,exRegs, (0xe), 32,0);
 				#ifdef DEBUGEMU
 				printf("link bit!");
 				#endif
@@ -2897,11 +2895,11 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 	case(0xba000000):
 		if ( ((n_flag==1) && (v_flag==0)) || ((n_flag==0) && (v_flag==1)) ){ 
 			
-			s32 s_word=(((arminstr&0xffffff)<<2)+(int)rom); //+/- 32MB of addressing. 
+			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
 			//also keep in mind prefetching (8 byte / 2 words ahead of current instruction for new address)
 		
-			rom=(u32)s_word;
+			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("(5.3) BLT ");
@@ -2910,9 +2908,9 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 			//link bit
 			if( ((arminstr>>24)&1) == 1){
 				//LR=PC
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0xf), 32,0);
+				fastldr((u8*)&dummyreg2, exRegs, (0xf), 32,0);
 				dummyreg2+=0x8;
-				faststr((u8*)&dummyreg2,gbavirtreg_cpu, (0xe), 32,0);
+				faststr((u8*)&dummyreg2,exRegs, (0xe), 32,0);
 				#ifdef DEBUGEMU
 				printf("link bit!");
 				#endif
@@ -2925,11 +2923,11 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 	case(0xca000000):
 		if ( (z_flag==0) && (((n_flag==1) && (v_flag==1)) || ((n_flag==0) && (v_flag==0))) ){ 
 			
-			s32 s_word=(((arminstr&0xffffff)<<2)+(int)rom); //+/- 32MB of addressing. 
+			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
 			//also keep in mind prefetching (8 byte / 2 words ahead of current instruction for new address)
 		
-			rom=(u32)s_word;
+			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("(5.3) BGT ");
@@ -2938,9 +2936,9 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 			//link bit
 			if( ((arminstr>>24)&1) == 1){
 				//LR=PC
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0xf), 32,0);
+				fastldr((u8*)&dummyreg2, exRegs, (0xf), 32,0);
 				dummyreg2+=0x8;
-				faststr((u8*)&dummyreg2,gbavirtreg_cpu, (0xe), 32,0);
+				faststr((u8*)&dummyreg2,exRegs, (0xe), 32,0);
 				#ifdef DEBUGEMU
 				printf("link bit!");
 				#endif
@@ -2956,11 +2954,11 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 				((n_flag==0) && (v_flag==1) )
 			){ 
 			
-			s32 s_word=(((arminstr&0xffffff)<<2)+(int)rom); //+/- 32MB of addressing. 
+			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
 			//also keep in mind prefetching (8 byte / 2 words ahead of current instruction for new address)
 		
-			rom=(u32)s_word;
+			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("(5.3) BLE ");
@@ -2969,9 +2967,9 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 			//link bit
 			if( ((arminstr>>24)&1) == 1){
 				//LR=PC
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0xf), 32,0);
+				fastldr((u8*)&dummyreg2, exRegs, (0xf), 32,0);
 				dummyreg2+=0x8;
-				faststr((u8*)&dummyreg2,gbavirtreg_cpu, (0xe), 32,0);
+				faststr((u8*)&dummyreg2,exRegs, (0xe), 32,0);
 				#ifdef DEBUGEMU
 				printf("link bit!");
 				#endif
@@ -2984,11 +2982,11 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 	case(0xea000000):{
 		
 		//new
-		s32 s_word=(((arminstr&0xffffff)<<2)+(int)rom+(0x8)); //+/- 32MB of addressing for branch offset / prefetch is considered here
+		s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)+(0x8)); //+/- 32MB of addressing for branch offset / prefetch is considered here
 		//after that LDR is required (requires to be loaded on a register).
 		//also keep in mind prefetching (8 byte / 2 words ahead of current instruction for new address)
 		
-		rom=(u32)s_word-(0x4); //fixup next IP handled by the emulator
+		exRegs[0xf]=(u32)((s_word-0x4)&0xfffffffe); //fixup next IP handled by the emulator
 		
 		
 		#ifdef DEBUGEMU
@@ -2998,9 +2996,9 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 			//link bit
 			if( ((arminstr>>24)&1) == 1){
 				//LR=PC
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0xf), 32,0);
+				fastldr((u8*)&dummyreg2, exRegs, (0xf), 32,0);
 				dummyreg2+=0x8;
-				faststr((u8*)&dummyreg2,gbavirtreg_cpu, (0xe), 32,0);
+				faststr((u8*)&dummyreg2,exRegs, (0xe), 32,0);
 				#ifdef DEBUGEMU
 				printf("link bit!");
 				#endif
@@ -3019,9 +3017,9 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 			//link bit
 			if( ((arminstr>>24)&1) == 1){
 				//LR=PC
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, (0xf), 32,0);
+				fastldr((u8*)&dummyreg2, exRegs, (0xf), 32,0);
 				dummyreg2+=0x8;
-				faststr((u8*)&dummyreg2,gbavirtreg_cpu, (0xe), 32,0);
+				faststr((u8*)&dummyreg2,exRegs, (0xe), 32,0);
 				#ifdef DEBUGEMU
 				printf("link bit!");
 				#endif
@@ -3036,7 +3034,7 @@ switch(((arminstr) & 0x012fff10)){
 	case(0x012fff10):
 	//coto
 	//Rn
-	fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr)&0xf), 32,0); 
+	fastldr((u8*)&dummyreg, exRegs, ((arminstr)&0xf), 32,0); 
 	
 	if(((arminstr)&0xf)==0xf){
 		printf("BX rn%d[%x]! PC is undefined behaviour!",(int)((arminstr)&0xf),(unsigned int)dummyreg);
@@ -3044,14 +3042,14 @@ switch(((arminstr) & 0x012fff10)){
 	}
 	u32 temppsr;
 	
-	gbavirtreg_cpu[0xf]=rom=(u32)dummyreg;
+	exRegs[0xf]=(u32)(dummyreg&0xfffffffe);
 	
 	//(BX ARM-> THUMB value will always add +4)
 	if((dummyreg&0x1)==1){
 		//bit[0] RAM -> bit[5] PSR
 		temppsr=((dummyreg&0x1)<<5)	| cpsrvirt;		//set bit[0] rn -> PSR bit[5]
-		rom = ((uint32)rom) & ~(1<<0); //align to log2 (because memory access/struct are always 4 byte)
-		rom+=(0x2);   //align for next THUMB opcode
+		exRegs[0xf] = (((uint32)(exRegs[0xf]&0xfffffffe)) & ~(1<<0))&0xfffffffe; //align to log2 (because memory access/struct are always 4 byte)
+		exRegs[0xf]+=0x2;   //align for next THUMB opcode
 	}
 	else{
 		temppsr= cpsrvirt & ~(1<<5);	 	//unset bit[5]
@@ -3059,7 +3057,7 @@ switch(((arminstr) & 0x012fff10)){
 	}
 	
 	//due ARM's ARM mode post +0x4 opcode execute, instruction pointer is reset
-	rom-=(0x4);
+	exRegs[0xf]-=(0x4);
 	
 	//set CPU <mode> (included bit[5])
 	updatecpuflags(1,temppsr,temppsr&0x1f);
@@ -3133,7 +3131,7 @@ if(isalu==1){
 			if(immop_arm==1){	//for #Inmediate OP operate
 			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//#Imm (operand 2)		 bit[11]---bit[0]
 				//rotate field:
@@ -3145,7 +3143,7 @@ if(isalu==1){
 				dummyreg3=andasm(dummyreg,dummyreg2);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("AND rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) ",
 				(int)(arminstr>>12)&0xf,(unsigned int)dummyreg3,
@@ -3158,10 +3156,10 @@ if(isalu==1){
 			else{	//for Register (operand 2) operator / shift included
 		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr)&0xf), 32,0);
+				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
 			
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -3176,7 +3174,7 @@ if(isalu==1){
 					//lsl
 					if((dummyreg2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3186,7 +3184,7 @@ if(isalu==1){
 					//lsr
 					else if ((dummyreg2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3196,7 +3194,7 @@ if(isalu==1){
 					//asr
 					else if ((dummyreg2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3206,7 +3204,7 @@ if(isalu==1){
 					//ror
 					else if ((dummyreg2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3265,7 +3263,7 @@ if(isalu==1){
 				dummyreg2=andasm(dummyreg,dummyreg3);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg2, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("AND rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x] (5.4)",
 				(int)(arminstr>>12)&0xf,(unsigned int)dummyreg2,
@@ -3288,7 +3286,7 @@ if(isalu==1){
 			if(immop_arm==1){	//for #Inmediate OP operate
 			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//#Imm (operand 2)		 bit[11]---bit[0]
 				//rotate field:
@@ -3300,7 +3298,7 @@ if(isalu==1){
 				dummyreg3=eorasm(dummyreg,dummyreg2);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("EOR rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) ",
 				(int)(arminstr>>12)&0xf,(unsigned int)dummyreg3,
@@ -3313,10 +3311,10 @@ if(isalu==1){
 			else{	//for Register (operand 2) operator / shift included
 		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr)&0xf), 32,0);
+				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
 			
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -3331,7 +3329,7 @@ if(isalu==1){
 					//lsl
 					if((dummyreg2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3341,7 +3339,7 @@ if(isalu==1){
 					//lsr
 					else if ((dummyreg2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3351,7 +3349,7 @@ if(isalu==1){
 					//asr
 					else if ((dummyreg2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3361,7 +3359,7 @@ if(isalu==1){
 					//ror
 					else if ((dummyreg2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3419,7 +3417,7 @@ if(isalu==1){
 				dummyreg2=eorasm(dummyreg,dummyreg3);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg2, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("EOR rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x] (5.4)",
 				(int)(arminstr>>12)&0xf,(unsigned int)dummyreg2,
@@ -3441,7 +3439,7 @@ if(isalu==1){
 			if(immop_arm==1){	//for #Inmediate OP operate
 			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//#Imm (operand 2)		 bit[11]---bit[0]
 				//rotate field:
@@ -3453,7 +3451,7 @@ if(isalu==1){
 				dummyreg3=subasm(dummyreg,dummyreg2);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("SUB rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
@@ -3466,10 +3464,10 @@ if(isalu==1){
 			else{	//for Register (operand 2) operator / shift included
 		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr)&0xf), 32,0);
+				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
 			
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -3484,7 +3482,7 @@ if(isalu==1){
 					//lsl
 					if((dummyreg2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3494,7 +3492,7 @@ if(isalu==1){
 					//lsr
 					else if ((dummyreg2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3504,7 +3502,7 @@ if(isalu==1){
 					//asr
 					else if ((dummyreg2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3514,7 +3512,7 @@ if(isalu==1){
 					//ror
 					else if ((dummyreg2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3572,7 +3570,7 @@ if(isalu==1){
 				dummyreg2=subasm(dummyreg,dummyreg3);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg2, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("SUB rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x] (5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg2,
@@ -3594,7 +3592,7 @@ if(isalu==1){
 			if(immop_arm==1){	//for #Inmediate OP operate
 			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//#Imm (operand 2)		 bit[11]---bit[0]
 				//rotate field:
@@ -3606,7 +3604,7 @@ if(isalu==1){
 				dummyreg3=rsbasm(dummyreg,dummyreg2);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("RSB rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
@@ -3618,10 +3616,10 @@ if(isalu==1){
 			}
 			else{	//for Register (operand 2) operator / shift included
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr)&0xf), 32,0);
+				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
 			
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -3636,7 +3634,7 @@ if(isalu==1){
 					//lsl
 					if((dummyreg2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3646,7 +3644,7 @@ if(isalu==1){
 					//lsr
 					else if ((dummyreg2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3656,7 +3654,7 @@ if(isalu==1){
 					//asr
 					else if ((dummyreg2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3666,7 +3664,7 @@ if(isalu==1){
 					//ror
 					else if ((dummyreg2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3724,7 +3722,7 @@ if(isalu==1){
 				dummyreg2=rsbasm(dummyreg,dummyreg3);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg2, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("RSB rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x] (5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg2,
@@ -3746,7 +3744,7 @@ if(isalu==1){
 			if(immop_arm==1){	//for #Inmediate OP operate
 			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//#Imm (operand 2)		 bit[11]---bit[0]
 				//rotate field:
@@ -3767,21 +3765,21 @@ if(isalu==1){
 				//dummyreg4=0xc0707070;
 				//rd destination reg	 bit[15]---bit[12] ((arminstr>>12)&0xf)
 				
-				//faststr((u8*)&dummyreg4, gbavirtreg_cpu,((arminstr>>12)&0xf) , 32,0);
+				//faststr((u8*)&dummyreg4, exRegs,((arminstr>>12)&0xf) , 32,0);
 				
-				gbavirtreg_cpu[(arminstr>>12)&0xf]=dummyreg4;
+				exRegs[(arminstr>>12)&0xf]=dummyreg4;
 				#ifdef DEBUGEMU
-				printf("ADD rd%d[%x]",(int)((arminstr>>12)&0xf),(unsigned int)gbavirtreg_cpu[(arminstr>>12)&0xf]);
+				printf("ADD rd%d[%x]",(int)((arminstr>>12)&0xf),(unsigned int)exRegs[(arminstr>>12)&0xf]);
 				#endif
 				return 0;
 			}
 			else{	//for Register (operand 2) operator / shift included
 		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr)&0xf), 32,0);
+				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
 			
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -3796,7 +3794,7 @@ if(isalu==1){
 					//lsl
 					if((dummyreg2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSL rm(%d),rs(%x)[%x] ",(int)dummyreg3,(int)((dummyreg2>>4)&0xf),(int)dummyreg4);
 						#endif
@@ -3806,7 +3804,7 @@ if(isalu==1){
 					//lsr
 					else if ((dummyreg2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4,gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4,exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSR rm(%d),rs(%d)[%x] ",(int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3816,7 +3814,7 @@ if(isalu==1){
 					//asr
 					else if ((dummyreg2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ASR rm(%d),rs(%d)[%x] ",(int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3826,7 +3824,7 @@ if(isalu==1){
 					//ror
 					else if ((dummyreg2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ROR rm(%d),rs(%d)[%x] ",(int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3902,8 +3900,8 @@ if(isalu==1){
 				}
 				
 				//rd destination reg	 bit[15]---bit[12]
-				//faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,1);
-				gbavirtreg_cpu[(arminstr>>12)&0xf]=dummyreg3;
+				//faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,1);
+				exRegs[(arminstr>>12)&0xf]=dummyreg3;
 				
 				#ifdef DEBUGEMU
 				printf("ADD rd(%d)<-rn(%d)[%x],rm(%d)[%x] (5.4)",
@@ -3923,7 +3921,7 @@ if(isalu==1){
 			if(immop_arm==1){	//for #Inmediate OP operate
 			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//#Imm (operand 2)		 bit[11]---bit[0]
 				//rotate field:
@@ -3935,7 +3933,7 @@ if(isalu==1){
 				dummyreg3=adcasm(dummyreg,dummyreg2);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("ADC rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
@@ -3948,10 +3946,10 @@ if(isalu==1){
 			else{	//for Register (operand 2) operator / shift included
 		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr)&0xf), 32,0);
+				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
 			
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -3966,7 +3964,7 @@ if(isalu==1){
 					//lsl
 					if((dummyreg2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3976,7 +3974,7 @@ if(isalu==1){
 					//lsr
 					else if ((dummyreg2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3986,7 +3984,7 @@ if(isalu==1){
 					//asr
 					else if ((dummyreg2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -3996,7 +3994,7 @@ if(isalu==1){
 					//ror
 					else if ((dummyreg2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4054,7 +4052,7 @@ if(isalu==1){
 				dummyreg2=adcasm(dummyreg,dummyreg3);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg2, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("ADC rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg2,
@@ -4077,7 +4075,7 @@ if(isalu==1){
 			if(immop_arm==1){	//for #Inmediate OP operate
 			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//#Imm (operand 2)		 bit[11]---bit[0]
 				//rotate field:
@@ -4089,7 +4087,7 @@ if(isalu==1){
 				dummyreg3=sbcasm(dummyreg,dummyreg2);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("SBC rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
@@ -4102,10 +4100,10 @@ if(isalu==1){
 			else{	//for Register (operand 2) operator / shift included
 		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr)&0xf), 32,0);
+				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
 			
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -4120,7 +4118,7 @@ if(isalu==1){
 					//lsl
 					if((dummyreg2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4130,7 +4128,7 @@ if(isalu==1){
 					//lsr
 					else if ((dummyreg2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4,gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4,exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4140,7 +4138,7 @@ if(isalu==1){
 					//asr
 					else if ((dummyreg2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4150,7 +4148,7 @@ if(isalu==1){
 					//ror
 					else if ((dummyreg2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4208,7 +4206,7 @@ if(isalu==1){
 				dummyreg2=sbcasm(dummyreg,dummyreg3);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg2, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("SBC rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg2,
@@ -4231,7 +4229,7 @@ if(isalu==1){
 			
 			if(immop_arm==1){	//for #Inmediate OP operate
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//#Imm (operand 2)		 bit[11]---bit[0]
 				//rotate field:
@@ -4243,7 +4241,7 @@ if(isalu==1){
 				dummyreg3=rscasm(dummyreg,dummyreg2);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("RSC rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
@@ -4256,10 +4254,10 @@ if(isalu==1){
 			else{	//for Register (operand 2) operator / shift included
 			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr)&0xf), 32,0);
+				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
 			
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -4274,7 +4272,7 @@ if(isalu==1){
 					//lsl
 					if((dummyreg2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4284,7 +4282,7 @@ if(isalu==1){
 					//lsr
 					else if ((dummyreg2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4294,7 +4292,7 @@ if(isalu==1){
 					//asr
 					else if ((dummyreg2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4304,7 +4302,7 @@ if(isalu==1){
 					//ror
 					else if ((dummyreg2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4362,7 +4360,7 @@ if(isalu==1){
 				dummyreg2=rscasm(dummyreg,dummyreg3);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg2, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("RSC rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg2,
@@ -4385,7 +4383,7 @@ if(isalu==1){
 			if(immop_arm==1){	//for #Inmediate OP operate
 			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//#Imm (operand 2)		 bit[11]---bit[0]
 				//rotate field:
@@ -4406,10 +4404,10 @@ if(isalu==1){
 			else{	//for Register (operand 2) operator / shift included
 		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr)&0xf), 32,0);
+				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
 			
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -4424,7 +4422,7 @@ if(isalu==1){
 					//lsl
 					if((dummyreg2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4434,7 +4432,7 @@ if(isalu==1){
 					//lsr
 					else if ((dummyreg2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4444,7 +4442,7 @@ if(isalu==1){
 					//asr
 					else if ((dummyreg2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4454,7 +4452,7 @@ if(isalu==1){
 					//ror
 					else if ((dummyreg2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4533,7 +4531,7 @@ if(isalu==1){
 			if(immop_arm==1){	//for #Inmediate OP operate
 			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//#Imm (operand 2)		 bit[11]---bit[0]
 				//rotate field:
@@ -4554,10 +4552,10 @@ if(isalu==1){
 			else{	//for Register (operand 2) operator / shift included
 		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr)&0xf), 32,0);
+				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
 			
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -4572,7 +4570,7 @@ if(isalu==1){
 					//lsl
 					if((dummyreg2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4582,7 +4580,7 @@ if(isalu==1){
 					//lsr
 					else if ((dummyreg2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4592,7 +4590,7 @@ if(isalu==1){
 					//asr
 					else if ((dummyreg2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4602,7 +4600,7 @@ if(isalu==1){
 					//ror
 					else if ((dummyreg2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4679,7 +4677,7 @@ if(isalu==1){
 			if(immop_arm==1){	//for #Inmediate OP operate
 			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//#Imm (operand 2)		 bit[11]---bit[0]
 				//rotate field:
@@ -4700,10 +4698,10 @@ if(isalu==1){
 			else{	//for Register (operand 2) operator / shift included
 		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr)&0xf), 32,0);
+				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
 			
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -4718,7 +4716,7 @@ if(isalu==1){
 					//lsl
 					if((dummyreg2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4728,7 +4726,7 @@ if(isalu==1){
 					//lsr
 					else if ((dummyreg2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4738,7 +4736,7 @@ if(isalu==1){
 					//asr
 					else if ((dummyreg2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4748,7 +4746,7 @@ if(isalu==1){
 					//ror
 					else if ((dummyreg2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4825,7 +4823,7 @@ if(isalu==1){
 			if(immop_arm==1){	//for #Inmediate OP operate
 			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//#Imm (operand 2)		 bit[11]---bit[0]
 				//rotate field:
@@ -4846,10 +4844,10 @@ if(isalu==1){
 			else{	//for Register (operand 2) operator / shift included
 		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr)&0xf), 32,0);
+				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
 			
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -4864,7 +4862,7 @@ if(isalu==1){
 					//lsl
 					if((dummyreg2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4874,7 +4872,7 @@ if(isalu==1){
 					//lsr
 					else if ((dummyreg2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4884,7 +4882,7 @@ if(isalu==1){
 					//asr
 					else if ((dummyreg2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4894,7 +4892,7 @@ if(isalu==1){
 					//ror
 					else if ((dummyreg2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -4972,7 +4970,7 @@ if(isalu==1){
 			if(immop_arm==1){	//for #Inmediate OP operate
 			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//#Imm (operand 2)		 bit[11]---bit[0]
 				//rotate field:
@@ -4984,7 +4982,7 @@ if(isalu==1){
 				dummyreg3=orrasm(dummyreg,dummyreg2);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("ORR rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
@@ -4997,10 +4995,10 @@ if(isalu==1){
 			else{	//for Register (operand 2) operator / shift included
 		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr)&0xf), 32,0);
+				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
 			
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -5015,7 +5013,7 @@ if(isalu==1){
 					//lsl
 					if((dummyreg2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -5025,7 +5023,7 @@ if(isalu==1){
 					//lsr
 					else if ((dummyreg2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -5035,7 +5033,7 @@ if(isalu==1){
 					//asr
 					else if ((dummyreg2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -5045,7 +5043,7 @@ if(isalu==1){
 					//ror
 					else if ((dummyreg2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -5103,7 +5101,7 @@ if(isalu==1){
 				dummyreg2=orrasm(dummyreg,dummyreg3);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg2, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("ORR rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg2,
@@ -5144,7 +5142,7 @@ if(isalu==1){
 				);
 				#endif
 				//rd (1st op reg) 		 bit[19]---bit[16] 
-				faststr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg, exRegs, ((arminstr>>12)&0xf), 32,0);
 			}
 			else{	//for Register (operand 2) operator / shift included
 		
@@ -5152,7 +5150,7 @@ if(isalu==1){
 				//fastldr((u8*)&dummyreg, (u32)gbavirtreg[0], ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr)&0xf), 32,0);
+				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
 				
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -5167,7 +5165,7 @@ if(isalu==1){
 					//lsl
 					if((dummyreg2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -5177,7 +5175,7 @@ if(isalu==1){
 					//lsr
 					else if ((dummyreg2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -5187,7 +5185,7 @@ if(isalu==1){
 					//asr
 					else if ((dummyreg2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -5197,7 +5195,7 @@ if(isalu==1){
 					//ror
 					else if ((dummyreg2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -5259,7 +5257,7 @@ if(isalu==1){
 					dummyreg+=0x8;
 				
 				//rd (1st op reg) 		 bit[19]---bit[16] 
-				faststr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("MOV rd(%x)[%x],rm(%d)[%x] (5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg,
@@ -5280,7 +5278,7 @@ if(isalu==1){
 			if(immop_arm==1){	//for #Inmediate OP operate
 			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg,gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg,exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//#Imm (operand 2)		 bit[11]---bit[0]
 				//rotate field:
@@ -5292,7 +5290,7 @@ if(isalu==1){
 				dummyreg3=bicasm(dummyreg,dummyreg2);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("BIC rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
@@ -5305,10 +5303,10 @@ if(isalu==1){
 			else{	//for Register (operand 2) operator / shift included
 		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr)&0xf), 32,0);
+				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
 			
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -5323,7 +5321,7 @@ if(isalu==1){
 					//lsl
 					if((dummyreg2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -5333,7 +5331,7 @@ if(isalu==1){
 					//lsr
 					else if ((dummyreg2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -5343,7 +5341,7 @@ if(isalu==1){
 					//asr
 					else if ((dummyreg2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -5353,7 +5351,7 @@ if(isalu==1){
 					//ror
 					else if ((dummyreg2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -5411,7 +5409,7 @@ if(isalu==1){
 				dummyreg2=bicasm(dummyreg,dummyreg3);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg2, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("BIC rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg2,
@@ -5453,14 +5451,14 @@ if(isalu==1){
 				#endif
 			
 				//rd (1st op reg) 		 bit[19]---bit[16] 
-				faststr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg, exRegs, ((arminstr>>12)&0xf), 32,0);
 			}
 			else{	//for Register (operand 2) operator / shift included	
 				//rn (1st op reg) 		 bit[19]---bit[16] / ignored
 				//fastldr((u8*)&dummyreg, (u32)gbavirtreg[0], ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr)&0xf), 32,0);
+				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
 			
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -5475,7 +5473,7 @@ if(isalu==1){
 					//lsl
 					if((dummyreg2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -5485,7 +5483,7 @@ if(isalu==1){
 					//lsr
 					else if ((dummyreg2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -5495,7 +5493,7 @@ if(isalu==1){
 					//asr
 					else if ((dummyreg2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -5505,7 +5503,7 @@ if(isalu==1){
 					//ror
 					else if ((dummyreg2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg2>>4)&0xf), 32,0); 
+						fastldr((u8*)&dummyreg4, exRegs, ((dummyreg2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
 						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((dummyreg2>>4)&0xf),(unsigned int)dummyreg4);
 						#endif
@@ -5563,7 +5561,7 @@ if(isalu==1){
 				dummyreg=mvnasm(dummyreg3);
 		
 				//rd (1st op reg) 		 bit[19]---bit[16] 
-				faststr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&dummyreg, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("MVN rd(%d)[%x],rm(%d)[%x] (5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg,
@@ -5604,13 +5602,13 @@ switch((arminstr>>16)&0x3f){
 			printf("CPSR save!:%x",(unsigned int)cpsrvirt);
 			#endif
 			dummyreg=cpsrvirt;
-			faststr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+			faststr((u8*)&dummyreg, exRegs, ((arminstr>>12)&0xf), 32,0);
 		}
 		//source PSR is: SPSR<mode> & save cond flags
 		else{
 			//printf("SPSR save!:%x",spsr_last);
 			dummyreg=spsr_last;
-			faststr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+			faststr((u8*)&dummyreg, exRegs, ((arminstr>>12)&0xf), 32,0);
 		}
 	return 0;
 	}
@@ -5620,7 +5618,7 @@ switch((arminstr>>16)&0x3f){
 		//printf("MSR (transf reg to PSR!) ");
 		//CPSR
 		if( ((dummyreg2=((arminstr>>22)&0x3ff)) &0x1) == 0){
-			fastldr((u8*)&dummyreg, gbavirtreg_cpu, (arminstr&0xf), 32,0);
+			fastldr((u8*)&dummyreg, exRegs, (arminstr&0xf), 32,0);
 			//dummy PSR
 			dummyreg&=0xf90f03ff; //important PSR bits
 			#ifdef DEBUGEMU
@@ -5633,7 +5631,7 @@ switch((arminstr>>16)&0x3f){
 		}
 		//SPSR
 		else{
-			fastldr((u8*)&dummyreg, gbavirtreg_cpu, (arminstr&0xf), 32,0);
+			fastldr((u8*)&dummyreg, exRegs, (arminstr&0xf), 32,0);
 			//dummy PSR
 			dummyreg&=0xf90f03ff; //important PSR bits
 			#ifdef DEBUGEMU
@@ -5654,7 +5652,7 @@ switch((arminstr>>16)&0x3f){
 			//operand reg
 			if( ((arminstr>>25) &0x1) == 0){
 				//rm
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, (arminstr&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, (arminstr&0xf), 32,0);
 				//dummy PSR
 				dummyreg&=0xf90f03ff; //important PSR bits
 				#ifdef DEBUGEMU
@@ -5680,7 +5678,7 @@ switch((arminstr>>16)&0x3f){
 			//operand reg
 			if( ((arminstr>>25) &0x1) == 0){
 				//rm
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, (arminstr&0xf), 32,0);
+				fastldr((u8*)&dummyreg, exRegs, (arminstr&0xf), 32,0);
 				//dummy PSR
 				dummyreg&=0xf90f03ff; //important PSR bits
 				#ifdef DEBUGEMU
@@ -5732,10 +5730,10 @@ switch( ((arminstr>>22)&0x3f) + ((arminstr>>4)&0xf) ){
 			//multiply only & dont alter CPSR cpu flags
 			case(0x0):
 				//rm
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, (arminstr&0xf), 32,0); 
+				fastldr((u8*)&dummyreg, exRegs, (arminstr&0xf), 32,0); 
 				
 				//rs
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>8)&0xf), 32,0); 
+				fastldr((u8*)&dummyreg2, exRegs, ((arminstr>>8)&0xf), 32,0); 
 				
 				#ifdef DEBUGEMU
 				printf("mul rd(%d),rm(%d)[%x],rs(%d)[%x]",
@@ -5748,17 +5746,17 @@ switch( ((arminstr>>22)&0x3f) + ((arminstr>>4)&0xf) ){
 				dummyreg2=mulasm(dummyreg,dummyreg2);
 				
 				//rd
-				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				faststr((u8*)&dummyreg2, exRegs, ((arminstr>>16)&0xf), 32,0);
 				
 			break;
 			
 			//multiply only & set CPSR cpu flags
 			case(0x1):
 				//rm
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, (arminstr&0xf), 32,0); 
+				fastldr((u8*)&dummyreg, exRegs, (arminstr&0xf), 32,0); 
 				
 				//rs
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>8)&0xf), 32,0); 
+				fastldr((u8*)&dummyreg2, exRegs, ((arminstr>>8)&0xf), 32,0); 
 				
 				#ifdef DEBUGEMU
 				printf("mul rd(%d),rm(%d)[%x],rs(%d)[%x] (PSR s)",
@@ -5773,20 +5771,20 @@ switch( ((arminstr>>22)&0x3f) + ((arminstr>>4)&0xf) ){
 				updatecpuflags(0,cpsrasm,0x0);
 				
 				//rd
-				faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				faststr((u8*)&dummyreg2, exRegs, ((arminstr>>16)&0xf), 32,0);
 				
 			break;
 			
 			//mult and accum & dont alter CPSR cpu flags
 			case(0x2):
 				//rm
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, (arminstr&0xf), 32,0); 
+				fastldr((u8*)&dummyreg, exRegs, (arminstr&0xf), 32,0); 
 				
 				//rs
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>8)&0xf), 32,0); 
+				fastldr((u8*)&dummyreg2, exRegs, ((arminstr>>8)&0xf), 32,0); 
 				
 				//rn
-				fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0); 
+				fastldr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0); 
 				
 				#ifdef DEBUGEMU
 				printf("mla rd(%d),rm(%d)[%x],rs(%d)[%x],rn(%d)[%x] ",
@@ -5800,20 +5798,20 @@ switch( ((arminstr>>22)&0x3f) + ((arminstr>>4)&0xf) ){
 				dummyreg=mlaasm(dummyreg,dummyreg2,dummyreg3);
 				
 				//rd
-				faststr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				faststr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 				
 			break;
 			
 			//mult and accum & set CPSR cpu flags
 			case(0x3):
 				//rm
-				fastldr((u8*)&dummyreg, gbavirtreg_cpu, (arminstr&0xf), 32,0); 
+				fastldr((u8*)&dummyreg, exRegs, (arminstr&0xf), 32,0); 
 				
 				//rs
-				fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>8)&0xf), 32,0); 
+				fastldr((u8*)&dummyreg2, exRegs, ((arminstr>>8)&0xf), 32,0); 
 				
 				//rn
-				fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0); 
+				fastldr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0); 
 				
 				#ifdef DEBUGEMU
 				printf("mla rd(%d),rm(%d)[%x],rs(%d)[%x],rn(%d)[%x] (PSR s)",
@@ -5830,7 +5828,7 @@ switch( ((arminstr>>22)&0x3f) + ((arminstr>>4)&0xf) ){
 				updatecpuflags(0,cpsrasm,0x0);
 				
 				//rd
-				faststr((u8*)&dummyreg, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+				faststr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 				
 			break;
 			
@@ -5846,10 +5844,10 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 	//it is indeed a LDR/STR opcode
 	case(0x40):{
 		//rd
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0); 
+		fastldr((u8*)&dummyreg2, exRegs, ((arminstr>>12)&0xf), 32,0); 
 		
 		//rn
-		fastldr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0); 
+		fastldr((u8*)&dummyreg3, exRegs, ((arminstr>>16)&0xf), 32,0); 
 		
 		//IF NOT INMEDIATE (i=1)
 		//decode = dummyreg / rd = dummyreg2 / rn = dummyreg3 / #imm|rm index /
@@ -5863,7 +5861,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 			if (((arminstr)&0xf)==0xf) return 0;
 			
 			//rm (operand 2 )		 bit[11]---bit[0]
-			fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((arminstr)&0xf), 32,0);
+			fastldr((u8*)&dummyreg4, exRegs, ((arminstr)&0xf), 32,0);
 			
 			//printf("rm%d(%x) ",((arminstr)&0xf),dummyreg4);
 			
@@ -5873,7 +5871,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 				//lsl
 				if((dummyreg5&0x6)==0x0){
 					//rs loaded
-					fastldr((u8*)&gbachunk, gbavirtreg_cpu, ((dummyreg5>>4)&0xf), 32,0); 
+					fastldr((u8*)&gbachunk, exRegs, ((dummyreg5>>4)&0xf), 32,0); 
 					#ifdef DEBUGEMU
 					printf("LSL rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)gbachunk);
 					#endif
@@ -5883,7 +5881,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 				//lsr
 				else if ((dummyreg5&0x6)==0x2){
 					//rs loaded
-					fastldr((u8*)&gbachunk, gbavirtreg_cpu, ((dummyreg5>>4)&0xf), 32,0); 
+					fastldr((u8*)&gbachunk, exRegs, ((dummyreg5>>4)&0xf), 32,0); 
 					#ifdef DEBUGEMU
 					printf("LSR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)gbachunk);
 					#endif
@@ -5893,7 +5891,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 				//asr
 				else if ((dummyreg5&0x6)==0x4){
 					//rs loaded
-					fastldr((u8*)&gbachunk, gbavirtreg_cpu, ((dummyreg5>>4)&0xf), 32,0); 
+					fastldr((u8*)&gbachunk, exRegs, ((dummyreg5>>4)&0xf), 32,0); 
 					#ifdef DEBUGEMU
 					printf("ASR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)gbachunk);
 					#endif
@@ -5903,7 +5901,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 				//ror
 				else if ((dummyreg5&0x6)==0x6){
 					//rs loaded
-					fastldr((u8*)&gbachunk, gbavirtreg_cpu, ((dummyreg5>>4)&0xf), 32,0); 
+					fastldr((u8*)&gbachunk, exRegs, ((dummyreg5>>4)&0xf), 32,0); 
 					#ifdef DEBUGEMU
 					printf("ROR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)gbachunk);
 					#endif
@@ -6033,7 +6031,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 						printf(" GBA LDRB rd(%d)[%x], [#0x%x] (5.9)",
 						(int)((arminstr>>12)&0xf),(unsigned int)dummyreg2,(unsigned int)(dummyreg3));
 					#endif
-					faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+					faststr((u8*)&dummyreg2, exRegs, ((arminstr>>12)&0xf), 32,0);
 				}
 			
 				//transfer word quantity
@@ -6045,7 +6043,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 						printf(" GBA LDR rd(%d)[%x], [#0x%x] (5.9)",
 						(int)((arminstr>>12)&0xf),(unsigned int)dummyreg2,(unsigned int)(dummyreg3));
 					#endif
-					faststr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+					faststr((u8*)&dummyreg2, exRegs, ((arminstr>>12)&0xf), 32,0);
 				}
 			}
 		}//end if register/shift opcode
@@ -6083,20 +6081,6 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 				//transfer byte quantity
 				if((dummyreg&0x4)==0x4){
 					//printf(" LDRB #imm");
-					//dummyreg2=((arminstr&0xfff)); //dummyreg4 already has this
-					
-					/* //old: because we use r15 and fetch directly from faststr/fastldr
-					//if rn == r15 use rom / generate [PC, #imm] value into rd
-					if(((arminstr>>16)&0xf)==0xf){
-						dummyreg2=(rom)+dummyreg4+(0x8); //align +8 for prefetching
-						gbachunk=cpuread_byte(dummyreg2);
-					}
-					//else rn / generate [Rn, #imm] value into rd
-					else{
-						dummyreg2=dummyreg3; //rd is gbachunk now, old rd is rewritten
-						gbachunk=cpuread_byte(dummyreg2);
-					}
-					*/
 					//if rn == r15 use rom / generate [PC, #imm] value into rd
 					if(((arminstr>>16)&0xf)==0xf){
 						dummyreg2=(dummyreg3+(0x8)); //align +8 for prefetching
@@ -6129,7 +6113,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 						printf("LDR rd(%d)[%x]<-LOADED [Rn(%d),#IMM]:(%x)",(int)((arminstr>>12)&0xf),(unsigned int)gbachunk,(unsigned int)((arminstr>>16)&0xf),(unsigned int)dummyreg2);
 					#endif
 				}
-				faststr((u8*)&gbachunk, gbavirtreg_cpu, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&gbachunk, exRegs, ((arminstr>>12)&0xf), 32,0);
 			}
 		}
 		
@@ -6163,8 +6147,8 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 			printf("(new) rn writeback base addr! [%x]",(unsigned int)dummyreg3);
 			#endif
 			
-			//old: faststr((u8*)&dummyreg5, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
-			faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+			//old: faststr((u8*)&dummyreg5, exRegs, ((arminstr>>16)&0xf), 32,0);
+			faststr((u8*)&dummyreg3, exRegs, ((arminstr>>16)&0xf), 32,0);
 		}
 		//else: don't write-back address into base
 		#ifdef DEBUGEMU
@@ -6182,7 +6166,7 @@ switch( ( (dummyreg=((arminstr>>20)&0xff)) & 0x80)  ){
 		u8 writeback=0;
 		
 		//rn
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0); 
+		fastldr((u8*)&dummyreg2, exRegs, ((arminstr>>16)&0xf), 32,0); 
 		
 		//1a)force 0x10 usr mode 
 		if( ((dummyreg&0x4)==0x4) && ((cpsrvirt&0x1f)!=0x10)){
@@ -6244,7 +6228,7 @@ switch( ( (dummyreg=((arminstr>>20)&0xff)) & 0x80)  ){
 					while(cntr<0x10){ //16 working registers for ARM cpu 
 						if(((1<<cntr) & (arminstr&0xffff)) > 0){
 							//ascending stack
-							cpuwrite_word(dummyreg2+(offset*4), gbavirtreg_cpu[(1<<cntr)]); //word aligned
+							cpuwrite_word(dummyreg2+(offset*4), exRegs[(1<<cntr)]); //word aligned
 							offset++;
 						}
 						cntr++;
@@ -6260,7 +6244,7 @@ switch( ( (dummyreg=((arminstr>>20)&0xff)) & 0x80)  ){
 					while(cntr<0x10){ //16 working registers for ARM cpu
 						if(((1<<cntr) & (arminstr&0xffff)) > 0){
 							//descending stack
-							cpuwrite_word(dummyreg2-(offset*4), gbavirtreg_cpu[(1<<cntr)]); //word aligned
+							cpuwrite_word(dummyreg2-(offset*4), exRegs[(1<<cntr)]); //word aligned
 							offset++;
 						}
 						cntr++;
@@ -6314,7 +6298,7 @@ switch( ( (dummyreg=((arminstr>>20)&0xff)) & 0x80)  ){
 					
 					while(cntr<0x10){ //16 working registers for ARM cpu
 						if(((1<<cntr) & (arminstr&0xffff)) > 0){
-							gbavirtreg_cpu[(1<<cntr)]=cpuread_word(dummyreg2+(offset*4)); //word aligned
+							exRegs[(1<<cntr)]=cpuread_word(dummyreg2+(offset*4)); //word aligned
 							offset++;
 						}
 						cntr++;
@@ -6329,7 +6313,7 @@ switch( ( (dummyreg=((arminstr>>20)&0xff)) & 0x80)  ){
 					
 					while(cntr<0x10){ //16 working registers for ARM cpu
 						if(((1<<cntr) & (arminstr&0xffff)) > 0){
-							gbavirtreg_cpu[(1<<cntr)]=cpuread_word(dummyreg2-(offset*4)); //word aligned
+							exRegs[(1<<cntr)]=cpuread_word(dummyreg2-(offset*4)); //word aligned
 							offset++;
 						}
 						cntr++;
@@ -6361,7 +6345,7 @@ switch( ( (dummyreg=((arminstr>>20)&0xff)) & 0x80)  ){
 				dummyreg3=(u32)subsasm((u32)dummyreg2,(lutu32bitcnt(arminstr&0xffff))*4);	//required for writeback later
 			}
 			
-			faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((arminstr>>16)&0xf), 32,0);
+			faststr((u8*)&dummyreg3, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 			#ifdef DEBUGEMU
 			printf(" updated addr: %x / Bytes workd onto stack: %x ", (unsigned int)dummyreg3,((lutu32bitcnt(arminstr&0xffff))*4));
@@ -6387,10 +6371,10 @@ switch( ( (dummyreg=(arminstr)) & 0x1000090)  ){
 	case(0x1000090):{
 		//printf("SWP opcode!");
 		//rn (address)
-		fastldr((u8*)&dummyreg2, gbavirtreg_cpu, ((dummyreg>>16)&0xf), 32,0); 
+		fastldr((u8*)&dummyreg2, exRegs, ((dummyreg>>16)&0xf), 32,0); 
 		//rd is writeonly
 		//rm
-		fastldr((u8*)&dummyreg4, gbavirtreg_cpu, ((dummyreg)&0xf), 32,0); 
+		fastldr((u8*)&dummyreg4, exRegs, ((dummyreg)&0xf), 32,0); 
 
 		//patch addresses read for GBA intermediate data transfers
 		//deprecated:dummyreg2=addresslookup(dummyreg2, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dummyreg2 & 0x3FFFF);
@@ -6401,7 +6385,7 @@ switch( ( (dummyreg=(arminstr)) & 0x1000090)  ){
 			//[rn]->rd
 			//deprecated:dummyreg3=ldru8extasm(dummyreg2,0x0);
 			dummyreg3=cpuread_byte(dummyreg2);
-			faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((dummyreg>>12)&0xf), 32,0);
+			faststr((u8*)&dummyreg3, exRegs, ((dummyreg>>12)&0xf), 32,0);
 			#ifdef DEBUGEMU
 			printf("SWPB 1/2 [rn(%d):%x]->rd(%d)[%x] ",(int)((dummyreg>>16)&0xf),(unsigned int)dummyreg2,(int)((dummyreg>>12)&0xf),(unsigned int)dummyreg3);
 			#endif
@@ -6417,7 +6401,7 @@ switch( ( (dummyreg=(arminstr)) & 0x1000090)  ){
 			//[rn]->rd
 			//deprecated:dummyreg3=ldru32extasm(dummyreg2,0x0);
 			dummyreg3=cpuread_word(dummyreg2);
-			faststr((u8*)&dummyreg3, gbavirtreg_cpu, ((dummyreg>>12)&0xf), 32,0);
+			faststr((u8*)&dummyreg3, exRegs, ((dummyreg>>12)&0xf), 32,0);
 			#ifdef DEBUGEMU
 			printf("SWP 1/2 rm(%d):[%x]->[rn(%d):[%x]] ",(int)((dummyreg)&0xf),(unsigned int)(dummyreg4&0xff),(int)((dummyreg>>16)&0xf),(unsigned int)dummyreg2);
 			#endif
@@ -6462,7 +6446,7 @@ switch( (arminstr) & 0xf000000 ){
 		#endif
 		
 		armstate = 0;
-		gba.armirqenable=false;
+		armIrqEnable=false;
 		
 		/* //deprecated (because we need the SPSR to remember SVC state)
 		//required because SPSR saved is not SVC neccesarily
@@ -6476,12 +6460,12 @@ switch( (arminstr) & 0xf000000 ){
 		//printf("SWI #0x%x / CPSR: %x(5.17)",(thumbinstr&0xff),cpsrvirt);
 		swi_virt(arminstr&0xffffff);
 		
-		gbavirtreg_cpu[0xe] = rom - (armstate ? 4 : 2);
+		exRegs[0xe] = (exRegs[0xf]&0xfffffffe) - (armstate ? 4 : 2);
 		
 		#ifdef BIOSHANDLER
-			rom  = (u32)(0x08-0x4);
+			exRegs[0xf] = (u32)(0x08-0x4);
 		#else
-			//rom  = gbavirtreg_cpu[0xf] = (u32)(gbavirtreg_cpu[0xe]-0x4);
+			//exRegs[0xf] = (u32)(exRegs[0xe]-0x4);
 			//continue til BX LR (ret address cback)
 		#endif
 		

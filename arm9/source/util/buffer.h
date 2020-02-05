@@ -28,7 +28,7 @@
 extern "C" {
 #endif
 
-extern volatile u32 gbawram[(256*1024)/4]; //genuine reference - wram that is 32bit per chunk
+extern volatile u8 gbawram[256*1024]; //genuine reference - wram that is 32bit per chunk
 extern volatile u8 __attribute__ ((aligned (1))) palram[0x400];
 extern volatile u8 __attribute__ ((aligned (1))) gbabios[0x4000];
 extern volatile u8 __attribute__ ((aligned (1))) gbaintram[0x8000];
