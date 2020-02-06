@@ -4,39 +4,9 @@
 #include "typedefsTGDS.h"
 #include "dsregs.h"
 #include "dsregs_asm.h"
-
 #include "fatfslayerTGDS.h"
 
-/*
-
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/dir.h>
-#include <fcntl.h>
-
-#include "consoleTGDS.h"
-#include "nds_cp15_misc.h"
-#include "dldi.h"
-#include "InterruptsARMCores_h.h"
-#include "ipcfifoTGDSUser.h"
-#include "ff.h"
-#include "reent.h"
-#include "sys/types.h"
-#include "utilsTGDS.h"
-#include "devoptab_devices.h"
-#include "posixHandleTGDS.h"
-#include "xenofunzip.h"
-*/
-
 //functions taken from ichflysettings.h from gbaemu4ds
-#define arm9advsound			//gbaemu4ds sound
-#define uppern_read_emulation	//addresses higher than romsize (in ewram). (stream from slot 1)
-#define ownfilebuffer			//gbaemu4ds fs driver
-//extra settings for ownfilebuffer
 #define chucksizeinsec 1 //1,2,4,8
 #define buffslots 255
 #define chucksize 0x200*chucksizeinsec

@@ -28,6 +28,7 @@ USA
 #include "interrupts.h"
 #include "utilsTGDS.h"
 #include "spifwTGDS.h"
+#include "gba.arm.core.h"
 
 //User Handler Definitions
 
@@ -77,6 +78,7 @@ __attribute__((section(".itcm")))
 #endif
 inline __attribute__((always_inline)) 
 void HblankUser(){
+	GBAVCOUNT = (REG_VCOUNT & 0x1ff);
 }
 
 #ifdef ARM9

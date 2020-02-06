@@ -1,5 +1,24 @@
-#ifndef translatorGBAdefs
-#define translatorGBAdefs
+/*
+			Copyright (C) 2017  Coto
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301
+USA
+
+*/
+
+#ifndef __translator_armv4core_h__
+#define __translator_armv4core_h__
 
 #include "typedefsTGDS.h"
 #include "dsregs.h"
@@ -8,7 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>//BRK(); SBRK();
+#include <unistd.h>
 #include "Util.h"
 #include "opcode.h"
 #include "pu.h"
@@ -87,71 +106,70 @@ extern u8 armirqstate;//0 disabled / 1 enabled
 extern u8 armswistate;//0 disabled / 1 enabled
 
 //u32  addresslookup(u32 srcaddr, u32 blacklist[], u32 whitelist[]);
-u32 updatecpuflags(u8 mode, u32 cpsr, u32 cpumode); //updatecpuflags(mode,cpsr,cpumode); mode: 0 = hardware asm cpsr update / 1 = virtual CPU mode change,  CPSR , change to CPU mode
+extern u32 updatecpuflags(u8 mode, u32 cpsr, u32 cpumode); //updatecpuflags(mode,cpsr,cpumode); mode: 0 = hardware asm cpsr update / 1 = virtual CPU mode change,  CPSR , change to CPU mode
 
 //disassemblers
-u32 disthumbcode(u32 thumbinstr);
-u32 disarmcode(u32 arminstr);
+extern u32 disthumbcode(u32 thumbinstr);
+extern u32 disarmcode(u32 arminstr);
 
 //CPU virtualize opcodes
-u32 * cpubackupmode(u32 * branch_stackfp, u32 cpuregvector[], u32 cpsr);
-u32 * cpurestoremode(u32 * branch_stackfp, u32 cpuregvector[]);
+extern u32 * cpubackupmode(u32 * branch_stackfp, u32 cpuregvector[], u32 cpsr);
+extern u32 * cpurestoremode(u32 * branch_stackfp, u32 cpuregvector[]);
 
 //thumb opcodes that require hardware CPSR bits
 //5.1
-u32 lslasm(u32 x1,u32 y1);
-u32 lsrasm(u32 x1,u32 y1);
-int asrasm(int x1, u32 y1);
+extern u32 lslasm(u32 x1,u32 y1);
+extern u32 lsrasm(u32 x1,u32 y1);
+extern int asrasm(int x1, u32 y1);
 //5.2
-u32 addasm(u32 x1,u32 y1);
-int addsasm(int x1,int y1); //re-uses addasm bit31 signed
+extern u32 addasm(u32 x1,u32 y1);
+extern int addsasm(int x1,int y1); //re-uses addasm bit31 signed
 
-u32 subasm(u32 x1,u32 y1);
-int subsasm(int x1,int y1); //re-uses subasm bit31 signed
+extern u32 subasm(u32 x1,u32 y1);
+extern int subsasm(int x1,int y1); //re-uses subasm bit31 signed
 //5.3
-u32 movasm(u32 reg);
-u32 cmpasm(u32 x, u32 y); //r0,r1
+extern u32 movasm(u32 reg);
+extern u32 cmpasm(u32 x, u32 y); //r0,r1
 //add & sub already added
 //5.4
-u32 andasm(u32 x1,u32 y1);
-u32 eorasm(u32 x1,u32 y1);
+extern u32 andasm(u32 x1,u32 y1);
+extern u32 eorasm(u32 x1,u32 y1);
 //lsl, lsr, asr already added
-u32 adcasm(u32 x1,u32 y1);
-u32 sbcasm(u32 x1,u32 y1);
-u32 rorasm(u32 x1,u32 y1);
-u32 tstasm(u32 x1,u32 y1);
-u32 negasm(u32 x1);
+extern u32 adcasm(u32 x1,u32 y1);
+extern u32 sbcasm(u32 x1,u32 y1);
+extern u32 rorasm(u32 x1,u32 y1);
+extern u32 tstasm(u32 x1,u32 y1);
+extern u32 negasm(u32 x1);
 //cmp rd,rs already added
-u32 cmnasm(u32 x1,u32 y1);
-u32 orrasm(u32 x1,u32 y1);
-u32 mulasm(u32 x1,u32 y1); //unsigned multiplier
-u32 bicasm(u32 x1,u32 y1);
-u32 mvnasm(u32 x1);
+extern u32 cmnasm(u32 x1,u32 y1);
+extern u32 orrasm(u32 x1,u32 y1);
+extern u32 mulasm(u32 x1,u32 y1); //unsigned multiplier
+extern u32 bicasm(u32 x1,u32 y1);
+extern u32 mvnasm(u32 x1);
 //5.5
 //add & cmp (low & high reg) already added
 
 //5.8
 //ldsb
-u32 ldsbasm(u32 x1,u32 y1);
-u32 ldshasm(u32 x1,u32 y1);
+extern u32 ldsbasm(u32 x1,u32 y1);
+extern u32 ldshasm(u32 x1,u32 y1);
 
 //ARM opcodes
-u32 rscasm(u32 x1,u32 y1);
-u32 teqasm(u32 x1,u32 y1);
-u32 rsbasm(u32 x1,u32 y1);
+extern u32 rscasm(u32 x1,u32 y1);
+extern u32 teqasm(u32 x1,u32 y1);
+extern u32 rsbasm(u32 x1,u32 y1);
 
 //5.6
-u32 mlaasm(u32 x1,u32 y1, u32 y2); // z1 = ((x1 * y1) + y2) 
-u32 mulsasm(u32 x1,u32 y1); //signed multiplier
-u32 multtasm(u32 x1,u32 y1);
-u32 mlavcsasm(u32 x1,u32 y1,u32 y2);
+extern u32 mlaasm(u32 x1,u32 y1, u32 y2); // z1 = ((x1 * y1) + y2) 
+extern u32 mulsasm(u32 x1,u32 y1); //signed multiplier
+extern u32 multtasm(u32 x1,u32 y1);
+extern u32 mlavcsasm(u32 x1,u32 y1,u32 y2);
 
 //ldr/str
-u32 ldru32extasm(u32 x1,u32 y1);
-u16 ldru16extasm(u32 x1,u16 y1);
-u8	ldru8extasm(u32 x1,u8 y1);
+extern u32 ldru32extasm(u32 x1,u32 y1);
+extern u16 ldru16extasm(u32 x1,u16 y1);
+extern u8	ldru8extasm(u32 x1,u8 y1);
 
 #ifdef __cplusplus
 }
 #endif
-

@@ -34,12 +34,6 @@ extern u32 SPdabt;
 
 //DTCM TOP reserved by compiler/user memory
 extern u32 dtcm_end_alloced;
-
-
-typedef int (*intfuncptr)();
-typedef u32 (*u32funcptr)();
-typedef void (*voidfuncptr)();
-
 extern u32 cpucore_tick;
 
 //patches for ARM code

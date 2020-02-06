@@ -59,14 +59,27 @@ struct sIPCSharedTGDSSpecific{
     int rom_size;   	//rom total size
 };
 
+//Settings:
 
-//#define testGBAEMU4DSFSCode	//enable for generating a file you can later test in any emu, that file is created (you pick from the list) is using the same gbaemu4ds streaming driver.
+//#define testGBAEMU4DSFSCode	//Enable for generating a file you can later test in any emu, that file is created (you pick from the list) is using the same gbaemu4ds streaming driver.
+
+//#define ROMTEST 		//Enabled:
+							//A default, and light gbarom that is mapped to 0x08000000	(GBA Rom entrypoint)
+						//Disabled:
+							//arm7tdmi payload support! allows to execute a small payload before jumping to 0x08000000 (GBA Rom entrypoint)
+						
+//#define DEBUGEMU	//Enables LR tracing / debugging by printf
+
+//#define BIOSHANDLER		//Activate this to jump to BIOS and do handling there (can cause problems if bad bios or corrupted) / require a bios at root
+							//Deactivating this will BX LR as soon as swi code is executed
+
+//#define PREFETCH_ENABLED //Enables prefetch for the emulator. (cpu_emulate()) //if debugging or jumping to unknown areas disable this
+//#define SPINLOCK_CODE //Enables own SPINLOCK library
 
 #ifdef ARM9
 //Used by ARM9. Required internally by ARM7
 #define TGDSDLDI_ARM7_ADDRESS (u32)(0x06000000)
 #endif
-
 
 #endif
 

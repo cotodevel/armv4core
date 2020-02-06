@@ -3,7 +3,6 @@
 #include "typedefsTGDS.h"
 #include "dsregs.h"
 #include "dsregs_asm.h"
-
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -15,15 +14,12 @@
 #include <ctype.h>
 #include <dirent.h>
 #include "supervisor.h"
-
 #include "pu.h"
 #include "opcode.h"
 #include "Util.h"
 #include "buffer.h"
 #include "translator.h"
 #include "bios.h"
-
-//filesystem
 #include "fatfslayerTGDS.h"
 #include "InterruptsARMCores_h.h"
 #include "ipcfifoTGDSUser.h"
@@ -35,16 +31,10 @@
 #include "devoptab_devices.h"
 #include "posixHandleTGDS.h"
 #include "xenofunzip.h"
-
-#include "settings.h"
 #include "keypadTGDS.h"
 #include "timerTGDS.h"
 #include "dmaTGDS.h"
 #include "gba.arm.core.h"
-
-
-//fifo
-extern struct fifo_semaphore FIFO_SEMAPHORE_FLAGS;
 
 //Stack for GBA
 u8 __attribute__((section(".dtcm"))) gbastck_usr[0x200];

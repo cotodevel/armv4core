@@ -1,19 +1,14 @@
 //coto: this translator is mostly mine work. (except gbareads[ichfly] & cpuread_data from VBA)
 
 #include "translator.h"
-
 #include "opcode.h"
 #include "Util.h"
-
 #include "pu.h"
 #include "supervisor.h"
-#include "settings.h"
+#include "ipcfifoTGDSUser.h"
 #include "main.h"
-
-//filesystem
 #include "fatfslayerTGDS.h"
 #include "InterruptsARMCores_h.h"
-#include "ipcfifoTGDSUser.h"
 #include "ff.h"
 #include "reent.h"
 #include "sys/types.h"

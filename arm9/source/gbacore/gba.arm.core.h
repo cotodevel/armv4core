@@ -23,11 +23,42 @@
 #define vram (u8*)(0x06200000)	//VRAM_C_0x06200000_ENGINE_B_BG;	//NDS BMP rgb15 mode + keyboard -> see TGDS gui_console_connector.c
 #define oam (u8*)(gbaoam)
 
+typedef struct{
+	u32 Version;
+	u32 listentr;
+} __attribute__ ((__packed__)) patch_t;
+
+typedef struct{
+	u32 gamecode;
+	u8 homebrew;
+	u64 crc;
+	char patchpath[512 * 2];
+	u8 swaplcd;
+	u8 savfetype;
+	u8 frameskip;
+	u8 frameskipauto;
+	u16 frameline;
+	u8 fastpu;
+	u8 mb;
+	u8 loadertype;
+} __attribute__ ((__packed__)) patch2_t;
+	
+struct DirEntry {
+	char name[512];
+	bool isDirectory;
+};
+
+typedef int (*intfuncptr)();
+typedef u32 (*u32funcptr)();
+typedef void (*voidfuncptr)();
+
 #endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern patch_t patchheader;
 
 //GBAProcess
 extern u32 cpu_fdexecute();
@@ -124,83 +155,6 @@ extern bool cheatsEnabled ;
 extern bool mirroringEnable;
 
 extern u8 ioMem[0x400];
-
-/*
-extern u16 DISPSTAT ;
-extern u16 VCOUNT   ;
-extern u16 BG0CNT   ;
-extern u16 BG1CNT   ;
-extern u16 BG2CNT   ;
-extern u16 BG3CNT   ;
-extern u16 BG0HOFS  ;
-extern u16 BG0VOFS  ;
-extern u16 BG1HOFS  ;
-extern u16 BG1VOFS  ;
-extern u16 BG2HOFS  ;
-extern u16 BG2VOFS  ;
-extern u16 BG3HOFS  ;
-extern u16 BG3VOFS  ;
-extern u16 BG2PA    ;
-extern u16 BG2PB    ;
-extern u16 BG2PC    ;
-extern u16 BG2PD    ;
-extern u16 BG2X_L   ;
-extern u16 BG2X_H   ;
-extern u16 BG2Y_L   ;
-extern u16 BG2Y_H   ;
-extern u16 BG3PA    ;
-extern u16 BG3PB    ;
-extern u16 BG3PC    ;
-extern u16 BG3PD    ;
-extern u16 BG3X_L   ;
-extern u16 BG3X_H   ;
-extern u16 BG3Y_L   ;
-extern u16 BG3Y_H   ;
-extern u16 WIN0H    ;
-extern u16 WIN1H    ;
-extern u16 WIN0V    ;
-extern u16 WIN1V    ;
-extern u16 WININ    ;
-extern u16 WINOUT   ;
-extern u16 MOSAIC   ;
-extern u16 BLDMOD   ;
-extern u16 COLEV    ;
-extern u16 COLY     ;
-extern u16 DM0SAD_L ;
-extern u16 DM0SAD_H ;
-extern u16 DM0DAD_L ;
-extern u16 DM0DAD_H ;
-extern u16 DM0CNT_L ;
-extern u16 DM0CNT_H ;
-extern u16 DM1SAD_L ;
-extern u16 DM1SAD_H ;
-extern u16 DM1DAD_L ;
-extern u16 DM1DAD_H ;
-extern u16 DM1CNT_L ;
-extern u16 DM1CNT_H ;
-extern u16 DM2SAD_L ;
-extern u16 DM2SAD_H ;
-extern u16 DM2DAD_L ;
-extern u16 DM2DAD_H ;
-extern u16 DM2CNT_L ;
-extern u16 DM2CNT_H ;
-extern u16 DM3SAD_L ;
-extern u16 DM3SAD_H ;
-extern u16 DM3DAD_L ;
-extern u16 DM3DAD_H ;
-extern u16 DM3CNT_L ;
-extern u16 DM3CNT_H ;
-extern u16 TM0D   ;
-extern u16 TM0CNT ;
-extern u16 TM1D   ;
-extern u16 TM1CNT ;
-extern u16 TM2D   ;
-extern u16 TM2CNT ;
-extern u16 TM3D   ;
-extern u16 TM3CNT ;
-extern u16 P1 ;
-*/
-
 extern u16 GBAIE;
 extern u16 GBAIF;
 extern u16 GBAIME;

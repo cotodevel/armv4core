@@ -4,16 +4,14 @@
 
 #include <dirent.h>
 #include <unistd.h>    // for sbrk()
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-
 #include <fcntl.h>
 #include <errno.h>
 #include <ctype.h>
-#include "main.h"
+#include "gba.arm.core.h"
 
 //PU setup all NDS region addresses
 #define debug_vect	(*(intfuncptr *)(0x02FFFD9C)) //ori: #define EXCEPTION_VECTOR	(*(VoidFn *)(0x2FFFD9C))
@@ -136,90 +134,20 @@ FIQ				0x1C							FIQ					Disabled			Disabled			Disabled
 extern "C" {
 #endif
 
-// extern void puSetMemPerm(u32 perm);
-extern void pu_Enable();
-
-// extern void puSetGbaIWRAM();
-extern void pu_SetRegion(u32 region, u32 value);
-
-extern void pu_SetDataPermissions(u32 v);
-extern void pu_SetCodePermissions(u32 v);
-extern void pu_SetDataCachability(u32 v);
-extern void pu_SetCodeCachability(u32 v);
-extern void pu_GetWriteBufferability(u32 v);
-
-extern void cpu_SetCP15Cnt(u32 v); //mask bit 1 for: 0 disable, 1 enable, PU
-extern u32 cpu_GetCP15Cnt(); //get PU status: 0 disable, 1 enable
-
-//instruction cache CP15
-extern void IC_InvalidateAll();
-extern void IC_InvalidateRange(const void *, u32 v);
-extern void setitcmbase(); //@ ITCM base = 0 , size = 32 MB
-extern void icacheenable(int);
-
-//data cache CP15
-extern void DC_FlushAll();
-extern void DC_FlushRange(const void *, u32 v);
-extern void setdtcmbase(); //@ DTCM base = __dtcm_start, size = 16 KB
-extern void drainwrite();
-extern void dcacheenable(int); //Cachability Bits for Data/Unified Protection Region (R/W)
-extern void setgbamap();
-
-//CP15 other opcodes
-void HALTCNT_ARM9();
-void HALTCNT_ARM9OPT();
-
-u32 getdtcmbase();
-u32 getitcmbase();
-
-extern u32 DC_clean_invalidate_range(u32 VA_range);
-
-extern u32 DC_lockdownVA(u32 VA_range);
-extern u32 IC_lockdownVA(u32 VA_range);
-
-extern int setdtcmsz(u8 size);
-
-extern void writebufenable(int);
-
-extern void prepcache();
 extern void gbamode();
 extern void ndsmode();
 extern void emulateedbiosstart();
-extern u32 vector_addr;
-extern u32 vector_end_addr;
-
-//extern u32 biosirq_hdlr(); //user bios exception handler (irq) (already added @ irq vector 0x00000000 + 0x
-
 extern int cpuGetCPSR();
-
-//install user interrupt handler at: (dtcm+top-0x4)
-extern int instusrhdlr();
 
 //MPU & other
 extern int inter_swi(int);	
 extern int cpuGetSPSR();
-extern u32 vblankcallC; 		//vblank C asm function address
-extern u32 mpu_setup();
 
 //C vector exceptions
 extern u32 exceptswi(u32); 		//swi vector
 extern u32 exceptundef(u32 undef);	//undefined vector
 extern u32 exceptirq(u32 nds_iemask,u32 nds_ifmask,u32 sp_ptr);
 extern u32 swicaller(u32 arg);
-
-extern u32 curr_exception[]; //inter_regs.s
-
-//extern void __attribute__((section(".dtcm"))) (*exHandler)();
-//extern void __attribute__((section(".dtcm"))) (*exHandlerswi)();
-//extern void __attribute__((section(".dtcm"))) (*exHandlerundifined)();
-//extern s32  __attribute__((section(".dtcm"))) exRegs[];
-//extern s32  __attribute__((section(".dtcm"))) BIOSDBG_SPSR;
-
-//cpu_SetCP15Cnt(cpu_GetCP15Cnt() & ~0x1);
-//2 = 2048 / 3 = 4096 / 4 = 8192 / 5 = 16384
-//printf("%x ",setdtcmsz(5)); //0x027C0000
-//pu_Enable();
-
 extern void exception_dump();
 
 #ifdef __cplusplus

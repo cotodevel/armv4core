@@ -1,7 +1,7 @@
 #include "opcode.h"
 #include "gba.arm.core.h"
 #include "translator.h"
-#include "../settings.h"
+#include "ipcfifoTGDSUser.h"
 
 /*
 //ldr/str (inline)

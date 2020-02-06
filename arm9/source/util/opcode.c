@@ -84,38 +84,6 @@ return 0;
 }
 
 
-//fifo
-u32 buffer_input[16],buffer_output[16];
-struct fifo_semaphore FIFO_SEMAPHORE_FLAGS;
-
-u32 sendwordipc(uint8 word){
-	//checkreg writereg (add,val) static int REG_IPC_add=0x04000180,REG_IE_add=0x04000210,REG_IF_add=0x04000214;
-	*((u32*)0x04000180)=((*(u32*)0x04000180)&0xfffff0ff) | (word<<8);
-	return (*(u32*)0x04000180);
-}
-
-u32 recvwordipc(){
-	return ((*(u32*)0x04000180)&0xf);
-}
-
-void ipcidle(){
-	sendwordipc(0x0);
-}
-
-//fifosend
-void sendfifo(u32 * buffer, struct fifo_semaphore fifo_instance){
-fifo_instance.REG_FIFO_SENDEMPTY_STAT=1<<0; //0<<0 - is send queue buffer empty? 0 not empty, 1 empty
-fifo_instance.REG_FIFO_SENDFULL_STAT=1<<1; //is full send? 0 not full, 1 full
-fifo_instance.REG_FIFO_SENDEMPTY_CLR=1<<3; //0 nothing - 1 clears send fifo
-int i=0;
-	
-	while(! ((*(u32*)0x04000184)  & fifo_instance.REG_FIFO_SENDFULL_STAT)){
-			*((u32*)0x04000188)=buffer[i]; //str[addr+index,value]
-			i++;
-	}
-}
-
-
 //counts leading zeroes :)
 inline __attribute__((always_inline))
 u8 clzero(u32 var){

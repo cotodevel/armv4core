@@ -1,12 +1,9 @@
 #include "typedefsTGDS.h"
 #include "dsregs.h"
 #include "dsregs_asm.h"
-
 #include "Util.h"
 #include "opcode.h"
 #include "main.h"
-
-//filesystem
 #include "fatfslayerTGDS.h"
 #include "InterruptsARMCores_h.h"
 #include "ipcfifoTGDSUser.h"
@@ -20,14 +17,11 @@
 #include "zlib.h"
 #include "xenofunzip.h"
 #include "gbaemu4ds_fat_ext.h"
-
 #include "pu.h"
 #include "supervisor.h"
 #include "buffer.h"
-#include "translator.h"	//for patches setup
-#include "settings.h"
+#include "translator.h"
 #include "gba.arm.core.h"
-
 #include "EEprom.h"
 #include "Flash.h"
 #include "RTC.h"

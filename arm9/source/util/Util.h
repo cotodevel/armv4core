@@ -1,12 +1,29 @@
-#ifndef utilGBAdefs
-#define utilGBAdefs
+/*
+			Copyright (C) 2017  Coto
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301
+USA
+
+*/
+
+#ifndef __util_armv4core_h__
+#define __util_armv4core_h__
 
 #include "typedefsTGDS.h"
 #include "dsregs.h"
 #include "dsregs_asm.h"
-
-#include <unistd.h>    // for sbrk()
-
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,39 +32,26 @@
 #define BIT(n) (1 << (n))
 #define base_factor 24
 
-//ramtest roundup
 #define ramshuffle7(n,m) ( (n* (rand() % m)) &0xfffff0) //int , top
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))	
 #define alignw(n)(CHECK_BIT(n,0)==1?n+1:n)
-
-//why get sizes over and over (and waste cycles), when you can just #define them once. same for each element size :o
 #define gba_stack_usr_size sizeof(gbastck_usr)
 #define gba_stack_usr_elemnt_size (sizeof(gbastck_usr[0]))
-
 #define gba_stack_fiq_size sizeof(gbastck_fiq)
 #define gba_stack_fiq_elemnt_size (sizeof(gbastck_fiq[0]))
-
 #define gba_stack_irq_size sizeof(gbastck_irq)
 #define gba_stack_irq_elemnt_size (sizeof(gbastck_irq[0]))
-
 #define gba_stack_svc_size sizeof(gbastck_svc)
 #define gba_stack_svc_elemnt_size (sizeof(gbastck_svc[0]))
-
 #define gba_stack_abt_size sizeof(gbastck_abt)
 #define gba_stack_abt_elemnt_size (sizeof(gbastck_abt[0]))
-
 #define gba_stack_und_size sizeof(gbastck_und)
 #define gba_stack_und_elemnt_size (sizeof(gbastck_und[0]))
-
 #define gba_stack_sys_size sizeof(gbastck_sys)
 #define gba_stack_sys_elemnt_size (sizeof(gbastck_sys[0]))
-
-
 #define gba_branch_table_size sizeof(branch_stack)
 #define gba_branch_block_size (int)((sizeof(branch_stack[0]))<<4)+(0x1*4) //17 elements 4 byte size each one
 #define gba_branch_elemnt_size (sizeof(branch_stack[0])) //element size
-
-//GBA stack
 #define GBASTACKSIZE 0x400 //1K for now
 
 /*
@@ -76,26 +80,6 @@ External Memory (Game Pak)
   0E000000-0E00FFFF   Game Pak SRAM    (max 64 KBytes) - 8bit Bus width
   0E010000-0FFFFFFF   Not used
 */
-
-
-/*
-video ram notes:
-All VRAM (and Palette, and OAM) can be written to only in 16bit and 32bit units 
-(STRH, STR opcodes), 8bit writes are ignored (by STRB opcode). 
-The only exception is "Plain <ARM7>-CPU Access" mode: The ARM7 CPU can use STRB to write 
-to VRAM (the reason for this special feature is that, in GBA mode, two 128K VRAM blocks 
-are used to emulate the GBA's 256K Work RAM).
-*/
-//#define internalRAM ((u8*)0x03000000)	//iram //allocated to ARM9 and served as Shared WRAM 03000000-03007FFF (IRAM)
-//#define workRAM ((u8*)0x02000000)		//wram //02000000-0203FFFF WRAM - On-board Work RAM (256 KBytes) 2 Wait
-//#define paletteRAM ((u8*)0x05000000)	//pallette //matches gba 05000000-050003FF   BG/OBJ Palette RAM  (1 Kbyte)
-//#define vram ((u8*)0x06000000)			//vram //matches gba VRAM - Video RAM (96 KBytes)
-//#define emuloam ((u8*)0x07000000) 		//oam emulated memory 
-//gba 04000000-040003FE I/O, address patches occur on the VBAEMU core
-
-
-#ifndef GBA_H
-#define GBA_H
 
 #define SAVE_GAME_VERSION_1 1
 #define SAVE_GAME_VERSION_2 2
@@ -171,28 +155,22 @@ typedef union {
 #define R14_FIQ  43
 #define SPSR_FIQ 44
 
-#endif // GBA_H
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern struct variable_desc savestr;
-
-//LUT table for fast-seeking 32bit depth unsigned values
 extern const  u8 minilut[0x10];
-
-//slot 2 bus 
 extern const u32  objtilesaddress [];
 extern const u8  gamepakramwaitstate[];
 extern const u8  gamepakwaitstate[];
 extern const u8  gamepakwaitstate0[];
 extern const u8  gamepakwaitstate1[];
 extern const u8  gamepakwaitstate2[];
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-//lookup calls
 extern u8 lutu16bitcnt(u16 x);
 extern u8 lutu32bitcnt(u32 x);
-
 extern void initemu();
 extern int utilload(const char *file,u8 *data,int size,bool extram);
 extern int loadrom(const char *filename,bool extram);
@@ -213,8 +191,6 @@ extern u32 * stack_test(u32 * branch_stackfp,int size, u8 testmode); //test GBA 
 extern u32 * updatestackfp(u32 * currstack_fp, u32 * stackbase);
 extern u32 dummycall(u32 arg);
 extern void __libnds_mpu_setup();
-
-//lookup calls
 extern u8 lutu16bitcnt(u16 x);
 extern u8 lutu32bitcnt(u32 x);
 extern int utilload(const char *file,u8 *data,int size,bool extram);
@@ -228,7 +204,6 @@ extern int VolumeFromString(const char *);
 extern int unzip(char *, void *, uLong);
 extern int utilLoad(const char *file,u8 *data,int size,bool extram);
 extern int setregbasesize(u32, u8);
-//direct memory reads
 extern void u32store(u32 address, u32 value);
 extern void u16store(u32 address, u16 value);
 extern void u8store(u32 address, u8 value);
@@ -241,8 +216,6 @@ extern void WRITE32LE(u8 * x,u32 v);
 extern void WRITE16LE(u8 * x,u16 v);
 extern u8	clzero(u32);
 extern u32 gba_entrypoint;
-
-//debug
 extern void isdebugemu_defined();
 extern bool setarmstate(u32 psr);  //set arm state and cpsr bits from any psr / ret false:ARM | true:THUMB
 extern int executeuntil_pc(u32 target_pc);
@@ -251,9 +224,8 @@ extern void CPUInit(const char *biosFileName, bool useBiosFile,bool extram);
 extern int utilLoad(const char *file,u8 *data,int size,bool extram);
 extern u32 gba_setup();
 extern u32 UPDATE_REG(u32 address, u32 value);
+extern struct gbaheader_t gbaheader;
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

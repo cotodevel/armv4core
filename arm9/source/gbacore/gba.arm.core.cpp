@@ -1,9 +1,7 @@
+#include "gba.arm.core.h"
 #include "typedefsTGDS.h"
 #include "dsregs.h"
 #include "dsregs_asm.h"
-
-#include "gba.arm.core.h"
-
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -13,21 +11,14 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <ctype.h>
-
-//NDS7 clock
 #include <time.h> 
-
-//emu clock
 #include "RTC.h"
-
 #include "supervisor.h"
 #include "pu.h"
 #include "opcode.h"
 #include "Util.h"
 #include "translator.h"
 #include "bios.h"
-
-//filesystem
 #include "fatfslayerTGDS.h"
 #include "InterruptsARMCores_h.h"
 #include "ipcfifoTGDSUser.h"
@@ -39,24 +30,16 @@
 #include "devoptab_devices.h"
 #include "posixHandleTGDS.h"
 #include "xenofunzip.h"
-
-//player instance
 #include "main.h"
-
-//save
 #include "savechip.h"
-
 #include "EEprom.h"
 #include "Flash.h"
 #include "Sram.h"
 #include "System.h"
-
-#include "settings.h"
 #include "buffer.h"
 #include "keypadTGDS.h"
 
 u16 GBADISPCNT = 0;
-
 u16 GBAIE       = 0x0000;
 u16 GBAIF       = 0x0000;
 u16 GBAIME      = 0x0000;
@@ -133,6 +116,8 @@ u16 GBATM2CNT = 0;
 u16 GBATM3D = 0;
 u16 GBATM3CNT = 0;
 u16 GBAP1 = 0;
+
+patch_t patchheader;
 int   sound_clock_ticks = 0;
 memoryMap map[256];
 bool ioReadable[0x400];

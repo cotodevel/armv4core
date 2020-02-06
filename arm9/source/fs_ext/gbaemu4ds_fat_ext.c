@@ -1,43 +1,13 @@
 #include "gbaemu4ds_fat_ext.h"
-
 #include "typedefsTGDS.h"
 #include "dsregs.h"
 #include "dsregs_asm.h"
-
 #include "dldi.h"
 #include "buffer.h"
-
-/*
-
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/dir.h>
-#include <fcntl.h>
-
-#include "nds_cp15_misc.h"
-#include "fatfslayerTGDS.h"
-#include "InterruptsARMCores_h.h"
-#include "ipcfifoTGDSUser.h"
-#include "ff.h"
-#include "reent.h"
-#include "sys/types.h"
-#include "consoleTGDS.h"
-#include "utilsTGDS.h"
-#include "devoptab_devices.h"
-#include "posixHandleTGDS.h"
-#include "xenofunzip.h"
-
-*/
-
+#include "ipcfifoTGDSUSer.h"
 
 FILE* ichflyfilestream;
 int ichflyfilestreamsize=0;
-
-
 u32 *sectortabel;
 void * lastopen;
 void * lastopenlocked;
@@ -46,8 +16,6 @@ int PosixStructFDLastLoadFile;	//Coto: a StructFD non-posix file descriptor havi
 u32 current_pointer = 0;
 u32 allocedfild[buffslots];
 u8* greatownfilebuffer;
-
-//DLDI Interface @ _dldi_start.ioInterface.readSectors(sector, count, buff)
 
 //part of fatfile.c
 void generatefilemap(FILE * f, int size)	//FILE * f is already open at this point.
@@ -353,12 +321,11 @@ pagefehler++;
 	}
 }
 
-//test case: 
-//use original gbaemu4ds streaming code to recreate the file. Uses generatefilemap's sectortable. The output file should run in any other emu.
-void testGBAEMU4DSFSTGDS(FILE * f,sint32 fileSize){	//FILE * f is already open at this point.
-	
+//test case: Use original gbaemu4ds streaming code to recreate the file. Uses generatefilemap's sectortable. The output file should run in any other emu.
+#ifdef testGBAEMU4DSFSCode
+void testGBAEMU4DSFSTGDS(FILE * f, sint32 fileSize){	//FILE * f is already open at this point.
 	clrscr();
-	printf("begin test case");
+	printf("begin testGBAEMU4DSFSTGDS");
 	char * outputTestCaseFile = "TestCaseFile.bin";
 	sint32 streamBufSize = 64*1024;	//higher buffer == faster testing code
 	uint8 * streambuf = (uint8 *)malloc(streamBufSize);
@@ -409,10 +376,7 @@ void testGBAEMU4DSFSTGDS(FILE * f,sint32 fileSize){	//FILE * f is already open a
 	fseek(f,0,SEEK_SET);
 	printf("done. Use %s file in other emu.",(char*)outputTestCaseFile);
 }
-
-
-
-//gbaARMHook specific
+#endif
 
 u8 stream_readu8(u32 pos){
 	return ichfly_readu8((unsigned int)pos);
@@ -430,120 +394,102 @@ u32 stream_readu32(u32 pos){
 FILE * gbaromfile = NULL;
 
 u32 isgbaopen(FILE * gbahandler){
+	if (!gbahandler){
+		return 1;
+	}
+	else{
+		return 0;
+	}
+}
 
-if (!gbahandler)
-	return 1;
-else
+u32 opengbarom(const char * filename,const char * access_type){
+	FILE *fh = fopen(filename, access_type); //r
+	if(!fh){
+		return 1;
+	}
+	gbaromfile=fh;
 	return 0;
 }
 
-/*
-mode	Description
-"r"	Open a file for reading. The file must exist.
-"w"	Create an empty file for writing. If a file with the same name already exists its content is erased and the file is considered as a new empty file.
-"a"	Append to a file. Writing operations append data at the end of the file. The file is created if it does not exist.
-"r+"	Open a file for update both reading and writing. The file must exist.
-"w+"	Create an empty file for both reading and writing.
-"a+"	Open a file for reading and appending.
-*/
-u32 opengbarom(const char * filename,const char * access_type){
-
-FILE *fh = fopen(filename, access_type); //r
-if(!fh)
-	return 1;
-
-gbaromfile=fh;
-return 0;
-}
-
 u32 closegbarom(){
-if(!gbaromfile){
-	printf("FATAL: GBAFH isn't open");
-	return 1;
-}
-
-fclose(gbaromfile);
-
-printf("GBARom closed!");
-return 0;
+	if(!gbaromfile){
+		printf("FATAL: GBAFH isn't open");
+		return 1;
+	}
+	fclose(gbaromfile);
+	printf("GBARom closed!");
+	return 0;
 }
 
 u32 readu32gbarom(int offset){
+	if(!gbaromfile){
+		printf("FATAL: GBAFH isn't open");
+	}
+	//int fseek(FILE *stream, long int offset, int whence);
+	fseek(gbaromfile,(long int)offset, SEEK_SET); 					//1) from start of file where (offset)
 
-if(!gbaromfile)
-	printf("FATAL: GBAFH isn't open");
+	int sizeread=fread((void*)disk_buf, 1, chucksize,gbaromfile); //2) perform read (512bytes read (128 reads))
 
-//int fseek(FILE *stream, long int offset, int whence);
-fseek(gbaromfile,(long int)offset, SEEK_SET); 					//1) from start of file where (offset)
-
-int sizeread=fread((void*)disk_buf, 1, chucksize,gbaromfile); //2) perform read (512bytes read (128 reads))
-
-if (sizeread!=chucksize){
+	if (sizeread!=chucksize){
 		printf("FATAL: GBAREAD isn't (%d) bytes",(int)chucksize);
 	}
-fseek(gbaromfile,0, SEEK_SET);									//3) and set pointer to what it was
-
-return disk_buf[0];
+	fseek(gbaromfile,0, SEEK_SET);									//3) and set pointer to what it was
+	return disk_buf[0];
 }
 
 
 u16 writeu16gbarom(int offset,u16 * buf_in,int size_elem){
+	if(!gbaromfile){
+		printf("FATAL: GBAFH isn't open");
+		return 1;
+	}
 
-if(!gbaromfile){
-	printf("FATAL: GBAFH isn't open");
-	return 1;
-}
+	//int fseek(FILE *stream, long int offset, int whence);
+	fseek(gbaromfile,(long int)offset, SEEK_SET); 					//1) from start of file where (offset)
 
-//int fseek(FILE *stream, long int offset, int whence);
-fseek(gbaromfile,(long int)offset, SEEK_SET); 					//1) from start of file where (offset)
-
-//size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
-int sizewritten=fwrite((u16*)buf_in, 1, size_elem, gbaromfile); //2) perform read (512bytes read (128 reads))
-if (sizewritten!=size_elem){
+	//size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
+	int sizewritten=fwrite((u16*)buf_in, 1, size_elem, gbaromfile); //2) perform read (512bytes read (128 reads))
+	if (sizewritten!=size_elem){
 		printf("FATAL: GBAWRITE isn't (%d) bytes, instead: (%x) bytes",(int)size_elem,(int)sizewritten);
 	}
-else{
-	printf("write ok:%x",(unsigned int)buf_in[0x0]);
-}
+	else{
+		printf("write ok:%x",(unsigned int)buf_in[0x0]);
+	}
 	
-fseek(gbaromfile,0, SEEK_SET);									//3) and set pointer to what it was
-
-return 0;
+	fseek(gbaromfile,0, SEEK_SET);									//3) and set pointer to what it was
+	return 0;
 }
 
 
 u32 writeu32gbarom(int offset,u32 * buf_in,int size_elem){
-
-if(!gbaromfile){
-	printf("FATAL: GBAFH isn't open");
-	return 1;
-}
-//int fseek(FILE *stream, long int offset, int whence);
-fseek(gbaromfile,(long int)offset, SEEK_SET); 					//1) from start of file where (offset)
-
-//size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
-int sizewritten=fwrite((u32*)buf_in, 1, size_elem, gbaromfile); //2) perform read (512bytes read (128 reads))
-if (sizewritten!=size_elem){
-		printf("FATAL: GBAWRITE isn't (%d) bytes, instead: (%x) bytes",(int)size_elem,(int)sizewritten);
+	if(!gbaromfile){
+		printf("FATAL: GBAFH isn't open");
+		return 1;
 	}
-else{
-	printf("write ok:%x",(unsigned int)buf_in[0x0]);
-}
-	
-fseek(gbaromfile,0, SEEK_SET);									//3) and set pointer to what it was
+	//int fseek(FILE *stream, long int offset, int whence);
+	fseek(gbaromfile,(long int)offset, SEEK_SET); 					//1) from start of file where (offset)
 
-return 0;
+	//size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
+	int sizewritten=fwrite((u32*)buf_in, 1, size_elem, gbaromfile); //2) perform read (512bytes read (128 reads))
+	if (sizewritten!=size_elem){
+			printf("FATAL: GBAWRITE isn't (%d) bytes, instead: (%x) bytes",(int)size_elem,(int)sizewritten);
+		}
+	else{
+		printf("write ok:%x",(unsigned int)buf_in[0x0]);
+	}
+
+	fseek(gbaromfile,0, SEEK_SET);									//3) and set pointer to what it was
+	return 0;
 }
 
 
 u32 getfilesizegbarom(){
-if(!gbaromfile){
-	printf("FATAL: GBAFH isn't open");
-	return 0;
-}
-fseek(gbaromfile,0,SEEK_END);
-int filesize = ftell(gbaromfile);
-fseek(gbaromfile,0,SEEK_SET);
-
-return filesize;
+	if(!gbaromfile){
+		printf("FATAL: GBAFH isn't open");
+		return 0;
+	}
+	fseek(gbaromfile,0,SEEK_END);
+	int filesize = ftell(gbaromfile);
+	fseek(gbaromfile,0,SEEK_SET);
+	return filesize;
 }
