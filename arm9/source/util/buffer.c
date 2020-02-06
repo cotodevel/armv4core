@@ -18,7 +18,3 @@ u8 * iomem[0x400];
 volatile u32 disk_buf[chucksize]; 
 
 u8 first32krom[1024*32];
-
-//tests
-u32 tempbuffer[1024*1]; //1K test
-u32 tempbuffer2[1024*1]; //1K test

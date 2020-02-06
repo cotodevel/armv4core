@@ -11,8 +11,8 @@
 #include <errno.h>
 #include <ctype.h>
 
-#ifndef SPINLOCK_COTO
-#define SPINLOCK_COTO
+#ifndef SPINLOCK_DEF
+#define SPINLOCK_DEF
 	
 #define spinlock_elements (10)
 #define spinlock_linearelements (spinlock_elements-1)

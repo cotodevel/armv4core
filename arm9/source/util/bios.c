@@ -133,317 +133,276 @@ return 0;
 
 //swi 1
 u32 bios_registerramreset(u32 flags){
-// no need to trace here. this is only called directly from cpp
-// to emulate bios initialization
+	// no need to trace here. this is only called directly from cpp
+	// to emulate bios initialization
 
-cpu_updateregisters(0x0, 0x80);	//CPUUpdateRegister(0x0, 0x80);
-	
-if(flags) {
-	if(flags & 0x01) {
-		// clear work RAM
-		memset(workRAM, 0, 0x40000);
-		//printf("do clean wram!");
-	}
-	if(flags & 0x02) {
-		// clear internal RAM
-		memset(internalRAM, 0, 0x7e00); // don't clear 0x7e00-0x7fff
-		//printf("do clean iwram!");
-	}
-	if(flags & 0x04) {
-		// clear palette RAM
-		memset(palram, 0, 0x400);
-		//printf("do clean palram!");
-	}
-	if(flags & 0x08) {
-		// clear VRAM
-		//memset(vram, 0, 0x18000);
-	}
-	if(flags & 0x10) {
-		// clean OAM
-		memset(oam, 0, 0x400);
-		//printf("do clean oam!");
-	}
-	
-	if(flags & 0x80) {
-		int i;
-		for(i = 0; i < 0x10; i++)
-			cpu_updateregisters(0x200+(i*2), 0x0);	//CPUUpdateRegister(0x200+i*2, 0);
-
-		for(i = 0; i < 0xF; i++)
-			cpu_updateregisters(0x4+(i*2), 0x0);	//CPUUpdateRegister(0x4+i*2, 0);
-
-		for(i = 0; i < 0x20; i++)
-			cpu_updateregisters(0x20+(i*2), 0x0);	//CPUUpdateRegister(0x20+(i*2), 0);
-
-		for(i = 0; i < 0x18; i++)
-			cpu_updateregisters(0xb0+(i*2), 0x0);	//CPUUpdateRegister(0xb0+(i*2), 0);
-
-		cpu_updateregisters(0x130, 0x0);			//CPUUpdateRegister(0x130, 0);
-		cpu_updateregisters(0x20, 0x100);			//CPUUpdateRegister(0x20, 0x100);
-		cpu_updateregisters(0x30, 0x100);			//CPUUpdateRegister(0x30, 0x100);
-		cpu_updateregisters(0x26, 0x100);			//CPUUpdateRegister(0x26, 0x100);
-		cpu_updateregisters(0x36, 0x100);			//CPUUpdateRegister(0x36, 0x100);
-		//printf("register map 1!");
-	}
-    
-	if(flags & 0x20) {
-		int i;
-		for(i = 0; i < 8; i++)
-			cpu_updateregisters(0x110+(i*2), 0x0);		//CPUUpdateRegister(0x110+i*2, 0);
-			cpu_updateregisters(0x134, 0x8000);			//CPUUpdateRegister(0x134, 0x8000);
-		for(i = 0; i < 7; i++)
-			cpu_updateregisters(0x140+(i*2), 0x0);		//CPUUpdateRegister(0x140+i*2, 0);
-	}
-
-	if(flags & 0x40) {
-		int i;
-		cpuwrite_byte(0x04000084, 0x0);					//CPUWriteByte(0x4000084, 0);
-		cpuwrite_byte(0x04000084, 0x80);					//CPUWriteByte(0x4000084, 0x80);
-		cpuwrite_word(0x04000080, 0x880e0000);			//CPUWriteMemory(0x4000080, 0x880e0000);
+	cpu_updateregisters(0x0, 0x80);	//CPUUpdateRegister(0x0, 0x80);
 		
-		//CPUUpdateRegister(0x88, CPUReadHalfWord(0x04000088)&0x3ff);
-		cpu_updateregisters(0x88, (cpuread_hword(0x04000088)&0x3ff));
+	if(flags) {
+		if(flags & 0x01) {
+			// clear work RAM
+			memset(workRAM, 0, 0x40000);
+			//printf("do clean wram!");
+		}
+		if(flags & 0x02) {
+			// clear internal RAM
+			memset(internalRAM, 0, 0x7e00); // don't clear 0x7e00-0x7fff
+			//printf("do clean iwram!");
+		}
+		if(flags & 0x04) {
+			// clear palette RAM
+			memset(palram, 0, 0x400);
+			//printf("do clean palram!");
+		}
+		if(flags & 0x08) {
+			// clear VRAM
+			//memset(vram, 0, 0x18000);
+		}
+		if(flags & 0x10) {
+			// clean OAM
+			memset(oam, 0, 0x400);
+			//printf("do clean oam!");
+		}
 		
-		cpuwrite_byte(0x04000070, 0x70);				//CPUWriteByte(0x4000070, 0x70);
-		
-		for(i = 0; i < 8; i++)
-			cpu_updateregisters(0x90+(i*2), 0x0);		//CPUUpdateRegister(0x90+i*2, 0);
-		
-		cpuwrite_byte(0x04000070, 0x0);					//CPUWriteByte(0x4000070, 0);
-      
-		for(i = 0; i < 8; i++)
-			cpu_updateregisters(0x90+(i*2), 0x0);		//CPUUpdateRegister(0x90+i*2, 0);
-		cpuwrite_byte(0x04000084, 0x0);					//CPUWriteByte(0x4000084, 0);
-	//printf("register map 2!");
-	}
-	
-}
+		if(flags & 0x80) {
+			int i;
+			for(i = 0; i < 0x10; i++)
+				cpu_updateregisters(0x200+(i*2), 0x0);	//CPUUpdateRegister(0x200+i*2, 0);
 
-return 0;
+			for(i = 0; i < 0xF; i++)
+				cpu_updateregisters(0x4+(i*2), 0x0);	//CPUUpdateRegister(0x4+i*2, 0);
+
+			for(i = 0; i < 0x20; i++)
+				cpu_updateregisters(0x20+(i*2), 0x0);	//CPUUpdateRegister(0x20+(i*2), 0);
+
+			for(i = 0; i < 0x18; i++)
+				cpu_updateregisters(0xb0+(i*2), 0x0);	//CPUUpdateRegister(0xb0+(i*2), 0);
+
+			cpu_updateregisters(0x130, 0x0);			//CPUUpdateRegister(0x130, 0);
+			cpu_updateregisters(0x20, 0x100);			//CPUUpdateRegister(0x20, 0x100);
+			cpu_updateregisters(0x30, 0x100);			//CPUUpdateRegister(0x30, 0x100);
+			cpu_updateregisters(0x26, 0x100);			//CPUUpdateRegister(0x26, 0x100);
+			cpu_updateregisters(0x36, 0x100);			//CPUUpdateRegister(0x36, 0x100);
+			//printf("register map 1!");
+		}
+		
+		if(flags & 0x20) {
+			int i;
+			for(i = 0; i < 8; i++)
+				cpu_updateregisters(0x110+(i*2), 0x0);		//CPUUpdateRegister(0x110+i*2, 0);
+				cpu_updateregisters(0x134, 0x8000);			//CPUUpdateRegister(0x134, 0x8000);
+			for(i = 0; i < 7; i++)
+				cpu_updateregisters(0x140+(i*2), 0x0);		//CPUUpdateRegister(0x140+i*2, 0);
+		}
+
+		if(flags & 0x40) {
+			int i;
+			cpuwrite_byte(0x04000084, 0x0);					//CPUWriteByte(0x4000084, 0);
+			cpuwrite_byte(0x04000084, 0x80);					//CPUWriteByte(0x4000084, 0x80);
+			cpuwrite_word(0x04000080, 0x880e0000);			//CPUWriteMemory(0x4000080, 0x880e0000);
+			
+			//CPUUpdateRegister(0x88, CPUReadHalfWord(0x04000088)&0x3ff);
+			cpu_updateregisters(0x88, (cpuread_hword(0x04000088)&0x3ff));
+			
+			cpuwrite_byte(0x04000070, 0x70);				//CPUWriteByte(0x4000070, 0x70);
+			
+			for(i = 0; i < 8; i++)
+				cpu_updateregisters(0x90+(i*2), 0x0);		//CPUUpdateRegister(0x90+i*2, 0);
+			
+			cpuwrite_byte(0x04000070, 0x0);					//CPUWriteByte(0x4000070, 0);
+		  
+			for(i = 0; i < 8; i++)
+				cpu_updateregisters(0x90+(i*2), 0x0);		//CPUUpdateRegister(0x90+i*2, 0);
+			cpuwrite_byte(0x04000084, 0x0);					//CPUWriteByte(0x4000084, 0);
+		//printf("register map 2!");
+		}
+		
+	}
+
+	return 0;
 }
 
 //swi 2 (halt not emulated?)
 u32 bios_cpuhalt(){
-	fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); 		//+r0
-	faststr((u8*)&dummyreg, exRegs, (0x0), 32,0); 		//=r0
+	u32 destroyableRegister = 0;
+	fastldr((u8*)&destroyableRegister, exRegs, (0x0), 32,0); 		//+r0
+	faststr((u8*)&destroyableRegister, exRegs, (0x0), 32,0); 		//=r0
 	return 0;
 }
 
 
 //swi 3
 u32 bios_stopsleep(){
-bios_cpuhalt();
-return 0;
+	return bios_cpuhalt();
 }
 
 //swi 6
 u32 bios_div(){
-//#ifdef DEV_VERSION
-//    log("Div: 0x%08x,0x%08x",
-//        exRegs[0],
-//        exRegs[1]);
-//#endif
+	//#ifdef DEV_VERSION
+	//    log("Div: 0x%08x,0x%08x",
+	//        exRegs[0],
+	//        exRegs[1]);
+	//#endif
 
-//int number = exRegs[0];
-//int denom = exRegs[1];
+	int number = exRegs[0];
+	int denom = exRegs[1];
 
-fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); 		//+r0
-fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); 		//+r1
+	if(denom != 0) {
+		exRegs[0] = number / denom;
+		exRegs[1] = number % denom;
+		s32 temp = (s32)exRegs[0];
+		exRegs[3] = temp < 0 ? (u32)-temp : (u32)temp;
+	}
 
-int number = dummyreg;
-int denom = dummyreg2;
-
-if(denom != 0) {
-	dummyreg=number / denom;						//exRegs[0] = number / denom;
-	dummyreg2=number % denom;						//exRegs[1] = number % denom;
-	s32 temp =	(s32)dummyreg;						//s32 temp = (s32)exRegs[0];
-	dummyreg3 = temp < 0 ? (u32)-temp : (u32)temp;//exRegs[3] = temp < 0 ? (u32)-temp : (u32)temp;
-	
-	faststr((u8*)&dummyreg, exRegs, (0x0), 32,0);
-	faststr((u8*)&dummyreg2, exRegs, (0x1), 32,0);
-	faststr((u8*)&dummyreg3, exRegs, (0x3), 32,0); 	//=r3
-}
-
-//#ifdef DEV_VERSION
-//    log("Div: return=0x%08x,0x%08x,0x%08x",
-//        exRegs[0],
-//        exRegs[1],
-//        exRegs[3]);
-//#endif
-return 0;
+	//#ifdef DEV_VERSION
+	//    log("Div: return=0x%08x,0x%08x,0x%08x",
+	//        exRegs[0],
+	//        exRegs[1],
+	//        exRegs[3]);
+	//#endif
+	return 0;
 }
 
 //swi 7
 u32 bios_divarm(){
-	fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); 	//r0
-	fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); 	//r1
-	
-	dummyreg3=dummyreg;		//tmp = r0
-	
-	faststr((u8*)&dummyreg2, exRegs, (0x0), 32,0);	//r0=r1
-	faststr((u8*)&dummyreg3, exRegs, (0x1), 32,0);	//r1=r0
-	
-	//u32 temp = exRegs[0];
-	//exRegs[0] = exRegs[1];
-	//exRegs[1] = temp;
+	u32 temp = exRegs[0];
+	exRegs[0] = exRegs[1];
+	exRegs[1] = temp;
   
 	bios_div();
-return 0;
+	return 0;
 }
 
 //swi 8
 u32 bios_sqrt(){
-	fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0);
-	dummyreg2 = (u16)sqrtasm((int)dummyreg);//(u32)sqrt((double)dummyreg);
-	faststr((u8*)&dummyreg2, exRegs, (0x0), 32,0);
-return 0;
+	exRegs[0]=(u32)sqrt((double)exRegs[0]);
+	return 0;
 }
 
 //swi 9
 u32 bios_arctan(){
-fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
-
-s32 a =  -( ((s32)(dummyreg*dummyreg)) >> 14);
-s32 b = ((0xA9 * a) >> 14) + 0x390;
-b = ((b * a) >> 14) + 0x91C;
-b = ((b * a) >> 14) + 0xFB6;
-b = ((b * a) >> 14) + 0x16AA;
-b = ((b * a) >> 14) + 0x2081;
-b = ((b * a) >> 14) + 0x3651;
-b = ((b * a) >> 14) + 0xA2F9;
-a = ((s32)dummyreg * b) >> 16;
-dummyreg = a;
-
-faststr((u8*)&dummyreg, exRegs, (0x0), 32,0); //=r0
-return 0;
+	s32 a =  -( ((s32)(exRegs[0]*exRegs[0])) >> 14);
+	s32 b = ((0xA9 * a) >> 14) + 0x390;
+	b = ((b * a) >> 14) + 0x91C;
+	b = ((b * a) >> 14) + 0xFB6;
+	b = ((b * a) >> 14) + 0x16AA;
+	b = ((b * a) >> 14) + 0x2081;
+	b = ((b * a) >> 14) + 0x3651;
+	b = ((b * a) >> 14) + 0xA2F9;
+	exRegs[0] = (u32)(((s32)exRegs[0] * b) >> 16);
+	return 0;
 }
 
 
 //swi 0xa
 u32 bios_arctan2(){
-fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); //+r1
-
-s32 x = dummyreg;
-s32 y = dummyreg2;
-u32 res = 0;
-if (y == 0) {
-	res = ((x>>16) & 0x8000);
-} 
-else{
-	if (x == 0) {
-		res = ((y>>16) & 0x8000) + 0x4000;
+	s32 x = exRegs[0];
+	s32 y = exRegs[1];
+	u32 res = 0;
+	if (y == 0) {
+		res = ((x>>16) & 0x8000);
 	} 
-	else {
-		if ((abs(x) > abs(y)) || ((abs(x) == abs(y)) && (!((x<0) && (y<0))))) {
-			dummyreg2 = x;
-			dummyreg = y << 14;
-			bios_div();
-			bios_arctan();
-		if (x < 0)
-			res = 0x8000 + dummyreg;
-		else
-			res = (((y>>16) & 0x8000)<<1) + dummyreg;
+	else{
+		if (x == 0) {
+			res = ((y>>16) & 0x8000) + 0x4000;
 		} 
 		else {
-			dummyreg = x << 14;
-			bios_div();
-			bios_arctan();
-			res = (0x4000 + ((y>>16) & 0x8000)) - dummyreg;
-      }
+			if ((abs(x) > abs(y)) || ((abs(x) == abs(y)) && (!((x<0) && (y<0))))) {
+				exRegs[1] = x;
+				exRegs[0] = y << 14;
+				bios_div();
+				bios_arctan();
+			if (x < 0)
+				res = 0x8000 + exRegs[0];
+			else
+				res = (((y>>16) & 0x8000)<<1) + exRegs[0];
+			} 
+			else {
+				exRegs[0] = x << 14;
+				bios_div();
+				bios_arctan();
+				res = (0x4000 + ((y>>16) & 0x8000)) - exRegs[0];
+		  }
+		}
 	}
-}
-dummyreg = res;
-faststr((u8*)&dummyreg, exRegs, (0x0), 32,0);
-return 0;
+	exRegs[0] = res;
+	return 0;
 }
 
 //swi 0xb
 u32 bios_cpuset(){
+	u32 source = exRegs[0];
+	u32 dest = exRegs[1];
+	u32 cnt = exRegs[2];
 
-fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); //+r1
-fastldr((u8*)&dummyreg3, exRegs, (0x2), 32,0); //+r2
+	if(((source & 0xe000000) == 0) ||
+		((source + (((cnt << 11)>>9) & 0x1fffff)) & 0xe000000) == 0)
+		return 0;
 
-u32 source = dummyreg;
-u32 dest = dummyreg2;
-u32 cnt = dummyreg3;
+	int count = cnt & 0x1FFFFF;
 
-if(((source & 0xe000000) == 0) ||
-	((source + (((cnt << 11)>>9) & 0x1fffff)) & 0xe000000) == 0)
-	return 0;
-
-int count = cnt & 0x1FFFFF;
-
-// 32-bit ?
-if((cnt >> 26) & 1) {
-	// needed for 32-bit mode!
-	source &= 0xFFFFFFFC;
-	dest &= 0xFFFFFFFC;
-    // fill ?
-    if((cnt >> 24) & 1) {
-		u32 value = (source>0x0EFFFFFF ? 0x1CAD1CAD : cpuread_word(source)); //CPUReadMemory(source)
-		while(count) {
-			cpuwrite_word(dest, value);		//CPUWriteMemory(dest, value);
-			dest += 4;
-			count--;
+	// 32-bit ?
+	if((cnt >> 26) & 1) {
+		// needed for 32-bit mode!
+		source &= 0xFFFFFFFC;
+		dest &= 0xFFFFFFFC;
+		// fill ?
+		if((cnt >> 24) & 1) {
+			u32 value = (source>0x0EFFFFFF ? 0x1CAD1CAD : cpuread_word(source)); //CPUReadMemory(source)
+			while(count) {
+				cpuwrite_word(dest, value);		//CPUWriteMemory(dest, value);
+				dest += 4;
+				count--;
+			}
+		} 
+		else {
+			// copy
+			while(count) {
+				//CPUWriteMemory(dest, (source>0x0EFFFFFF ? 0x1CAD1CAD : CPUReadMemory(source)));
+				cpuwrite_word(dest, (source>0x0EFFFFFF ? 0x1CAD1CAD : cpuread_word(source)));
+				source += 4;
+				dest += 4;
+				count--;
+			}
 		}
-    } 
+	} 
 	else {
+		// 16-bit fill?
+		if((cnt >> 24) & 1) {
+			u16 value = (source>0x0EFFFFFF ? 0x1CAD : cpuread_hword(source)); //CPUReadHalfWord(source));
+			while(count) {
+				cpuwrite_hword(dest, value); //CPUWriteHalfWord(dest, value);
+				dest += 2;
+				count--;
+			}
+		} 
+		else {
 		// copy
-		while(count) {
-			//CPUWriteMemory(dest, (source>0x0EFFFFFF ? 0x1CAD1CAD : CPUReadMemory(source)));
-			cpuwrite_word(dest, (source>0x0EFFFFFF ? 0x1CAD1CAD : cpuread_word(source)));
-			source += 4;
-			dest += 4;
-			count--;
+			while(count) {
+				//CPUWriteHalfWord(dest, (source>0x0EFFFFFF ? 0x1CAD : CPUReadHalfWord(source)));
+				cpuwrite_hword(dest, (source>0x0EFFFFFF ? 0x1CAD : cpuread_hword(source)));
+				source += 2;
+				dest += 2;
+				count--;
+			}
 		}
-    }
-} 
-else {
-	// 16-bit fill?
-	if((cnt >> 24) & 1) {
-		u16 value = (source>0x0EFFFFFF ? 0x1CAD : cpuread_hword(source)); //CPUReadHalfWord(source));
-		while(count) {
-			cpuwrite_hword(dest, value); //CPUWriteHalfWord(dest, value);
-			dest += 2;
-			count--;
-		}
-    } 
-	else {
-	// copy
-		while(count) {
-			//CPUWriteHalfWord(dest, (source>0x0EFFFFFF ? 0x1CAD : CPUReadHalfWord(source)));
-			cpuwrite_hword(dest, (source>0x0EFFFFFF ? 0x1CAD : cpuread_hword(source)));
-			source += 2;
-			dest += 2;
-			count--;
-		}
-    }
-}
-return 0;
+	}
+	return 0;
 }
 
 //swi 0xc
 u32 bios_cpufastset(){
-
-fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); //+r1
-fastldr((u8*)&dummyreg3, exRegs, (0x2), 32,0); //+r2
-
-u32 source = dummyreg;
-u32 dest = dummyreg2;
-u32 cnt = dummyreg3;
-
-if(((source & 0xe000000) == 0) || ((source + (((cnt << 11)>>9) & 0x1fffff)) & 0xe000000) == 0)
-	return 0;
-
+	u32 source = exRegs[0];
+	u32 dest = exRegs[1];
+	u32 cnt = exRegs[2];
+	if(((source & 0xe000000) == 0) || ((source + (((cnt << 11)>>9) & 0x1fffff)) & 0xe000000) == 0){
+		return 0;
+	}
 	// needed for 32-bit mode!
 	source &= 0xFFFFFFFC;
 	dest &= 0xFFFFFFFC;
   
 	int count = cnt & 0x1FFFFF;
-  
 	// fill?
 	if((cnt >> 24) & 1) {
 		while(count > 0) {
@@ -469,94 +428,85 @@ if(((source & 0xe000000) == 0) || ((source + (((cnt << 11)>>9) & 0x1fffff)) & 0x
 		count -= 8;
 		}
 	}
-return 0;
+	return 0;
 }
 
 //swi 0xd
 u32 bios_getbioschecksum(){
-	dummyreg=0xBAAE187F;
-	faststr((u8*)&dummyreg, exRegs, (0x0), 32,0);
-return 0;
+	exRegs[0]=0xBAAE187F;
+	return 0;
 }
 
 //swi 0xe
 u32 bios_bgaffineset(){
-//#ifdef DEV_VERSION  
-//    log("BgAffineSet: %08x,%08x,%08x",
-//        exRegs[0],
-//        exRegs[1],
-//        exRegs[2]);
-//#endif
+	//#ifdef DEV_VERSION  
+	//    log("BgAffineSet: %08x,%08x,%08x",
+	//        exRegs[0],
+	//        exRegs[1],
+	//        exRegs[2]);
+	//#endif
 
-fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); //+r1
-fastldr((u8*)&dummyreg3, exRegs, (0x2), 32,0); //+r2
+	u32 src = exRegs[0];
+	u32 dest = exRegs[1];
+	int num = exRegs[2];
 
-u32 src = dummyreg;
-u32 dest = dummyreg2;
-int num = dummyreg3;
+	for(i = 0; i < num; i++) {
+		s32 cx = cpuread_word(src);				 //CPUReadMemory(src);
+		src+=4;
+		s32 cy = cpuread_word(src); 			//CPUReadMemory(src);
+		src+=4;
+		s16 dispx = cpuread_hword(src);			//CPUReadHalfWord(src);
+		src+=2;
+		s16 dispy = cpuread_hword(src);			//CPUReadHalfWord(src);
+		src+=2;
+		s16 rx = cpuread_hword(src);			//CPUReadHalfWord(src);
+		src+=2;
+		s16 ry = cpuread_hword(src); 			//CPUReadHalfWord(src);
+		src+=2;
+		u16 theta = (cpuread_hword(src)>>8);	//CPUReadHalfWord(src)>>8;
+		src+=4; // keep structure alignment
+		s32 a = sinetable[(theta+0x40)&255];
+		s32 b = sinetable[theta];
 
-for(i = 0; i < num; i++) {
-	s32 cx = cpuread_word(src);				 //CPUReadMemory(src);
-	src+=4;
-	s32 cy = cpuread_word(src); 			//CPUReadMemory(src);
-	src+=4;
-	s16 dispx = cpuread_hword(src);			//CPUReadHalfWord(src);
-	src+=2;
-	s16 dispy = cpuread_hword(src);			//CPUReadHalfWord(src);
-	src+=2;
-	s16 rx = cpuread_hword(src);			//CPUReadHalfWord(src);
-	src+=2;
-	s16 ry = cpuread_hword(src); 			//CPUReadHalfWord(src);
-	src+=2;
-	u16 theta = (cpuread_hword(src)>>8);	//CPUReadHalfWord(src)>>8;
-	src+=4; // keep structure alignment
-	s32 a = sinetable[(theta+0x40)&255];
-	s32 b = sinetable[theta];
+		s16 dx =  (rx * a)>>14;
+		s16 dmx = (rx * b)>>14;
+		s16 dy =  (ry * b)>>14;
+		s16 dmy = (ry * a)>>14;
+		
+		cpuwrite_hword(dest, dx);	//CPUWriteHalfWord(dest, dx);
+		dest += 2;
+		cpuwrite_hword(dest, -dmx);	//CPUWriteHalfWord(dest, -dmx);
+		dest += 2;
+		cpuwrite_hword(dest, dy);	//CPUWriteHalfWord(dest, dy);
+		dest += 2;
+		cpuwrite_hword(dest, dmy);	//CPUWriteHalfWord(dest, dmy);
+		dest += 2;
 
-	s16 dx =  (rx * a)>>14;
-	s16 dmx = (rx * b)>>14;
-	s16 dy =  (ry * b)>>14;
-	s16 dmy = (ry * a)>>14;
-    
-	cpuwrite_hword(dest, dx);	//CPUWriteHalfWord(dest, dx);
-	dest += 2;
-	cpuwrite_hword(dest, -dmx);	//CPUWriteHalfWord(dest, -dmx);
-	dest += 2;
-	cpuwrite_hword(dest, dy);	//CPUWriteHalfWord(dest, dy);
-	dest += 2;
-	cpuwrite_hword(dest, dmy);	//CPUWriteHalfWord(dest, dmy);
-	dest += 2;
-
-	s32 startx = cx - dx * dispx + dmx * dispy;
-	s32 starty = cy - dy * dispx - dmy * dispy;
-    
-	cpuwrite_word(dest, startx);	//CPUWriteMemory(dest, startx);
-	dest += 4;
-	cpuwrite_word(dest, starty);	//CPUWriteMemory(dest, starty);
-	dest += 4;
-}
-return 0;
+		s32 startx = cx - dx * dispx + dmx * dispy;
+		s32 starty = cy - dy * dispx - dmy * dispy;
+		
+		cpuwrite_word(dest, startx);	//CPUWriteMemory(dest, startx);
+		dest += 4;
+		cpuwrite_word(dest, starty);	//CPUWriteMemory(dest, starty);
+		dest += 4;
+	}
+	return 0;
 }
 
 //swi 0xf
 u32 bios_objaffineset(){
-//#ifdef DEV_VERSION
-//    log("ObjAffineSet: 0x%08x,0x%08x,0x%08x,0x%08x",
-//        exRegs[0],
-//        exRegs[1],
-//        exRegs[2],
-//        exRegs[3]);
-//#endif
-fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); //+r1
-fastldr((u8*)&dummyreg3, exRegs, (0x2), 32,0); //+r2
-fastldr((u8*)&dummyreg4, exRegs, (0x3), 32,0); //+r3
-  
-	u32 src = dummyreg; 		//r0
-	u32 dest = dummyreg2;		//r1
-	int num = dummyreg3;		//r2
-	int offset = dummyreg4; 	//r3
+	//#ifdef DEV_VERSION
+	//    log("ObjAffineSet: 0x%08x,0x%08x,0x%08x,0x%08x",
+	//        exRegs[0],
+	//        exRegs[1],
+	//        exRegs[2],
+	//        exRegs[3]);
+	//#endif
+	
+	u32 src = exRegs[0]; 		//r0
+	u32 dest = exRegs[1];		//r1
+	int num = exRegs[2];		//r2
+	int offset = exRegs[3]; 	//r3
 
 	for(i = 0; i < num; i++){
 		s16 rx = cpuread_hword(src); //CPUReadHalfWord(src);
@@ -583,169 +533,429 @@ fastldr((u8*)&dummyreg4, exRegs, (0x3), 32,0); //+r3
 		cpuwrite_hword(dest, dmy);	//CPUWriteHalfWord(dest, dmy);
 		dest += offset;
 	}
-return 0;
+	return 0;
 }
 
 //swi 0x10
 u32 bios_bitunpack(){
+	u32 source = exRegs[0];
+	u32 dest = exRegs[1];
+	u32 header = exRegs[2];
 
-u32 source=0; 	//u32 source = exRegs[0];
-u32 dest=0;		//u32 dest = exRegs[1];
-u32 header=0;	//u32 header = exRegs[2];
+	int len=cpuread_hword(header); 			//int len = CPUReadHalfWord(header);
 
-fastldr((u8*)&source, exRegs, (0x0), 32,0); 	//r0
-fastldr((u8*)&dest, exRegs, (0x1), 32,0); 	//r1
-fastldr((u8*)&header, exRegs, (0x2), 32,0); 	//r2
-
-int len=cpuread_hword(header); 			//int len = CPUReadHalfWord(header);
-
-// check address
-if(((source & 0xe000000) == 0) || ((source + len) & 0xe000000) == 0)
-	return 0;
-
-int bits=cpuread_byte(header+2);		//int bits = CPUReadByte(header+2);
-int revbits = 8 - bits; 
-// u32 value = 0; //unneeded
-
-u32 base=cpuread_word(header+4);		//u32 base = CPUReadMemory(header+4);
-
-bool addBase = (base & 0x80000000) ? true : false;
-base &= 0x7fffffff;
-int dataSize=cpuread_byte(header+3);	//int dataSize = CPUReadByte(header+3);
-
-int data = 0; 
-int bitwritecount = 0; 
-while(1) {
-	len -= 1;
-	if(len < 0)
+	// check address
+	if(((source & 0xe000000) == 0) || ((source + len) & 0xe000000) == 0)
 		return 0;
-		
-	int mask = 0xff >> revbits; 
-	u8 b=cpuread_byte(source);			//u8 b = CPUReadByte(source); 
-	source++;
-	int bitcount = 0;
+
+	int bits=cpuread_byte(header+2);		//int bits = CPUReadByte(header+2);
+	int revbits = 8 - bits; 
+	// u32 value = 0; //unneeded
+
+	u32 base=cpuread_word(header+4);		//u32 base = CPUReadMemory(header+4);
+
+	bool addBase = (base & 0x80000000) ? true : false;
+	base &= 0x7fffffff;
+	int dataSize=cpuread_byte(header+3);	//int dataSize = CPUReadByte(header+3);
+
+	int data = 0; 
+	int bitwritecount = 0; 
 	while(1) {
-		if(bitcount >= 8)
+		len -= 1;
+		if(len < 0)
 			return 0;
 			
-		u32 d = b & mask;
-		u32 temp = d >> bitcount;
-			
-		if(d || addBase) {
-			temp += base;
+		int mask = 0xff >> revbits; 
+		u8 b=cpuread_byte(source);			//u8 b = CPUReadByte(source); 
+		source++;
+		int bitcount = 0;
+		while(1) {
+			if(bitcount >= 8)
+				return 0;
+				
+			u32 d = b & mask;
+			u32 temp = d >> bitcount;
+				
+			if(d || addBase) {
+				temp += base;
+			}
+			data |= temp << bitwritecount;
+			bitwritecount += dataSize;
+			if(bitwritecount >= 32) {
+				cpuwrite_word(dest, data);		//CPUWriteMemory(dest, data);
+				dest += 4;
+				data = 0;
+				bitwritecount = 0;
+			}
+			mask <<= bits;
+			bitcount += bits;
 		}
-		data |= temp << bitwritecount;
-		bitwritecount += dataSize;
-		if(bitwritecount >= 32) {
-			cpuwrite_word(dest, data);		//CPUWriteMemory(dest, data);
-			dest += 4;
-			data = 0;
-			bitwritecount = 0;
-		}
-		mask <<= bits;
-		bitcount += bits;
 	}
-}
-
-return 0;
+	return 0;
 }
 
 //swi 0x11
 u32 bios_lz77uncompwram(){
-//#ifdef DEV_VERSION
-//    log("LZ77UnCompWram: 0x%08x,0x%08x", exRegs[0], exRegs[1]);
-//#endif
-fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0);//+r1
+	//#ifdef DEV_VERSION
+	//    log("LZ77UnCompWram: 0x%08x,0x%08x", exRegs[0], exRegs[1]);
+	//#endif
+	
+	u32 source = exRegs[0];
+	u32 dest = exRegs[1];
 
-u32 source = dummyreg; 	//exRegs[0];
-u32 dest = dummyreg2;	//exRegs[1];
+	u32 header = cpuread_word(source);//CPUReadMemory(source);
+	source += 4;
 
-u32 header = cpuread_word(source);//CPUReadMemory(source);
-source += 4;
-
-if(((source & 0xe000000) == 0) || ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
-	return 0;  
-  
-int len = header >> 8;
-
-while(len > 0) {
-	u8 d = cpuread_byte(source++); //CPUReadByte(source++);
-
-	if(d) {
-		for(i = 0; i < 8; i++) {
-			if(d & 0x80) {
-				u16 data = (cpuread_byte(source++) << 8); //CPUReadByte(source++) << 8;
-				data |= cpuread_byte(source++);	//CPUReadByte(source++);
-				int length = (data >> 12) + 3;
-				int offset = (data & 0x0FFF);
-				u32 windowOffset = dest - offset - 1;
-				for(i = 0; i < length; i++) {
-					cpuwrite_byte(dest++,cpuread_byte(windowOffset++)); //CPUWriteByte(dest++, CPUReadByte(windowOffset++));
+	if(((source & 0xe000000) == 0) || ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
+		return 0;  
+	  
+	int len = header >> 8;
+	while(len > 0) {
+		u8 d = cpuread_byte(source++); //CPUReadByte(source++);
+		if(d) {
+			for(i = 0; i < 8; i++) {
+				if(d & 0x80) {
+					u16 data = (cpuread_byte(source++) << 8); //CPUReadByte(source++) << 8;
+					data |= cpuread_byte(source++);	//CPUReadByte(source++);
+					int length = (data >> 12) + 3;
+					int offset = (data & 0x0FFF);
+					u32 windowOffset = dest - offset - 1;
+					for(i = 0; i < length; i++) {
+						cpuwrite_byte(dest++,cpuread_byte(windowOffset++)); //CPUWriteByte(dest++, CPUReadByte(windowOffset++));
+						len--;
+							if(len == 0)
+								return 0;
+					}
+				} 
+				else{
+					cpuwrite_byte(dest++,cpuread_byte(source++)); //CPUWriteByte(dest++, CPUReadByte(source++));
 					len--;
 						if(len == 0)
 							return 0;
 				}
-			} 
-			else{
+				d <<= 1;
+			}
+		}
+		else {
+			for(i = 0; i < 8; i++) {
 				cpuwrite_byte(dest++,cpuread_byte(source++)); //CPUWriteByte(dest++, CPUReadByte(source++));
 				len--;
 					if(len == 0)
 						return 0;
 			}
-		d <<= 1;
-		}
-	} 
-	else {
-		for(i = 0; i < 8; i++) {
-			cpuwrite_byte(dest++,cpuread_byte(source++)); //CPUWriteByte(dest++, CPUReadByte(source++));
-			len--;
-				if(len == 0)
-					return 0;
 		}
 	}
-}
-return 0;
+	return 0;
 }
 
 //swi 0x12
 u32 bios_lz77uncompvram(){
-//#ifdef DEV_VERSION
-//    log("LZ77UnCompVram: 0x%08x,0x%08x",
-//        exRegs[0],
-//        exRegs[1]);
-//#endif
-fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); //+r1
-  
-u32 source = dummyreg; 	//exRegs[0];
-u32 dest = dummyreg2;	//exRegs[1];
+	//#ifdef DEV_VERSION
+	//    log("LZ77UnCompVram: 0x%08x,0x%08x",
+	//        exRegs[0],
+	//        exRegs[1]);
+	//#endif
+	
+	u32 source = exRegs[0];
+	u32 dest = exRegs[1];
+	u32 header = cpuread_word(source); //CPUReadMemory(source);
+	source += 4;
 
-u32 header = cpuread_word(source); //CPUReadMemory(source);
-source += 4;
+	if(((source & 0xe000000) == 0) ||((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
+		return 0;  
+	  
+	int byteCount = 0;
+	int byteShift = 0;
+	u32 writeValue = 0;
+	int len = header >> 8;
 
-if(((source & 0xe000000) == 0) ||((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
-	return 0;  
-  
-int byteCount = 0;
-int byteShift = 0;
-u32 writeValue = 0;
+	while(len > 0) {
+		u8 d = cpuread_byte(source++); // CPUReadByte(source++);
 
-int len = header >> 8;
+		if(d) {
+		for(i = 0; i < 8; i++) {
+			if(d & 0x80) {
+				u16 data = ( cpuread_byte(source++) << 8 ); //CPUReadByte(source++) << 8;
+				data |= cpuread_byte(source++);			//CPUReadByte(source++);
+				int length = (data >> 12) + 3;
+				int offset = (data & 0x0FFF);
+				u32 windowOffset = dest + byteCount - offset - 1;
+				for(i = 0; i < length; i++) {
+					writeValue |= (cpuread_byte(windowOffset++) << byteShift); //(CPUReadByte(windowOffset++) << byteShift);
+					byteShift += 8;
+					byteCount++;
 
-while(len > 0) {
-	u8 d = cpuread_byte(source++); // CPUReadByte(source++);
+					if(byteCount == 2) {
+						cpuwrite_hword(dest, writeValue);	//CPUWriteHalfWord(dest, writeValue);
+						dest += 2;
+						byteCount = 0;
+						byteShift = 0;
+						writeValue = 0;
+					}
+					len--;
+					if(len == 0)
+						return 0;
+				}
+			}
+			else {
+				writeValue |= (cpuread_byte(source++) << byteShift); //(CPUReadByte(source++) << byteShift);
+				byteShift += 8;
+				byteCount++;
+				
+				if(byteCount == 2) {
+					cpuwrite_hword(dest, writeValue);		//CPUWriteHalfWord(dest, writeValue);
+					dest += 2;
+					byteCount = 0;
+					byteShift = 0;
+					writeValue = 0;
+				}
+				len--;
+				if(len == 0)
+					return 0;
+			}
+			d <<= 1;
+		}
+		}
+		else {
+			for(i = 0; i < 8; i++) {
+				writeValue |= (cpuread_byte(source++) << byteShift);
+				byteShift += 8;
+				byteCount++;
+					if(byteCount == 2) {
+						cpuwrite_hword(dest, writeValue);
+						dest += 2;      
+						byteShift = 0;
+						byteCount = 0;
+						writeValue = 0;
+					}
+				len--;
+				if(len == 0)
+					return 0;
+			}
+		}
+	}
+	return 0;
+}
 
-	if(d) {
-	for(i = 0; i < 8; i++) {
+//swi 0x13
+u32 bios_huffuncomp(){
+	//#ifdef DEV_VERSION
+	//    log("HuffUnComp: 0x%08x,0x%08x",
+	//        exRegs[0],
+	//        exRegs[1]);
+	//#endif
+
+	u32 source = exRegs[0];
+	u32 dest = exRegs[1];
+
+	u32 header = cpuread_word(source); //CPUReadMemory(source);
+	source += 4;
+
+	if(((source & 0xe000000) == 0) || ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
+		return 0;  
+	  
+	u8 treeSize = cpuread_byte(source++); //CPUReadByte(source++);
+	u32 treeStart = source;
+	source += ((treeSize+1)<<1)-1; // minus because we already skipped one byte
+	  
+	int len = header >> 8;
+
+	u32 mask = 0x80000000;
+	u32 data = cpuread_word(source); //CPUReadMemory(source);
+	source += 4;
+
+	int pos = 0;
+	u8 rootNode = cpuread_byte(treeStart); //CPUReadByte(treeStart);
+	u8 currentNode = rootNode;
+	bool writeData = false;
+	int byteShift = 0;
+	int byteCount = 0;
+	u32 writeValue = 0;
+
+	if((header & 0x0F) == 8) {
+		while(len > 0) {
+			// take left
+			if(pos == 0)
+				pos++;
+			else
+				pos += (((currentNode & 0x3F)+1)<<1);
+		  
+			if(data & mask) {
+				// right
+				if(currentNode & 0x40)
+					writeData = true;
+				currentNode = cpuread_byte(treeStart+pos+1); 	//CPUReadByte(treeStart+pos+1);
+			} 
+			else {
+				// left
+				if(currentNode & 0x80)
+					writeData = true;
+				currentNode = cpuread_byte(treeStart+pos);		//CPUReadByte(treeStart+pos);
+			}
+		  
+		  if(writeData) {
+				writeValue |= (currentNode << byteShift);
+				byteCount++;
+				byteShift += 8;
+
+				pos = 0;
+				currentNode = rootNode;
+				writeData = false;
+
+				if(byteCount == 4) {
+					byteCount = 0;
+					byteShift = 0;
+					cpuwrite_word(dest, writeValue);	//CPUWriteMemory(dest, writeValue);
+					writeValue = 0;
+					dest += 4;
+					len -= 4;
+				}
+			}
+			mask >>= 1;
+			if(mask == 0) {
+				mask = 0x80000000;
+				data = cpuread_word(source); //CPUReadMemory(source);
+				source += 4;
+			}
+		}
+	} 
+	else {
+		int halfLen = 0;
+		int value = 0;
+			while(len > 0) {
+				// take left
+				if(pos == 0)
+					pos++;
+				else
+					pos += (((currentNode & 0x3F)+1)<<1);
+
+				if((data & mask)) {
+					// right
+					if(currentNode & 0x40)
+						writeData = true;
+					currentNode = cpuread_byte(treeStart+pos+1); //CPUReadByte(treeStart+pos+1);
+				} 
+				else{
+					// left
+					if(currentNode & 0x80)
+						writeData = true;
+					currentNode = cpuread_byte(treeStart+pos);		//CPUReadByte(treeStart+pos);
+				}
+		  
+				if(writeData) {
+					if(halfLen == 0)
+						value |= currentNode;
+					else
+						value |= (currentNode<<4);
+
+					halfLen += 4;
+					if(halfLen == 8) {
+						writeValue |= (value << byteShift);
+						byteCount++;
+						byteShift += 8;
+					
+						halfLen = 0;
+						value = 0;
+
+						if(byteCount == 4) {
+							byteCount = 0;
+							byteShift = 0;
+							cpuwrite_word(dest, writeValue);		//CPUWriteMemory(dest, writeValue);
+							dest += 4;
+							writeValue = 0;
+							len -= 4;
+						}
+					}
+					pos = 0;
+					currentNode = rootNode;
+					writeData = false;
+				}
+				mask >>= 1;
+				if(mask == 0) {
+					mask = 0x80000000;
+					cpuread_word(source);	//data = CPUReadMemory(source);
+					source += 4;
+				}
+			}   
+		}
+	return 0;
+}
+
+
+//swi 0x14
+u32 bios_rluncompwram(){
+	//#ifdef DEV_VERSION
+	//    log("RLUnCompWram: 0x%08x,0x%08x",
+	//        exRegs[0],
+	//        exRegs[1]);
+	//#endif
+	u32 source = exRegs[0];
+	u32 dest = exRegs[1];
+
+	u32 header = cpuread_word(source & 0xFFFFFFFC); //CPUReadMemory(source & 0xFFFFFFFC);
+	source += 4;
+
+	if(((source & 0xe000000) == 0) || ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
+		return 0;  
+	  
+	int len = header >> 8;
+
+	while(len > 0) {
+		u8 d = cpuread_byte(source++);	//CPUReadByte(source++);
+		int l = d & 0x7F;
+			if(d & 0x80) {
+				u8 data = cpuread_byte(source++);	 //CPUReadByte(source++);
+				l += 3;
+				for(i = 0;i < l; i++) {
+					cpuwrite_byte(dest++, data);	//CPUWriteByte(dest++, data);
+					len--;
+						if(len == 0)
+						return 0;
+				}
+			} 
+			else{
+				l++;
+				for(i = 0; i < l; i++) {
+					cpuwrite_byte(dest++, cpuread_byte(source++));	//CPUWriteByte(dest++,  CPUReadByte(source++));
+					len--;
+					if(len == 0)
+						return 0;
+				}
+			}
+	}
+
+	return 0;
+}
+
+//swi 0x15
+u32 bios_rluncompvram(){
+	//#ifdef DEV_VERSION
+	//    log("RLUnCompVram: 0x%08x,0x%08x",
+	//        exRegs[0],
+	//        exRegs[1]);
+	//#endif
+	u32 source = exRegs[0];
+	u32 dest = exRegs[1];
+
+	u32 header = cpuread_word(source & 0xFFFFFFFC);	//CPUReadMemory(source & 0xFFFFFFFC);
+	source += 4;
+
+	if(((source & 0xe000000) == 0) || ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
+		return 0;  
+	  
+	int len = header >> 8;
+	int byteCount = 0;
+	int byteShift = 0;
+	u32 writeValue = 0;
+
+	while(len > 0) {
+		u8 d = cpuread_byte(source++);	//CPUReadByte(source++);
+		int l = d & 0x7F;
 		if(d & 0x80) {
-			u16 data = ( cpuread_byte(source++) << 8 ); //CPUReadByte(source++) << 8;
-			data |= cpuread_byte(source++);			//CPUReadByte(source++);
-			int length = (data >> 12) + 3;
-			int offset = (data & 0x0FFF);
-			u32 windowOffset = dest + byteCount - offset - 1;
-			for(i = 0; i < length; i++) {
-				writeValue |= (cpuread_byte(windowOffset++) << byteShift); //(CPUReadByte(windowOffset++) << byteShift);
+			u8 data = cpuread_byte(source++);	//CPUReadByte(source++);
+			l += 3;
+			for(i = 0;i < l; i++) {
+				writeValue |= (data << byteShift);
 				byteShift += 8;
 				byteCount++;
 
@@ -760,470 +970,167 @@ while(len > 0) {
 				if(len == 0)
 					return 0;
 			}
-        }
-		else {
-			writeValue |= (cpuread_byte(source++) << byteShift); //(CPUReadByte(source++) << byteShift);
-			byteShift += 8;
-			byteCount++;
-			
-			if(byteCount == 2) {
-				cpuwrite_hword(dest, writeValue);		//CPUWriteHalfWord(dest, writeValue);
-				dest += 2;
-				byteCount = 0;
-				byteShift = 0;
-				writeValue = 0;
-			}
-			len--;
-			if(len == 0)
-				return 0;
-		}
-        d <<= 1;
-	}
-    }
-	else {
-		for(i = 0; i < 8; i++) {
-			writeValue |= (cpuread_byte(source++) << byteShift);
-			byteShift += 8;
-			byteCount++;
-				if(byteCount == 2) {
-					cpuwrite_hword(dest, writeValue);
-					dest += 2;      
-					byteShift = 0;
-					byteCount = 0;
-					writeValue = 0;
-				}
-			len--;
-			if(len == 0)
-				return 0;
-		}
-	}
-}
-return 0;
-}
-
-//swi 0x13
-u32 bios_huffuncomp(){
-//#ifdef DEV_VERSION
-//    log("HuffUnComp: 0x%08x,0x%08x",
-//        exRegs[0],
-//        exRegs[1]);
-//#endif
-fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0);
-fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0);
-
-u32 source = dummyreg; //exRegs[0];
-u32 dest = dummyreg2; //exRegs[1];
-
-u32 header = cpuread_word(source); //CPUReadMemory(source);
-source += 4;
-
-if(((source & 0xe000000) == 0) || ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
-	return 0;  
-  
-u8 treeSize = cpuread_byte(source++); //CPUReadByte(source++);
-
-u32 treeStart = source;
-
-source += ((treeSize+1)<<1)-1; // minus because we already skipped one byte
-  
-int len = header >> 8;
-
-u32 mask = 0x80000000;
-u32 data = cpuread_word(source); //CPUReadMemory(source);
-source += 4;
-
-int pos = 0;
-u8 rootNode = cpuread_byte(treeStart); //CPUReadByte(treeStart);
-u8 currentNode = rootNode;
-bool writeData = false;
-int byteShift = 0;
-int byteCount = 0;
-u32 writeValue = 0;
-
-if((header & 0x0F) == 8) {
-	while(len > 0) {
-		// take left
-		if(pos == 0)
-			pos++;
-		else
-			pos += (((currentNode & 0x3F)+1)<<1);
-      
-		if(data & mask) {
-			// right
-			if(currentNode & 0x40)
-				writeData = true;
-			currentNode = cpuread_byte(treeStart+pos+1); 	//CPUReadByte(treeStart+pos+1);
 		} 
 		else {
-			// left
-			if(currentNode & 0x80)
-				writeData = true;
-			currentNode = cpuread_byte(treeStart+pos);		//CPUReadByte(treeStart+pos);
-		}
-      
-      if(writeData) {
-			writeValue |= (currentNode << byteShift);
-			byteCount++;
-			byteShift += 8;
-
-			pos = 0;
-			currentNode = rootNode;
-			writeData = false;
-
-			if(byteCount == 4) {
-				byteCount = 0;
-				byteShift = 0;
-				cpuwrite_word(dest, writeValue);	//CPUWriteMemory(dest, writeValue);
-				writeValue = 0;
-				dest += 4;
-				len -= 4;
-			}
-		}
-		mask >>= 1;
-		if(mask == 0) {
-			mask = 0x80000000;
-			data = cpuread_word(source); //CPUReadMemory(source);
-			source += 4;
-		}
-    }
-} 
-else {
-	int halfLen = 0;
-	int value = 0;
-		while(len > 0) {
-			// take left
-			if(pos == 0)
-				pos++;
-			else
-				pos += (((currentNode & 0x3F)+1)<<1);
-
-			if((data & mask)) {
-				// right
-				if(currentNode & 0x40)
-					writeData = true;
-				currentNode = cpuread_byte(treeStart+pos+1); //CPUReadByte(treeStart+pos+1);
-			} 
-			else{
-				// left
-				if(currentNode & 0x80)
-					writeData = true;
-				currentNode = cpuread_byte(treeStart+pos);		//CPUReadByte(treeStart+pos);
-			}
-      
-			if(writeData) {
-				if(halfLen == 0)
-					value |= currentNode;
-				else
-					value |= (currentNode<<4);
-
-				halfLen += 4;
-				if(halfLen == 8) {
-					writeValue |= (value << byteShift);
-					byteCount++;
-					byteShift += 8;
-				
-					halfLen = 0;
-					value = 0;
-
-					if(byteCount == 4) {
-						byteCount = 0;
-						byteShift = 0;
-						cpuwrite_word(dest, writeValue);		//CPUWriteMemory(dest, writeValue);
-						dest += 4;
-						writeValue = 0;
-						len -= 4;
-					}
-				}
-				pos = 0;
-				currentNode = rootNode;
-				writeData = false;
-			}
-			mask >>= 1;
-			if(mask == 0) {
-				mask = 0x80000000;
-				cpuread_word(source);	//data = CPUReadMemory(source);
-				source += 4;
-			}
-		}   
-	}
-return 0;
-}
-
-
-//swi 0x14
-u32 bios_rluncompwram(){
-//#ifdef DEV_VERSION
-//    log("RLUnCompWram: 0x%08x,0x%08x",
-//        exRegs[0],
-//        exRegs[1]);
-//#endif
-fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); //+r1
-
-u32 source = dummyreg; 	//exRegs[0];
-u32 dest = dummyreg2;	//exRegs[1];
-
-u32 header = cpuread_word(source & 0xFFFFFFFC); //CPUReadMemory(source & 0xFFFFFFFC);
-source += 4;
-
-if(((source & 0xe000000) == 0) || ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
-	return 0;  
-  
-int len = header >> 8;
-
-while(len > 0) {
-	u8 d = cpuread_byte(source++);	//CPUReadByte(source++);
-    int l = d & 0x7F;
-		if(d & 0x80) {
-			u8 data = cpuread_byte(source++);	 //CPUReadByte(source++);
-			l += 3;
-			for(i = 0;i < l; i++) {
-				cpuwrite_byte(dest++, data);	//CPUWriteByte(dest++, data);
-				len--;
-					if(len == 0)
-					return 0;
-			}
-		} 
-		else{
 			l++;
 			for(i = 0; i < l; i++) {
-				cpuwrite_byte(dest++, cpuread_byte(source++));	//CPUWriteByte(dest++,  CPUReadByte(source++));
+				writeValue |= (cpuread_byte(source++) << byteShift);	//(CPUReadByte(source++) << byteShift);
+				byteShift += 8;
+				byteCount++;
+				if(byteCount == 2) {
+					cpuwrite_hword(dest, writeValue);	//CPUWriteHalfWord(dest, writeValue);
+					dest += 2;
+					byteCount = 0;
+					byteShift = 0;
+					writeValue = 0;
+				}
 				len--;
 				if(len == 0)
 					return 0;
-			}
+		  }
 		}
-}
+	}
 
-return 0;
-}
-
-//swi 0x15
-u32 bios_rluncompvram(){
-//#ifdef DEV_VERSION
-//    log("RLUnCompVram: 0x%08x,0x%08x",
-//        exRegs[0],
-//        exRegs[1]);
-//#endif
-fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); 
-fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); 
-
-u32 source = dummyreg; 	//exRegs[0];
-u32 dest = dummyreg2;	//exRegs[1];
-
-u32 header = cpuread_word(source & 0xFFFFFFFC);	//CPUReadMemory(source & 0xFFFFFFFC);
-source += 4;
-
-if(((source & 0xe000000) == 0) || ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
-	return 0;  
-  
-int len = header >> 8;
-int byteCount = 0;
-int byteShift = 0;
-u32 writeValue = 0;
-
-while(len > 0) {
-	u8 d = cpuread_byte(source++);	//CPUReadByte(source++);
-    int l = d & 0x7F;
-	if(d & 0x80) {
-		u8 data = cpuread_byte(source++);	//CPUReadByte(source++);
-		l += 3;
-		for(i = 0;i < l; i++) {
-			writeValue |= (data << byteShift);
-			byteShift += 8;
-			byteCount++;
-
-			if(byteCount == 2) {
-				cpuwrite_hword(dest, writeValue);	//CPUWriteHalfWord(dest, writeValue);
-				dest += 2;
-				byteCount = 0;
-				byteShift = 0;
-				writeValue = 0;
-			}
-			len--;
-			if(len == 0)
-				return 0;
-		}
-    } 
-	else {
-		l++;
-		for(i = 0; i < l; i++) {
-			writeValue |= (cpuread_byte(source++) << byteShift);	//(CPUReadByte(source++) << byteShift);
-			byteShift += 8;
-			byteCount++;
-			if(byteCount == 2) {
-				cpuwrite_hword(dest, writeValue);	//CPUWriteHalfWord(dest, writeValue);
-				dest += 2;
-				byteCount = 0;
-				byteShift = 0;
-				writeValue = 0;
-			}
-			len--;
-			if(len == 0)
-				return 0;
-      }
-    }
-}
-
-return 0;
+	return 0;
 }
 
 //swi 0x16
 u32 bios_diff8bitunfilterwram(){
-//#ifdef DEV_VERSION
-//    log("Diff8bitUnFilterWram: 0x%08x,0x%08x", exRegs[0],
-//        exRegs[1]);
-//#endif
+	//#ifdef DEV_VERSION
+	//    log("Diff8bitUnFilterWram: 0x%08x,0x%08x", exRegs[0],
+	//        exRegs[1]);
+	//#endif
 
-fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); //+r1
+	u32 source = exRegs[0];
+	u32 dest = exRegs[1];
+	u32 header = cpuread_word(source);	//CPUReadMemory(source);
+	source += 4;
 
-u32 source = dummyreg; 	//exRegs[0];
-u32 dest = dummyreg2;	//exRegs[1];
+	if( ((source & 0xe000000) == 0) || (( source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
+		return 0;  
 
-u32 header = cpuread_word(source);	//CPUReadMemory(source);
-source += 4;
+	int len = header >> 8;
 
-if( ((source & 0xe000000) == 0) || (( source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
-	return 0;  
-
-int len = header >> 8;
-
-u8 data = cpuread_byte(source++);		//CPUReadByte(source++);
-cpuwrite_byte(dest++, data);			//CPUWriteByte(dest++, data);
-len--;
-	
-while(len > 0) {
-	u8 diff = cpuread_byte(source++);	//CPUReadByte(source++);
-	data += diff;
-	cpuwrite_byte(dest++, data);		//CPUWriteByte(dest++, data);
+	u8 data = cpuread_byte(source++);		//CPUReadByte(source++);
+	cpuwrite_byte(dest++, data);			//CPUWriteByte(dest++, data);
 	len--;
-}
+		
+	while(len > 0) {
+		u8 diff = cpuread_byte(source++);	//CPUReadByte(source++);
+		data += diff;
+		cpuwrite_byte(dest++, data);		//CPUWriteByte(dest++, data);
+		len--;
+	}
 
-return 0;
+	return 0;
 }
 
 //swi 0x17
 
 u32 bios_diff8bitunfiltervram(){
-//#ifdef DEV_VERSION
-//    log("Diff8bitUnFilterVram: 0x%08x,0x%08x", exRegs[0],
-//        exRegs[1]);
-//#endif
-fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); //+r0
-fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); //+r1
+	//#ifdef DEV_VERSION
+	//    log("Diff8bitUnFilterVram: 0x%08x,0x%08x", exRegs[0],
+	//        exRegs[1]);
+	//#endif
+	u32 source = exRegs[0];
+	u32 dest = exRegs[1];
+	u32 header = cpuread_word(source);	//CPUReadMemory(source);
+	source += 4;
 
-u32 source = dummyreg;	//exRegs[0];
-u32 dest = dummyreg2;	//exRegs[1];
+	if(((source & 0xe000000) == 0) || ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
+		return 0;  
+		
+	int len = header >> 8;
 
-u32 header = cpuread_word(source);	//CPUReadMemory(source);
-source += 4;
+	u8 data = cpuread_byte(source++);	//CPUReadByte(source++);
+	u16 writeData = data;
+	int shift = 8;
+	int bytes = 1;
+	  
+	while(len >= 2) {
+		u8 diff = cpuread_byte(source++);	//CPUReadByte(source++);
+		data += diff;
+		writeData |= (data << shift);
+		bytes++;
+		shift += 8;
+		if(bytes == 2) {
+			cpuwrite_hword(dest, writeData);	//CPUWriteHalfWord(dest, writeData);
+			dest += 2;
+			len -= 2;
+			bytes = 0;
+			writeData = 0;
+			shift = 0;
+		}
+	}  
 
-if(((source & 0xe000000) == 0) || ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
-	return 0;  
-	
-int len = header >> 8;
-
-u8 data = cpuread_byte(source++);	//CPUReadByte(source++);
-u16 writeData = data;
-int shift = 8;
-int bytes = 1;
-  
-while(len >= 2) {
-    u8 diff = cpuread_byte(source++);	//CPUReadByte(source++);
-    data += diff;
-    writeData |= (data << shift);
-    bytes++;
-    shift += 8;
-	if(bytes == 2) {
-		cpuwrite_hword(dest, writeData);	//CPUWriteHalfWord(dest, writeData);
-		dest += 2;
-		len -= 2;
-		bytes = 0;
-		writeData = 0;
-		shift = 0;
-    }
-}  
-
-return 0;
+	return 0;
 }
 
 
 //swi 0x18
 u32 bios_diff16bitunfilter(){
-//#ifdef DEV_VERSION
-//    log("Diff16bitUnFilter: 0x%08x,0x%08x", exRegs[0],
-//        exRegs[1]);
-//#endif
-fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); 
-fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0); 
+	//#ifdef DEV_VERSION
+	//    log("Diff16bitUnFilter: 0x%08x,0x%08x", exRegs[0],
+	//        exRegs[1]);
+	//#endif
+	u32 source = exRegs[0];
+	u32 dest = exRegs[1];
+	u32 header = cpuread_word(source);	//CPUReadMemory(source);
+	source += 4;
 
-u32 source = dummyreg;	//exRegs[0];
-u32 dest = dummyreg2;	//exRegs[1];
+	if(((source & 0xe000000) == 0) || ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
+		return 0;  
+	  
+	int len = header >> 8;
 
-u32 header = cpuread_word(source);	//CPUReadMemory(source);
-source += 4;
-
-if(((source & 0xe000000) == 0) || ((source + ((header >> 8) & 0x1fffff)) & 0xe000000) == 0)
-	return 0;  
-  
-int len = header >> 8;
-
-u16 data = cpuread_hword(source);		//CPUReadHalfWord(source);
-source += 2;
-cpuwrite_hword(dest, data);				//CPUWriteHalfWord(dest, data);
-dest += 2;
-len -= 2;
-  
-while(len >= 2) {
-	u16 diff = cpuread_hword(source);	//CPUReadHalfWord(source);
+	u16 data = cpuread_hword(source);		//CPUReadHalfWord(source);
 	source += 2;
-	data += diff;
-	cpuwrite_hword(dest, data);			//CPUWriteHalfWord(dest, data);
+	cpuwrite_hword(dest, data);				//CPUWriteHalfWord(dest, data);
 	dest += 2;
 	len -= 2;
-}
-return 0;
+	  
+	while(len >= 2) {
+		u16 diff = cpuread_hword(source);	//CPUReadHalfWord(source);
+		source += 2;
+		data += diff;
+		cpuwrite_hword(dest, data);			//CPUWriteHalfWord(dest, data);
+		dest += 2;
+		len -= 2;
+	}
+	return 0;
 }
 
 //swi 0x1f
 u32 bios_midikey2freq(){
-//#ifdef DEV_VERSION
-//    log("MidiKey2Freq: WaveData=%08x mk=%08x fp=%08x",
-//        exRegs[0],
-//        exRegs[1],
-//        exRegs[2]);
-//#endif
-fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0);
-fastldr((u8*)&dummyreg2, exRegs, (0x1), 32,0);
-fastldr((u8*)&dummyreg3, exRegs, (0x2), 32,0);
+	//#ifdef DEV_VERSION
+	//    log("MidiKey2Freq: WaveData=%08x mk=%08x fp=%08x",
+	//        exRegs[0],
+	//        exRegs[1],
+	//        exRegs[2]);
+	//#endif
 
-int freq = cpuread_word(dummyreg+4);	//CPUReadMemory(exRegs[0]+4);
-double tmp;
-tmp = ((double)(180 - dummyreg2)) - ((double)dummyreg3 / 256.f);
-tmp = pow((double)2.f, tmp / 12.f);
-dummyreg = (int)((double)freq / tmp); //save to r0
-faststr((u8*)&dummyreg, exRegs, (0x0), 32,0);
-
-//#ifdef DEV_VERSION
-//    log("MidiKey2Freq: return %08x",
-//        exRegs[0]);
-//#endif
-return 0;
+	int freq = cpuread_word(exRegs[0]+4);	//CPUReadMemory(exRegs[0]+4);
+	double tmp;
+	tmp = ((double)(180 - exRegs[1])) - ((double)exRegs[2] / 256.f);
+	tmp = pow((double)2.f, tmp / 12.f);
+	exRegs[0] = (int)((double)freq / tmp); //save to r0
+	
+	//#ifdef DEV_VERSION
+	//    log("MidiKey2Freq: return %08x",
+	//        exRegs[0]);
+	//#endif
+	return 0;
 }
 
 //swi 0x2a
 u32 bios_snddriverjmptablecopy(){
-//#ifdef DEV_VERSION
-//    log("SndDriverJmpTableCopy: dest=%08x",
-//        exRegs[0]);
-//#endif
-fastldr((u8*)&dummyreg, exRegs, (0x0), 32,0); 
-
-for(i = 0; i < 0x24; i++) {
-	cpuwrite_word(dummyreg, 0x9c);	//CPUWriteMemory(dummyreg, 0x9c);
-	dummyreg += 4;
-}
-
-return 0;
+	//#ifdef DEV_VERSION
+	//    log("SndDriverJmpTableCopy: dest=%08x",
+	//        exRegs[0]);
+	//#endif
+	for(i = 0; i < 0x24; i++) {
+		cpuwrite_word(exRegs[0], 0x9c);	//CPUWriteMemory(exRegs[0], 0x9c);
+		exRegs[0] += 4;
+	}
+	return 0;
 }

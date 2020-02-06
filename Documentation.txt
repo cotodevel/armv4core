@@ -1,0 +1,500 @@
+ARMv4T Instructions implemented:
+
+PSR Bits: 95% (CPU status register, allows ARM Core to toggle between ARM Mode or THUMB Mode)
+
+ARM Mode:
+swi: 75%
+load/stores  (word/halfword/byte/ldm/stm) : 95%
+branches: 50% (some of them are broken)
+MSR/MRS : 100%
+ALU Opcodes (The ones that use the hardware barrel shifter): 75%
+	RSB/TST/CMP/etc
+
+//other conditional
+//z_flag=0;
+//disarmcode(0x00810002); //addeq r0,r1,r2
+//disarmcode(0x10810002); //addne r0,r1,r2
+//disarmcode(0x05910000); //ldreq r0,[r1]
+//disarmcode(0x05810000); //streq r0,[r1]
+
+//5.2 BRANCH CONDITIONAL
+//z_flag=1;
+//disarmcode(0x0afffffe); //beq label
+//disarmcode(0x1afffffd); //bne label
+//disarmcode(0x2afffffc); //bcs label
+//disarmcode(0x3afffffb); //bcc label
+//disarmcode(0x4afffffa); //bmi label
+//disarmcode(0x5afffff9); //bpl label
+//disarmcode(0x6afffff8); //bvs label
+//disarmcode(0x7afffff7); //bvc label
+//disarmcode(0x8afffff6); //bhi label
+//disarmcode(0x9afffff5); //bls label
+//disarmcode(0xaafffff4); //bge label
+//disarmcode(0xbafffff3); //blt label
+//disarmcode(0xcafffff2); //bgt label
+//disarmcode(0xdafffff1); //ble label
+//disarmcode(0xeafffff0); //b label
+
+//5.3 BRANCH WITH LINK
+//z_flag=1;
+//disarmcode(0x012fff31); //blxeq r1
+//disarmcode(0x112fff31); //blxne r1
+//disarmcode(0xe12fff31); //blx r1
+
+//disarmcode(0xe12fff11); //bx r1 pokesapp
+
+//5.4
+//AND 
+//#Imm with rotate
+//disarmcode(0xe0000001); //and r0,r0,r1
+//disarmcode(0xe20004ff); //and r0,r0,#0xff000000
+
+//shift with either #imm or register
+//disarmcode(0xe0011082); //and r1,r1,r2,lsl #0x1
+//disarmcode(0xe0011412);  //and r1,r2,lsl r4
+//disarmcode(0xe0011a12); //and r1,r2,lsl r10
+
+//disarmcode(0xe00110a2); //and r1,r2,lsr #1
+//disarmcode(0xe0011a32);	//and r1,r2,lsr r10
+//disarmcode(0xe00110c2);	//and r1,r2,asr #1
+//disarmcode(0xe0011a52);	//and r1,r2,asr r10
+//disarmcode(0xe00110e2); //and r1,r2,ror #1
+//disarmcode(0xe0011a72); //and r1,r2,ror r10
+
+//EOR
+//disarmcode(0xe2211001);  //eor r1,#1
+//disarmcode(0xe0211002);  //eor r1,r2
+
+//disarmcode(0xe0211082); //eor r1,r2,lsl #1
+//disarmcode(0xe0211a12); //eor r1,r2,lsl r10
+//disarmcode(0xe02110a2); //eor r1,r2,lsr #1
+//disarmcode(0xe0211a32); //eor r1,r2,lsr r10
+//disarmcode(0xe02110c2); //eor r1,r2,asr #1
+//disarmcode(0xe0211a52); //eor r1,r2,asr r10
+//disarmcode(0xe02110e2); //eor r1,r2,ror #1
+//disarmcode(0xe0211a72); //eor r1,r2,ror r10
+
+//SUB
+//disarmcode(0xe2411001); //sub r1,#1
+//disarmcode(0xe0411002); //sub r1,r2
+//disarmcode(0xe0411082);	//sub r1,r2,lsl #1
+//disarmcode(0xe0411a12); //sub r1,r2,lsl r10
+//disarmcode(0xe04110a2); //sub r1,r2,lsr #1
+//disarmcode(0xe0411a32); //sub r1,r2,lsr r10
+//disarmcode(0xe04110c2); //sub r1,r2,asr #1
+//disarmcode(0xe0411a52); //sub r1,r2,asr r10
+//disarmcode(0xe04110e2); //sub r1,r2,ror #1
+//disarmcode(0xe0411a72); //sub r1,r2,ror sl
+
+//RSB
+//disarmcode(0xe2611001); //rsb r1,#1
+//disarmcode(0xe0611002); //rsb r1,r2
+//disarmcode(0xe0611082); //rsb r1,r2,lsl #1
+//disarmcode(0xe0611a12); //rsb r1,r2,lsl r10
+//disarmcode(0xe06110a2);	//rsb r1,r2,lsr #1
+//disarmcode(0xe0611a32);	//rsb r1,r2,lsr r10
+//disarmcode(0xe06110c2); //rsb r1,r2, asr #1
+//disarmcode(0xe0611a52); //rsb r1,r2, asr r10
+//disarmcode(0xe06110e2);	//rsb r1,r2,ror #1
+//disarmcode(0xe0611a72);	//rsb r1,r2,ror r10
+
+//ADD
+//disarmcode(0xe2811001); //add r1,#1
+//disarmcode(0xe0811002); //add r1,r2
+//disarmcode(0xe0811082); //add r1,r2,lsl #1
+//disarmcode(0xe0811a12); //add r1,r2,lsl r10
+//disarmcode(0xe08110a2); //add r1,r2,lsr #1 
+//disarmcode(0xe0811a32); //add r1,r2,lsr r10
+//disarmcode(0xe08110c2); //add r1,r2,asr #1
+//disarmcode(0xe0811a52); //add r1,r2,asr r10
+//disarmcode(0xe08110e2); //add r1,r2,ror #1
+//disarmcode(0xe0811a72); //add r1,r2,ror r10
+//disarmcode(0xe28f0018);	//add r0,=0x08000240
+
+//disarmcode(0xe5810000); //str r0,[r1]
+
+//ADC
+//disarmcode(0xe2a11001); //adc r1,#1
+//disarmcode(0xe0a11002); //adc r1,r2
+//disarmcode(0xe0a11082); //adc r1,r2,lsl #1
+//disarmcode(0xe0a11a12); //adc r1,r2,lsl r10
+//disarmcode(0xe0a110a2); //adc r1,r2,lsr #1
+//disarmcode(0xe0a11a32); //adc r1,r2,lsr r10
+//disarmcode(0xe0a110c2); //adc r1,r2,asr #1
+//disarmcode(0xe0a11a52); //adc r1,r2,asr r10
+//disarmcode(0xe0a110e2); //adc r1,r2,ror #1
+//disarmcode(0xe0a11a72); //adc r1,r2,ror r10
+
+//SBC
+//disarmcode(0xe2c11001); //sbc r1,#1
+//disarmcode(0xe0c11002); //sbc r1,r2
+//disarmcode(0xe0c11082); //sbc r1,r2,lsl #1
+//disarmcode(0xe0c11a12); //sbc r1,r2,lsl r10
+//disarmcode(0xe0c110a2); //sbc r1,r2,lsr #1
+//disarmcode(0xe0c11a32); //sbc r1,r2,lsr r10
+//disarmcode(0xe0c110c2); //sbc r1,r2,asr #1
+//disarmcode(0xe0c11a52); //sbc r1,r2,asr r10
+//disarmcode(0xe0c110e2); //sbc r1,r2,ror #1
+//disarmcode(0xe0c11a72); //sbc r1,r2,ror r10
+
+//RSC
+//disarmcode(0xe2e11001); //rsc r1,#1
+//disarmcode(0xe0e11002); //rsc r1,r2
+//disarmcode(0xe0e11082); //rsc r1,r2,lsl #1
+//disarmcode(0xe0e11a12); //rsc r1,r2,lsl r10
+//disarmcode(0xe0e110a2); //rsc r1,r2,lsr #1
+//disarmcode(0xe0e11a32); //rsc r1,r2,lsr r10
+//disarmcode(0xe0e110c2); //rsc r1,r2,asr #1
+//disarmcode(0xe0e11a52); //rsc r1,r2,asr r10
+//disarmcode(0xe0e110e2); //rsc r1,r2,ror #1
+//disarmcode(0xe0e11a72); //rsc r1,r2,ror r10
+
+//TST
+//disarmcode(0xe3110001); //tst r1,#1
+//disarmcode(0xe1110002); //tst r1,r2
+//disarmcode(0xe1110082); //tst r1,r2,lsl #1
+//disarmcode(0xe1110a12); //tst r1,r2,lsl r10
+//disarmcode(0xe11100a2); //tst r1,r2,lsr #1
+//disarmcode(0xe1110a32); //tst r1,r2,lsr r10
+//disarmcode(0xe11100c2); //tst r1,r2,asr #1
+//disarmcode(0xe1110a52); //tst r1,r2,asr r10
+//disarmcode(0xe11100e2); //tst r1,r2,ror #1
+//disarmcode(0xe1110a72); //tst r1,r2,ror r10
+
+//TEQ
+//disarmcode(0xe3310001); //teq r1,#1
+//disarmcode(0xe1310002); //teq r1,r2
+//disarmcode(0xe1310082); //teq r1,r2,lsl #1
+//disarmcode(0xe1310a12); //teq r1,r2, lsl r10
+//disarmcode(0xe13100a2); //teq r1,r2,lsr #1
+//disarmcode(0xe1310a32); //teq r1,r2,lsr r10
+//disarmcode(0xe13100c2); //teq r1,r2,asr #1
+//disarmcode(0xe1310a52); //teq r1,r2,asr r10
+//disarmcode(0xe13100e2); //teq r1,r2,ror #1
+//disarmcode(0xe1310a72); //teq r1,r2,ror r10
+
+//CMP
+//disarmcode(0xe3510001); //cmp r1,#1
+//disarmcode(0xe1510002); //cmp r1,r2
+//disarmcode(0xe1510082); //cmp r1,r2, lsl #1
+//disarmcode(0xe1510a12); //cmp r1,r2,lsl r10
+//disarmcode(0xe15100a2); //cmp r1,r2, lsr #1
+//disarmcode(0xe1510a32); //cmp r1,r2, lsr r10
+//disarmcode(0xe15100c2); //cmp r1,r2, asr #1
+//disarmcode(0xe1510a52); //cmp r1,r2,asr r10
+//disarmcode(0xe15100e2); //cmp r1,r2,ror #1
+//disarmcode(0xe1510a72); //cmp r1,r2,ror r10
+
+//CMN
+//disarmcode(0xe3710001); //cmn r1,#1
+//disarmcode(0xe1710002); //cmn r1,r2
+//disarmcode(0xe1710082); //cmn r1,r2,lsl #1
+//disarmcode(0xe1710a12); //cmn r1,r2, lsl r10
+//disarmcode(0xe17100a2); //cmn r1,r2, lsr #1
+//disarmcode(0xe1720a32); //cmn r1,r2,lsr r10
+//disarmcode(0xe17100c2); //cmn r1,r2,asr #1
+//disarmcode(0xe1710a52); //cmn r1,r2, asr r10
+//disarmcode(0xe17100e2); //cmn r1,r2, ror #1
+//disarmcode(0xe1710a72); //cmn r1,r2, ror r10
+
+//ORR
+//disarmcode(0xe3811001); //orr r1,#1
+//disarmcode(0xe1811002); //orr r1,r2 
+//disarmcode(0xe1811082); //orr r1,r2,lsl #1
+//disarmcode(0xe1811a12); //orr r1,r2,lsl r10
+//disarmcode(0xe18110a2); //orr r1,r2,lsr #1
+//disarmcode(0xe1811a32); //orr r1,r2,lsr r10
+//disarmcode(0xe18110c2); //orr r1,r2,asr #1
+//disarmcode(0xe1811a52); //orr r1,r2,asr r10
+//disarmcode(0xe18110e2); //orr r1,r2,ror #1
+//disarmcode(0xe1811a72); //orr r1,r2,ror r10
+
+//MOV
+//disarmcode(0xe3a01001); //mov r1,#1
+//disarmcode(0xe1a01002); //mov r1,r2
+//disarmcode(0xe1b01082); //movs r1,r1,lsl #1
+//disarmcode(0xe1b01a12); //movs r1,r1,lsl r10
+//disarmcode(0xe1b010a2); //movs r1,r1,lsr #1
+//disarmcode(0xe1b01a32); //movs r1,r1,lsr r10
+//disarmcode(0xe1b010c2); //movs r1,r1,asr #1
+//disarmcode(0xe1b01a52); //movs r1,r1,asr r10
+//disarmcode(0xe1b010e2); //movs r1,r1,ror #1
+//disarmcode(0xe1b01a72); //movs r1,r1,ror r10
+//disarmcode(0xe1a0e00f); //mov r14,r15 (poke sapp)
+
+
+//MVN
+//disarmcode(0xe3e01001); //mvn r1,#1
+//disarmcode(0xe1e01002); //mvn r1,r2
+//disarmcode(0xe1e01082); //mvn r1,r2,lsl #1
+//disarmcode(0xe1e01a12); //mvn r1,r2,lsl r10
+//disarmcode(0xe1e010a2); //mvn r1,r2, lsr #1
+//disarmcode(0xe1e01a32); //mvn r1,r2, lsr r10
+//disarmcode(0xe1e010c2); //mvn r1,r2, asr #1
+//disarmcode(0xe1e01a52); //mvn r1,r2, asr r10
+//disarmcode(0xe1e010e2); //mvn r1,r2, ror #1
+//disarmcode(0xe1e01a72); //mvn r1,r2,ror r10
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//disarmcode(0xe19000f1); 		//ldrsh r0,[r0,r1]
+//disarmcode(0xe59f2064);		//ldr r2,[pc, #100]
+//disarmcode(0xe3a01000);		//mov r1,#0
+//disarmcode(0xe3b01000);		//bad opcode mov r1,#0 with S bit set
+
+//disarmcode(0xe1b00801);	//lsl r0,r1,#0x10
+//disarmcode(e1b00211);	//lsl r0,r1,r2
+
+//disarmcode(0xe24000ff);		//sub r0,r0,#0xff
+//disarmcode(0xe0400001);	//sub r0,r0,r1
+//disarmcode(0xe27000ff); //rsbs r0,#0xff
+//disarmcode(0xe0700001); //rsbs r0,r1
+//disarmcode(0xe28004ff);		//add r0,#0xff000000
+//disarmcode(0xe0800001); //add r0,r1
+//disarmcode(0xe2a00333); //adc r0,#0xcc000000
+//disarmcode(0xe0a00001);	//adc r0,r1
+//disarmcode(0xe2d004dd);	//sbc r0,#0xdd000000
+//disarmcode(0xe0d00001);	//sbc r0,r1
+//disarmcode(0xe2e004dd);	//rsc r0,#0xdd000000
+//disarmcode(0xe0e00001);	//rsc r0,r1
+//disarmcode(0xe31004dd);	//tst r0,#0xdd000000
+//disarmcode(0xe1100001);	//tst r0,r1
+//disarmcode(0xe33004bb); //teq r0,#0xbb000000
+//disarmcode(0xe1300001);	//teq r0,r1
+//disarmcode(0xe35004aa);	//cmp r0,0xaa000000
+//disarmcode(0xe1500001);	//cmp r0,r1
+//disarmcode(0xe37004aa); 	//cmn r0,#0xaa000000
+//disarmcode(0xe1700001);		//cmn r0,r1
+//disarmcode(0xe38004aa); //orr r0,#0xaa000000
+//disarmcode(0xe1800001); //orr r0,r1
+//disarmcode(0xe3a004aa); //mov r0,#0xaa000000
+//disarmcode(0xe1a00001); //mov r0,r1
+//disarmcode(0xe3c004aa); //bic r0,#0xaa000000
+//disarmcode(0xe1c00001); //bic r0,r1
+//disarmcode(0xe3e004aa); //mvn r0,#0xaa000000
+//disarmcode(0xe1e00001); //mvn r0,r1
+//disarmcode(0xe1b00801); //lsl r0,r1,#0x10
+//disarmcode(0xe1b00211); //lsl r0,r1,r2
+
+//cpsr test
+//disarmcode(0xe10f0000); //mrs r0,CPSR
+//cpsrvirt=0;
+//disarmcode(0xe129f000); //msr CPSR_fc, r0
+
+//spsr test
+//disarmcode(0xe14f0000); //mrs r0,spsr
+//spsr_last=0;
+//disarmcode(0xe169f000); //msr spsr,r0
+
+//5.5
+//CPSR
+//disarmcode(0xe10f0000); //mrs r0,CPSR
+//disarmcode(0xe129f000); //msr CPSR_fc, r0
+//disarmcode(0xe329f20f); //msr CPSR_fc, #0xf0000000
+//disarmcode(0xf328f004); //msr cpsr,#imm transfer to psr
+//disarmcode(0xf128f00f); //msr cpsr,pc transfer to psr
+//disarmcode(0xe129f000); //pokesapp
+
+//SPSR
+//disarmcode(0xe14f0000); //mrs r0,spsr
+//disarmcode(0xe169f000); //msr spsr,r0
+//disarmcode(0xe369f20f); //msr spsr,#0xf0000000
+//disarmcode(0xf368f004); //msr spsr,#imm transfer to psr
+//disarmcode(0xf168f00f); //msr spsr,pc transfer to psr
+
+//5.6 MUL
+//disarmcode(0xe00a0592); 	//mul r10,r2,r5 (no cpsr flags)
+//disarmcode(0xe01a0592);		//mul r10,r2,r5 (cpsr enabled flag)
+
+//disarmcode(0xe02a5192); //mla r10,r2,r1,r5 (rd = (rs*rn)+rm)
+//untested but unused?
+//disarmcode(0xe0100292); //muls r0,r2,r2
+//disarmcode(0xb0020293); //mullt r2,r3,r2
+//disarmcode(0x70388396); //mlasvc r8,r6,r3,r8
+//disarmcode(0xe04a0592); //purposely broken mul r10,r2,r5
+
+//5.7 STR/LDR
+//disarmcode(0xe7b21004); //ldr r1,[r2,r4]!
+//disarmcode(0xe7a21004); //str r1,[r2,r4]!
+//disarmcode(0xe59f1150);	//ldr r1,=0x3007ffc (pok\E9mon sapp compiler) (pc+0x150)
+//disarmcode(0xe59f1148);	//ldr r1,=0x8000381
+
+//disarmcode(0xe59f103c);	//ldr r1,=0x3007ffc (own compiler)
+
+
+//disarmcode(0xe6921004); //ldr r1,[r2],r4
+//disarmcode(0xe5821010); //str r1,[r2,#0x10]
+//disarmcode(0xe7821103); //str r1,[r2,r3,lsl #2]
+//disarmcode(0x05861005); //streq r1,[r6,#5]
+
+//disarmcode(0xe6821004); //ldr r1,[r2,#0x10]
+//disarmcode(0xe7921103); //ldr r1,[r2,r3,lsl #2]
+//disarmcode(0x05961005); //ldreq r1,[r6,#0x5]
+//disarmcode(0xe59f5040); //ldr r5,[pc, #0x40]
+
+//5.8 LDM/STM
+
+ //test ldm/stm 5.8 (requires (u32)&gbabios[0] on r0 first)
+/*
+disarmcode(0xe880ffff); //stm r0,{r0-r15}
+
+//clean registers
+for(i=0;i<16;i++){
+	if(i!=0x0 )
+		exRegs[i]=0x0;
+
+}
+exRegs[0x0]=(u32)gbabios;
+rom=0;
+disarmcode(0xe890ffff); //ldm r0,{r0-r15}
+*/
+
+//5.8 ldm/stm with PC
+
+//disarmcode(0xe92d8000);//stm r13!,{pc}
+//rom=0x0;
+//disarmcode(0xe97d8000);	//ldm sp!,{pc}^ //pre-indexed (sub)
+
+
+//without PSR
+//disarmcode(0xe880ffff); //stm r0,{r0-r15}
+//disarmcode(0xe890ffff); //ldm r0,{r0-r15}
+
+//with PSR
+//disarmcode(0xe880ffff); //stm r0,{r0-r15}
+//disarmcode(0xe8d0ffff); //ldm r0,{r0-r15}^
+
+//stack test
+/*
+disarmcode(0xe92d0007);		//push {r0,r1,r2} (writeback enabled and post-bit enabled / add offset base)
+disarmcode(0xe93d0007);		//pop {r0,r1,r2} (writeback enabled and pre-bit enabled // subs offset bast)
+*/
+//disarmcode(0xe8bd8000);	//pop {pc}
+
+//disarmcode(0xe92d8000);//stm r13!,{pc}
+
+//disarmcode(0xe8fd8000);	//ldm sp!,{pc}^ //post-indexed
+//disarmcode(0xe9fd8000);	//ldm sp!,{pc}^ //pre-indexed (add)
+//	disarmcode(0xe97d8000);		//ldm sp!,{pc}^ //pre-indexed (sub)
+
+//disarmcode(0xe96d7fff);	//stmdb sp!,{r0-r14}^
+//disarmcode(0xe82d400f);	//stmda sp!,{r0-r3,lr}
+
+//disarmcode(0xe59f5048);	//ldr r5,[pc,#72]
+//disarmcode(0xe8956013);	//ldm r5,{r0,r1,r4,sp,lr}
+//disarmcode(0xe9bd800f);	//ldmib sp!,{r0,r1,r2,r3,pc}
+
+//5.9 SWP
+//disarmcode(0xe1020091); 	//swp r0,r1,[r2]
+//disarmcode(0xe1420091);		//swpb r0,r1,[r2]
+//disarmcode(0x01010090);	//swpeq r0,r0,[r1]
+
+//5.10 swi / svc call
+//z_flag=1;
+//c_flag=0;
+//disarmcode(0xef000010);	    //swi 0x10
+
+//5.15 undefined
+//disarmcode(0xe755553e);
+
+------------------------------------------------------------------------------------------------------------
+
+Thumb Mode:
+add : 60%
+load/stores (word/halfword/byte/ldm/stm) : 60%
+ALU Opcodes (The ones that use the hardware barrel shifter): 0%
+
+//0x008b lsl rd,rs,#Imm (5.1)
+//0x1841 adds rd,rs,rn / 0x1a41 subs rd,rs,rn / #Imm (5.2)
+//0x3c01 subs r4,#1 (5.3) 
+//0x40da lsrs rd,rs (5.4)
+//0x4770 bx lr / 0x449c add ip,r3 (5.5)
+//0x4e23 LDR RD,[PC,#Imm] (5.6)
+//0x5158 str r0,[r3,r5] / 0x58f8 ldr r0,[r7,r3] (5.7)
+//0x5e94 ldsh r0,[r3,r4] (5.8)
+//0x69aa ldr r2,[r5,#24] / 0x601a str r2,[r3,#0] (5.9)
+//0x87DB ldrh r3,[r2,#3] // 0x87DB strh r3,[r2,#3] (5.10)
+//0x97FF str rd,[sp,#Imm] / 0x9FFF ldr rd,[sp,#Imm] (5.11)
+//0xa2e1 rd,[pc,#Imm] / 0xaae1 add rd,[sp,#Imm] (5.12)
+//0xb01a add sp,#imm / 0xb09a add sp,#-imm(5.13)
+//0xb4ff push {rlist} / 0xb5ff push {Rlist,LR} / 0xbcff pop {Rlist} / 0xbdff pop {Rlist,PC}
+//0xc7ff stmia rb!,{rlist} / 0xcfff ldmia rb!,{rlist} (5.15)
+
+//(5.16)
+//0xd0ff BEQ label / 0xd1ff BNE label / 0xd2ff BCS label / 0xd3ff BCC label 
+//0xd4ff BMI label / 0xd5ff BPL label / 0xd6ff BVS label / 0xd7ff BVC label
+//0xd8ff BHI label / 0xd9ff BLS label / 0xdaff BGE label / 0xdbff BLT label
+//0xdcff BGT label / 0xddff BLE label
+
+//0xdfff swi #value8 (5.17)
+//0xe7ff b(al) PC-relative area (5.18)
+//0xf7ff 1/2 long branch
+//0xffff 2/2 long branch (5.19)
+
+//Push / Pop: 95%
+PUSH / POP :
+PUSH r0-r7,LR / POP r0,-r7,PC:
+
+//disthumbcode(0x4708); //bx r1 (branch to ARM mode)
+//disthumbcode(0x4709); //bx r1 (branch to thumb mode)
+//disthumbcode(0x472d); //bx r5 (branch to thumb code)
+//branch test
+//disthumbcode(0x2901); 	//cmp r1,#0x1
+//disthumbcode(0xd080);		//beq #0x100
+//disthumbcode(0xdf01);	//swi #1
+
+
+//0x80 lsl r0,r0[8],#2  / 0x880 lsr r0,r0[0x20],#2 / 0x1080 asr r0,r0[0xffffffff], #3 (5.1) hw CPSR OK!
+//0x188b add r3,r1,r2 / 0x1a8b sub r3,r1[0x10],r2[0xc4] / 0x1dcb add r3,r1[0x10],#7 / 0x1fcb sub r3,r1[0x10],#0x7 (5.2) hw CPSR OK!
+//0x23fe mov r3,#0xfe / 0x2901 cmp r1,#0x1 / 0x3120 add r1,#0x20 / 0x3c01 sub r4,#1 = 0xffffffff (5.3) hw CPSR OK!
+//0x400a and r2,r1   /0x404a eor r2,r1 / 0x408a lsl r2,r1 / 0x40da lsr r2,r3 / 0x4111 asr r1,r2 / 0x4151 adc r1,r2 / 0x4191 sbc r1,r2 / 0x41d1 ror r1,r2 / 0x4211 tst r1,r2 / 0x424a neg r2,r1 / 0x4291 cmp r1,r2 / 0x42d1 cmn r1,r2 / 0x4311 orr r2,r2,r1 / 0x4351 mul r1,r1,r2 / 0x4391 bic r1,r1,r2 / 0x43d1 mvn r1,r2  (5.4) hw CPSR OK!
+//0x4478 add r0,r15 / 0x449c add ip(r12),r3 / 0x44f6 add r14,r14 /0x456e cmp rd, hs / 0x459e cmp hd, rs / 0x45f7 cmp pc,lr / 0x4678 mov r1,pc / 0x4687 mov pc,r0  / 0x46f7 mov hd,hs / 0x4708 bx r1 (arm) / 0x4709 (thumb) / 0x4770 bx lr (arm) / 0x4771 bx lr (thumb) / (5.5) hw CPSR OK!. pending branch opcodes because ARM disassembler is missing..!
+//0x4820 ldr r0,[pc,#0x20] (5.6)  hw CPSR OK!.
+//0x5158 str r0,[r3,r5] / 0x5558 strb r0,[r3,r5] / 0x58f8 ldr r0,[r7,r3] / 0x5d58 ldrb r0,[r3,r5]  (5.7) hw CPSR OK!
+//0x5358 strh r0,[r5,r3] / 0x5758 ldrh r0,[r3,r5] / 0x5b58 ldsb r0,[r3,r5] / 0x5f58 ldsh r0,[r3,r5] (5.8) hw CPSR OK!
+//0x6118 str r0,[r3,#0x10]  / 0x6858 ldr r0,[r3,#0x4] / 0x7058 strb r0,[r3,#0x4] /0x7858 ldrb r0,[r3,#0x4] (5.9) OK
+//0x8098 strh r0,[r3,#0x4] / 0x8898 ldrh r0,[r3,#0x8] (5.10) 
+//0x9302 str r3,[sp,#0x8] / 0x9b02 ldr r3,[sp,#0x8] (5.11) OK
+//0xaf02 add r0,[sp,#0x8] / 0xa002 add r0,[pc,#0x8] (5.12) OK
+
+//0xb01a add sp,#imm / 0xb09a subs sp,#imm(5.13) OK
+//b4ff push r0-r7 / 0xb5ff push r0-r7,LR / 0xbcff pop r0-r7 / 0xbdff pop r0-r7,PC OK
+//0xc3ff stmia r3!, {r0-r7} / 0xcfff ldmia rb!,{r0-r7} (5.15)
+
+//(5.16)
+//0xd0ff BEQ label / 0xd1ff BNE label / 0xd2ff BCS label / 0xd3ff BCC label 
+//0xd4ff BMI label / 0xd5ff BPL label / 0xd6ff BVS label / 0xd7ff BVC label
+//0xd8ff BHI label / 0xd9ff BLS label / 0xdaff BGE label / 0xdbff BLT label
+//0xdcff BGT label / 0xddff BLE label
+
+//0xdfff swi #value8 (5.17)
+//0xe7ff b(al) PC-relative area (5.18)
+//0xf7ff 1/2 long branch
+//0xffff 2/2 long branch (5.19)
+
+
+Branch With Link seems to work more or less OK, might be some bugs
+
+------------------------------------------------------------------------------------------------------------
+
+Software (registers) calling convention:
+
+ARM:			Also ARM:
+@r0				a1 		(Argument 1/ User Scratchpad Reg #1)/Result
+@r1				a2 		(Argument 2/ User Scratchpad Reg #2)/Result
+@r2				a3 		(Argument 3/ User Scratchpad Reg #3)/Result
+@r3				a4 		(Argument 4/ User Scratchpad Reg #4)/Result
+@r4				s1/v1	(Register Variable)
+@r5				s2/v2	(Register Variable)
+@r6				s3/v3	(Register Variable)
+@r7				s4/v4	(Register Variable)
+@r8				s5/v5	(Register Variable)
+@r9				sb/v6	(Static Base/Register Variable)
+@r10			sl/v7	(Stack Limit/Stack Chunk Handle/Register Variable)
+@r11			fp/v8	(Frame Pointer/Register Variable)
+@r12			ip 		(Scratch register/New -sb in inter-link-unit calls)
+@r13			sp 		(Stack Pointer/ Lower end of the current stack frame)
+@r14			lr 		(Link Register/ Scratch Register)
+@r15			pc 		(Program Counter)
+
+These bits are critical to understanding how to reverse engineer code, since all ARM Code (Be it GCC or through the official Arm Developer Suite - ADS) follows that convention.

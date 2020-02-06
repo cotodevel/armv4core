@@ -69,13 +69,6 @@ extern u32 cpuirq(u32 cpumode);
 extern u32 ndsvcounter();
 
 //GBACore
-extern u32  gbachunk;		//gba read chunk
-extern u32  dummyreg;		//any purpose destroyable 4 byte chunk
-extern u32  dummyreg2;		//any purpose destroyable 4 byte chunk
-extern u32  dummyreg3;		//any purpose destroyable 4 byte chunk
-extern u32  dummyreg4;		//any purpose destroyable 4 byte chunk
-extern u32  dummyreg5;		//any purpose destroyable 4 byte chunk
-extern u32  bios_irqhandlerstub_C;	//irq handler word aligned pointer for ARM9
 
 //gba virtualized r0-r15 registers
 extern u32  exRegs[0x10]; //placeholder for actual CPU mode registers

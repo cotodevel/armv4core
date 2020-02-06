@@ -54,8 +54,6 @@ extern u8 * gbaoam;	//[0x400];
 extern u8 * gbacaioMem;	//[0x400];
 extern u8 * saveram;	//[128*1024]; //128K
 extern u8 * iomem[0x400];
-extern u32 tempbuffer[1024*1]; //1K test
-extern u32 tempbuffer2[1024*1]; //1K test
 extern volatile u32 disk_buf[chucksize];
 extern u8 first32krom[1024*32];
 

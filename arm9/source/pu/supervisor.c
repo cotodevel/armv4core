@@ -150,7 +150,6 @@ return address;
 }
 
 
-//coto
 //cpuupdateticks()
 int __attribute((hot)) cpuupdateticks(){
 
@@ -526,7 +525,7 @@ u32 cpuloop(int ticks){
 				return 0;
 		}//end if there's a new event
 	
-	//}//endmain looper //coto
+	//}//endmain looper
 
 return 0;
 }
@@ -1103,9 +1102,10 @@ u8 __attribute__ ((hot)) cpuread_byte(u32 address){
 //#endif
 
 switch(address >> 24) {
-	case 0:
-		fastldr((u8*)&dummyreg, exRegs, (0xf), 32,0);	//PC fetch
-		if ((dummyreg) >> 24) {
+	case 0:{
+		u32 destroyableRegister = 0;
+		fastldr((u8*)&destroyableRegister, exRegs, (0xf), 32,0);	//PC fetch
+		if ((destroyableRegister) >> 24) {
 			if(address < 0x4000) {
 				#ifdef DEBUGEMU
 					printf("byte: bios protected read! (%x) ",(unsigned int)address);
@@ -1121,6 +1121,7 @@ switch(address >> 24) {
 	
 		//return bios[address & 0x3FFF];
 		return u8read((u32)bios+(address & 0x3FFF));
+	}
 	break;
 	case 2:
 		#ifdef DEBUGEMU
@@ -1176,7 +1177,6 @@ switch(address >> 24) {
 		return u8read((u32)oam+(address & 0x3ff));
 	break;
 	case 8: case 9: case 10: case 11: case 12:
-		//coto
 		#ifndef ROMTEST
 			return (u8)(stream_readu8(address % 0x08000000)); //gbareads SHOULD NOT be aligned
 		#endif
@@ -1276,9 +1276,10 @@ u16 __attribute__ ((hot)) cpuread_hword(u32 address){
 
 u32 value=0;
 switch(address >> 24) {
-	case 0:
-	fastldr((u8*)&dummyreg, exRegs, (0xf), 32,0); 
-		if ((dummyreg) >> 24) {
+	case 0:{
+		u32 destroyableRegister = 0;
+		fastldr((u8*)&destroyableRegister, exRegs, (0xf), 32,0); 
+		if ((destroyableRegister) >> 24) {
 			if(address < 0x4000) {
 				//value = ldru16extasm((u32)(u8*)biosProtected,(address&2)); 	//value = READ16LE(((u16 *)&biosProtected[address&2]));
 				//#ifdef DEBUGEMU
@@ -1301,6 +1302,7 @@ switch(address >> 24) {
 			//value = READ16LE(((u16 *)&bios[address & 0x3FFE]));
 			value = u16read((u32)bios+(address & 0x3FFE));
 		}
+	}
 	break;
 	case 2:
 			#ifdef DEBUGEMU
@@ -1469,9 +1471,10 @@ u32 __attribute__ ((hot)) cpuread_word(u32 address){
 
 	u32 value=0;
 	switch(address >> 24) {
-		case 0:
-			fastldr((u8*)&dummyreg, exRegs, (0xf), 32,0); //pc
-			if(dummyreg >> 24) {
+		case 0:{
+			u32 destroyableRegister = 0;
+			fastldr((u8*)&destroyableRegister, exRegs, (0xf), 32,0); //pc
+			if(destroyableRegister >> 24) {
 				if(address < 0x4000) {
 					//value = READ32LE(((u32 *)&biosProtected));
 					//value = ldru32asm((u32)(u8*)biosProtected,0x0);
@@ -1500,9 +1503,9 @@ u32 __attribute__ ((hot)) cpuread_word(u32 address){
 				#ifdef DEBUGEMU
 					printf("Word bios read! (%x)[%x] ",(unsigned int)((u32)(u8*)bios+address),(unsigned int)*(u32*)((u32)(u8*)bios+address));
 				#endif
-			
 				value = u32read((u32)bios+address);
 			}
+		}
 		break;
 		case 2:
 			#ifdef DEBUGEMU

@@ -891,7 +891,6 @@ int utilload(const char *file,u8 *data,int size,bool extram){ //*file is filenam
 	
 	printf("bios OK!");
 	/*
-		// tempbuffer2 
 		printf(" /// GBABIOS @ %x //",(unsigned int)(u8*)bios);
 			
 		for(i=0;i<16;i++){

@@ -779,8 +779,6 @@ u32 __attribute__ ((hot)) swi_virt(u32 swinum){
             //ori
             //gba4ds_swiIntrWait(1,(GBAIE & 0x6080));
             
-            //coto: new safe GBA SWI sleepmode
-            ////execute_arm7_command(0xc0700103,0x0,0x0);
 		}
         break;
         case 0x04:
@@ -807,11 +805,9 @@ u32 __attribute__ ((hot)) swi_virt(u32 swinum){
             ////execute_arm7_command(0xc0700100,0x1FFFFFFB,0x0);
             //gba4ds_swiWaitForVBlank();
             
-            //coto: new sleep mode 
             //gba4ds_swiWaitForVBlank();
             ////execute_arm7_command(0xc3730100,0x0,0x0);
             
-            //coto: speedup games that run on vblank (breaks vblank dependant games) 
             //asm("mov r0,#1");
             //asm("mov r1,#1");
             //HALTCNT_ARM9OPT();
@@ -876,7 +872,6 @@ u32 __attribute__ ((hot)) swi_virt(u32 swinum){
             bios_diff16bitunfilter();
 		break;
         
-        //coto: added soundbias support
         case 0x19:
         {
             //#ifdef DEV_VERSION
@@ -1256,7 +1251,6 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
 __attribute__ ((hot))
 void  CPUUpdateRegister(u32 address, u16 value)
 {
-    //coto
   switch(address) {
     
   #ifdef own_bg_render
@@ -1266,8 +1260,6 @@ void  CPUUpdateRegister(u32 address, u16 value)
     
         //well, this part 1/2: setup vram and engines
         //  part 2/2 redirects all writes to each tile sections / map sections of current gba video mode
-		
-		//coto: get tile/map screen sizes
 		
 		switch(value & 0x7){
 		
@@ -1473,7 +1465,6 @@ void  CPUUpdateRegister(u32 address, u16 value)
 				REG_DISPCNT = (dsValue | BIT(11)); //enable BG3
 				if((GBADISPCNT & 7) != (value & 7))
 				{
-					//coto: adjust the enum definitions to an addressable u32 by the ARMv5 core.
 					//8<<2 = bit 32 (but it is bit 31)
 					if((value & 7) == 4)
 					{
@@ -2460,7 +2451,6 @@ u32 CPUReadMemory(u32 address)
   switch(address >> 24) {
   case 0:
 			if(address < 0x4000) {
-				//coto:
 				#ifdef require_gbabios
 					value = READ32LE(((u8 *)&bios[address & 0x3FFC]));
 				#else
@@ -2692,7 +2682,6 @@ u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is sma
   switch(address >> 24) {
   case 0:
 			if(address < 0x4000) {
-			//coto:
 			#ifdef require_gbabios
 				value = READ16LE(((u8 *)&bios[address & 0x3FFE]));
 			#else
@@ -2932,7 +2921,6 @@ printf("r8 %02x",address);
   switch(address >> 24) {
   case 0:
 			if(address < 0x4000) {
-				//coto: 
 				#ifdef require_gbabios
 					return bios[address & 0x3FFF];
 				#else
@@ -3438,7 +3426,7 @@ void CPUWriteByte(u32 address, u8 b)
 			case 0x9d:
 			case 0x9e:
 			case 0x9f:
-				//ori: soundEvent(gba, address&0xFF, b); //coto: sound writes are cpu write bytes (strb)
+				//ori: soundEvent(gba, address&0xFF, b); //sound writes are cpu write bytes (strb)
 				//execute_arm7_command(0xc0700100,(u32)address&0xFF, (u32)b);
 			break;
 			case 0x301: // HALTCNT, undocumented

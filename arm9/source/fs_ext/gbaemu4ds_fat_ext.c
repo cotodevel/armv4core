@@ -40,7 +40,6 @@ void generatefilemap(FILE * f, int size)	//FILE * f is already open at this poin
 		while(1==1){}
 	}
 	
-	//Coto Todo: chucksize replace by sectorSize so its SD dependant and implementation does not break on cards that aren't 512 bytes per sector lol
 	//setblanc
 	int i = 0;
 	while(i < (getDiskClusterSizeBytes()/chucksize)*clusCount+1)

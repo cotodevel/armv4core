@@ -609,35 +609,7 @@ bx lr
 @EWRAM variables
 @---------------------------------------------------------------------------------------------------------------
 
-@--------------------------------------------C IRQ handler word aligned pointer	
-.global gbachunk
-gbachunk:
-	.word 0x00000000
-
 @--------------------------------- emulator interruptable registers / variables
-
-@-- destroyable regs (for virtual stack opcodes)
-.global dummyreg
-dummyreg:
-	.word 0x00000000
-	
-.global dummyreg2
-dummyreg2:
-	.word 0x00000000
-
-.global dummyreg3
-dummyreg3:
-	.word 0x00000000
-
-@so far here
-
-.global dummyreg4
-dummyreg4:
-	.word 0x00000000
-
-.global dummyreg5
-dummyreg5:
-	.word 0x00000000
 	
 @-- address patches
 .global addrpatches
@@ -837,9 +809,6 @@ gbastckmodeadr_curr:
 gbastckfpadr_spsr:
 	.word 0x00000000
 
-@.equ REG_BASE,	0x04000000
-@.equ REG_IME,	0x04000208
-
 @The ARM9 Exception Vectors are located at FFFF0000h. The IRQ handler redirects to [DTCM+3FFCh].
 @= ADDRESS of label (phys location), dereference address and you get offset content
 
@@ -909,10 +878,6 @@ call_adrstack:
 @--------------------------------------------------------------------------------
 @.section	.dtcm,"ax",%progbits
 @--------------------------------------------------------------------------------
-
-.global rom						@GBA virtual Program Counter, Instruction Pointer
-rom:
-	.word 0x00000000
 	
 .global romsize					@no need to allocate to dtcm , its already on dtcm
 romsize:

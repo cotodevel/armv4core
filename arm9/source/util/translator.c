@@ -182,17 +182,10 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 						if((u32)updatestackfp(gbastckfp_usr,gbastckadr_usr) != (u32)0){
 					
 						//store LR to actual (pre-SPSR'd) Stack
-						dummyreg=exRegs[0xe];
-						//stmiavirt((u8*)&dummyreg, (u32)(u32*)gbastckfp_usr, 1 << 0xe, 32, 0);
-						faststr((u8*)&dummyreg, ((u32*)gbastckfp_usr[0]), (0xe), 32,0);
+						gbastckfp_usr[0]=exRegs[0xe];
 						
 						//store PC to actual (pre-SPSR'd stack)
-						dummyreg=(u32)(u32*)(exRegs[0xf]&0xfffffffe); //PC
-						//stmiavirt((u8*)&dummyreg, (u32)(u32*)gbastckfp_usr+0x1, 1 << 0xf, 32, 0);
-						faststr((u8*)&dummyreg, 
-						//(u32)(u32*)gbastckfp_usr+0x1
-						((u32*)gbastckfp_usr[1])
-						, (0xf), 32,0);
+						gbastckfp_usr[1] = exRegs[0xf];
 						
 						//increase fp by the ammount of regs added
 						gbastckfp_usr=(u32*)addspvirt((u32)(u32*)gbastckfp_usr,2);
@@ -439,52 +432,46 @@ switch(thumbinstr>>11){
 	//LSL opcode
 	case 0x0:
 		//extract reg
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&7), 32,0);
-		
-		dummyreg2=lslasm(dummyreg,((thumbinstr>>6)&0x1f));
+		u32 destroyableRegister = exRegs[((thumbinstr>>3)&7)];
+		u32 destroyableRegister2 = lslasm(destroyableRegister,((thumbinstr>>6)&0x1f));
 		#ifdef DEBUGEMU
-		printf("LSL r%d[%x],r%d[%x],#%x (5.1)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)((thumbinstr>>6)&0x1f));
+		printf("LSL r%d[%x],r%d[%x],#%x (5.1)",(int)(thumbinstr&0x7),(unsigned int)destroyableRegister2,(int)((thumbinstr>>3)&0x7),(unsigned int)destroyableRegister,(unsigned int)((thumbinstr>>6)&0x1f));
 		#endif
+		exRegs[(thumbinstr&0x7)] = destroyableRegister2;
+		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
-		//update desired stack reg	
-		faststr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	break;
 	
 	//LSR opcode
 	case 0x1: 
 		//extract reg
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&7), 32,0);
-		
-		dummyreg2=lsrasm(dummyreg,((thumbinstr>>6)&0x1f));
+		u32 destroyableRegister = exRegs[((thumbinstr>>3)&7)];
+		u32 destroyableRegister2 = lsrasm(destroyableRegister,((thumbinstr>>6)&0x1f));
 		#ifdef DEBUGEMU
-		printf("LSR r%d[%x],r%d[%x],#%x (5.1)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)((thumbinstr>>6)&0x1f));
+		printf("LSR r%d[%x],r%d[%x],#%x (5.1)",(int)(thumbinstr&0x7),(unsigned int)destroyableRegister2,(int)((thumbinstr>>3)&0x7),(unsigned int)destroyableRegister,(unsigned int)((thumbinstr>>6)&0x1f));
 		#endif
+		exRegs[(thumbinstr&0x7)] = destroyableRegister2;
+		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
-		//update desired stack reg	
-		faststr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	break;
 	
 	//ASR opcode
 	case 0x2:
 		//extract reg
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&7), 32,0);
-		
-		dummyreg2=(u32)asrasm((int)dummyreg,((thumbinstr>>6)&0x1f)); //dummyreg=lslasm(dummyreg,((thumbinstr>>6)&0x1f));
+		u32 destroyableRegister = exRegs[((thumbinstr>>3)&7)];
+		u32 destroyableRegister2 = (u32)asrasm((int)destroyableRegister,((thumbinstr>>6)&0x1f));
 		#ifdef DEBUGEMU
-		printf("ASR r%d[%x],r%d[%x],#%x (5.1)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)((thumbinstr>>6)&0x1f));
+		printf("ASR r%d[%x],r%d[%x],#%x (5.1)",(int)(thumbinstr&0x7),(unsigned int)destroyableRegister2,(int)((thumbinstr>>3)&0x7),(unsigned int)destroyableRegister,(unsigned int)((thumbinstr>>6)&0x1f));
 		#endif
+		exRegs[(thumbinstr&0x7)] = destroyableRegister2;
+		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
-		//update desired stack reg	
-		faststr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	break;
 	
 	//5.3
@@ -494,74 +481,66 @@ switch(thumbinstr>>11){
 		#ifdef DEBUGEMU
 		printf("mov r%d,#0x%x (5.3)",(int)((thumbinstr>>8)&0x7),(unsigned int)thumbinstr&0xff);
 		#endif
-		dummyreg=movasm((u32)(thumbinstr&0xff));
+		u32 destroyableRegister = movasm((u32)(thumbinstr&0xff));
+		exRegs[((thumbinstr>>8)&0x7)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
-		//update desired stack reg	
-		faststr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
-	return 0;
+		return 0;
 	break;
 	
 	//cmp / compare contents of rd with #imm bit[0-8] / gba flags affected
 	case 0x5:
 		//rs
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("cmp r%d[%x],#0x%x (5.3)",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg,(unsigned int)(thumbinstr&0xff));
+		printf("cmp r%d[%x],#0x%x (5.3)",(int)((thumbinstr>>8)&0x7),(unsigned int)exRegs[((thumbinstr>>8)&0x7)],(unsigned int)(thumbinstr&0xff));
 		#endif
-		cmpasm(dummyreg,(u32)thumbinstr&0xff);
+		cmpasm(exRegs[((thumbinstr>>8)&0x7)],(u32)thumbinstr&0xff);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-	return 0;
+		return 0;
 	break;
 	
 	//add / add #imm bit[7] value to contents of rd and then place result on rd
 	case 0x6:
 		//rn
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
 		#ifdef DEBUGEMU
-		printf("add r%d[%x], #%x (5.3)", (int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg,(unsigned int)(thumbinstr&0xff));
+		printf("add r%d[%x], #%x (5.3)", (int)((thumbinstr>>8)&0x7),(unsigned int)exRegs[((thumbinstr>>8)&0x7)],(unsigned int)(thumbinstr&0xff));
 		#endif
-		dummyreg=addasm(dummyreg,(thumbinstr&0xff));
+		u32 destroyableRegister = addasm(exRegs[((thumbinstr>>8)&0x7)],(thumbinstr&0xff));
+		//done? update desired reg content
+		exRegs[((thumbinstr>>8)&0x7)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
-		//done? update desired reg content
-		faststr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
-	return 0;
+		return 0;
 	break;
 	
 	//sub / sub #imm bit[0-8] value from contents of rd and then place result on rd
 	case 0x7:	
-	//rn
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
+		//rn
 		#ifdef DEBUGEMU
-		printf("sub r%d[%x], #%x (5.3)", (int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg,(unsigned int)(thumbinstr&0xff));
+		printf("sub r%d[%x], #%x (5.3)", (int)((thumbinstr>>8)&0x7),(unsigned int)exRegs[((thumbinstr>>8)&0x7)],(unsigned int)(thumbinstr&0xff));
 		#endif
-		dummyreg=subasm(dummyreg,(thumbinstr&0xff));
+		u32 destroyableRegister = subasm(exRegs[((thumbinstr>>8)&0x7)],(thumbinstr&0xff));
+		//done? update desired reg content
+		exRegs[((thumbinstr>>8)&0x7)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
-		//done? update desired reg content
-		faststr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
-	return 0;
+		return 0;
 	break;
 
 	//5.6
 	//PC relative load WORD 10-bit Imm
 	case 0x9:
-		dummyreg2=cpuread_word(((exRegs[0xf]&0xfffffffe)+0x4)+((thumbinstr&0xff)<<2)); //[PC+0x4,#(8<<2)Imm] / because prefetch and alignment
+		u32 destroyableRegister = cpuread_word(((exRegs[0xf]&0xfffffffe)+0x4)+((thumbinstr&0xff)<<2)); //[PC+0x4,#(8<<2)Imm] / because prefetch and alignment
 		#ifdef DEBUGEMU
-		printf("(WORD) LDR r%d[%x], [PC:%x,#%x] (5.6) ",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg2,(unsigned int)dummyreg,(unsigned int)(thumbinstr&0xff));
+		printf("(WORD) LDR r%d[%x], [PC:%x,#%x] (5.6) ",(int)((thumbinstr>>8)&0x7),(unsigned int)destroyableRegister,(unsigned int)exRegs[0xf],(unsigned int)(thumbinstr&0xff));
 		#endif
-		//store read onto Rd
-		faststr((u8*)&dummyreg2, exRegs, ((thumbinstr>>8)&0x7), 32,0);
-	return 0;
+		exRegs[((thumbinstr>>8)&0x7)] = destroyableRegister;
+		return 0;
 	break;
 	
 	////////////////////////////////////5.9 LOAD/STORE low reg with #Imm
@@ -570,44 +549,43 @@ switch(thumbinstr>>11){
 	case(0xc):{
 		//1)read address (from reg) into dummy reg (RD) 
 		//--> BTW chunk data must not be modified (if ever it's an address it will be patched at ldr/str opcodes)
-		fastldr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
+		//exRegs[(thumbinstr&0x7)]
 		
 		//2a)read address (from reg) into dummy reg (RB) <-- this NEEDS to be checked for address patch as it's the destination physical address
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		#ifdef DEBUGEMU
-		printf(" STR r%d(%x), [r%d(%x),#0x%x] (5.9)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)(((thumbinstr>>6)&0x1f)<<2));
+		printf(" STR r%d(%x), [r%d(%x),#0x%x] (5.9)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)],(unsigned int)(((thumbinstr>>6)&0x1f)<<2));
 		#endif
 		//2b) RB = #Imm + RB 
-		dummyreg=addsasm(dummyreg,(u32)(((thumbinstr>>6)&0x1f)<<2));
-		
+		u32 destroyableRegister = addsasm(exRegs[((thumbinstr>>3)&0x7)],(u32)(((thumbinstr>>6)&0x1f)<<2));
 		//store RD into [RB,#Imm]
-		cpuwrite_word(dummyreg, dummyreg2);
+		cpuwrite_word(destroyableRegister, exRegs[(thumbinstr&0x7)]);
 		#ifdef DEBUGEMU
-		printf("content @%x:[%x]",(unsigned int)dummyreg,(unsigned int)*((u32*)dummyreg));
+		printf("content @%x:[%x]",(unsigned int)destroyableRegister,(unsigned int)cpuload_word(destroyableRegister));
 		#endif
-	return 0;
+		return 0;
 	}
 	break;
 	
 	/* LDR RD,[RB,#Imm] */
 	//warning: small error on arm7tdmi docs (this should be LDR, but is listed as STR) as bit 11 set is load, and unset store
 	case(0xd):{ //word quantity (#Imm is 7 bits, filled with bit[0] & bit[1] = 0 by shifting >> 2 )
-		#ifdef DEBUGEMU
-			printf(" LDR r%d, [r%d,#0x%x] (5.9)",(int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)(((thumbinstr>>6)&0x1f)<<2)); //if freeze undo this
-		#endif
-		
 		//RB
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//exRegs[((thumbinstr>>3)&0x7)]
 		
 		//get #Imm
-		dummyreg4=(((thumbinstr>>6)&0x1f)<<2);
+		u32 destroyableRegister2 = (((thumbinstr>>6)&0x1f)<<2);
 		
 		//add with #imm
-		dummyreg2=addsasm(dummyreg,dummyreg4);
+		u32 destroyableRegister = addsasm(exRegs[((thumbinstr>>3)&0x7)],destroyableRegister2);
+		destroyableRegister = cpuread_word(destroyableRegister);
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
-		dummyreg=cpuread_word(dummyreg2);
-		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		#ifdef DEBUGEMU
+		printf("LDR r%d, [r%d,#0x%x]:[%x] (5.9)",(int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)destroyableRegister2, (unsigned int)destroyableRegister);
+		#endif
+		return 0;
 	}
 	break;
 	
@@ -615,46 +593,47 @@ switch(thumbinstr>>11){
 	case(0xe):{
 		//1)read address (from reg) into dummy reg (RD) 
 		//--> BTW chunk data must not be modified (if ever it's an address it will be patched at ldr/str opcodes)
-		fastldr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
+		//exRegs[(thumbinstr&0x7)]
 		
 		//2a)read address (from reg) into dummy reg (RB) <-- this NEEDS to be checked for address patch as it's the destination physical address
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
-		#ifdef DEBUGEMU
-			printf(" strb r%d(%x), [r%d(%x),#0x%x] (5.9)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)((thumbinstr>>6)&0x1f)<<2);
-		#endif
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		//2b) RB = #Imm + RB 
-		dummyreg=addsasm(dummyreg,(u32)(((thumbinstr>>6)&0x1f)<<2));
+		u32 destroyableRegister = addsasm(exRegs[((thumbinstr>>3)&0x7)],(u32)(((thumbinstr>>6)&0x1f)<<2));
 		
 		//store RD into [RB,#Imm]
-		cpuwrite_byte(dummyreg,dummyreg2&0xff);
+		cpuwrite_byte(destroyableRegister, exRegs[(thumbinstr&0x7)]&0xff);
+		
 		#ifdef DEBUGEMU
-			printf("content @%x:[%x]",(unsigned int)dummyreg,(unsigned int)*((u8*)dummyreg));
+			printf(" STRB r%d(%x), [r%d(%x),#0x%x]:[%x] (5.9)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)],(unsigned int)((thumbinstr>>6)&0x1f)<<2);
+			printf(" Content: @%x:[%x]",(unsigned int)destroyableRegister,(unsigned int)cpuread_byte(destroyableRegister));
 		#endif
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//LDRB rd, [Rb,#IMM] (5.9)
 	case(0xf):{ //byte quantity (#Imm is 5 bits)
 		//RB
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//exRegs[((thumbinstr>>3)&0x7)]
 		
 		//get #Imm
-		dummyreg2=(((thumbinstr>>6)&0x1f)<<2);
+		//(((thumbinstr>>6)&0x1f)<<2);
 		
 		//add with #imm
-		dummyreg3=addsasm(dummyreg,dummyreg2);
-		
-		dummyreg3=cpuread_byte(dummyreg3);
+		u32 destroyableRegister = addsasm(exRegs[((thumbinstr>>3)&0x7)], (((thumbinstr>>6)&0x1f)<<2));
+		u32 destroyableRegister2 = cpuread_byte(destroyableRegister);
+		exRegs[(thumbinstr&0x7)] = destroyableRegister2;
 		
 		#ifdef DEBUGEMU
-			printf(" ldrb Rd(%d)[%x], [Rb(%d)[%x],#(0x%x)] (5.9)",(int)(thumbinstr&0x7),(unsigned int)dummyreg3,
-			(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
-			(unsigned int)(((thumbinstr>>6)&0x1f)<<2)); //if freeze undo this
+			printf(" ldrb Rd(%d)[%x], [Rb(%d)[%x],#(0x%x)] (5.9)",
+			(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],
+			(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)],
+			(unsigned int)(((thumbinstr>>6)&0x1f)<<2));
+			printf(" Content: @%x:[%x]",(unsigned int)destroyableRegister,(unsigned int)destroyableRegister2);
 		#endif
 		
-		faststr((u8*)&dummyreg3, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
@@ -663,22 +642,20 @@ switch(thumbinstr>>11){
 	// STRH rd, [rb,#IMM] (5.10)
 	case(0x10):{
 		//RB
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
-		
+		//exRegs[((thumbinstr>>3)&0x7)]
 		//RD
-		fastldr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
-		
-		dummyreg3=addsasm(dummyreg,(((thumbinstr>>6)&0x1f)<<1)); // Rb + #Imm bit[6] depth (adds >>0)
-		
+		//exRegs[(thumbinstr&0x7)]
+		u32 destroyableRegister =addsasm(exRegs[((thumbinstr>>3)&0x7)],(((thumbinstr>>6)&0x1f)<<1)); // Rb + #Imm bit[6] depth (adds >>0)
 		//store RD into [RB,#Imm]
-		cpuwrite_hword(dummyreg3,dummyreg2);
+		cpuwrite_hword(destroyableRegister, exRegs[(thumbinstr&0x7)]);
 		
 		#ifdef DEBUGEMU
-		printf("strh r(%d)[%x] ,[Rb(%d)[%x],#[%x]] (5.7)",(int)((thumbinstr)&0x7),(unsigned int)dummyreg2,
-		(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,(unsigned int)(((thumbinstr>>6)&0x1f)<<1));
+		printf("strh r(%d)[%x] ,[Rb(%d)[%x],#[%x]] (5.7)",
+		(int)((thumbinstr)&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],
+		(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)],
+		(unsigned int)(((thumbinstr>>6)&0x1f)<<1));
 		#endif
-		
-	return 0;
+		return 0;
 	}
 	break;
 	
@@ -686,24 +663,25 @@ switch(thumbinstr>>11){
 	//LDRH Rd, [Rb,#IMM] (5.10)
 	case(0x11):{
 		//RB
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//exRegs[((thumbinstr>>3)&0x7)]
 		
 		//get #Imm
-		dummyreg2=(((thumbinstr>>6)&0x1f)<<1);
+		//(((thumbinstr>>6)&0x1f)<<1);
 		
 		//add with #imm
-		dummyreg3=addsasm(dummyreg,dummyreg2);
+		u32 destroyableRegister = addsasm(exRegs[((thumbinstr>>3)&0x7)], (((thumbinstr>>6)&0x1f)<<1));
+		destroyableRegister = cpuread_hword(destroyableRegister);
 		
-		dummyreg3=cpuread_hword(dummyreg3);
+		//Rd
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		#ifdef DEBUGEMU
-			printf(" ldrh Rd(%d)[%x], [Rb(%d)[%x],#(0x%x)] (5.9)",(int)(thumbinstr&0x7),(unsigned int)dummyreg3,
-			(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
+			printf(" ldrh Rd(%d)[%x], [Rb(%d)[%x],#(0x%x)] (5.9)",
+			(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],
+			(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)],
 			(unsigned int)(((thumbinstr>>6)&0x1f)<<1)); //if freeze undo this
 		#endif
-		//Rd
-		faststr((u8*)&dummyreg3, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
@@ -711,42 +689,40 @@ switch(thumbinstr>>11){
 	//STR RD, [SP,#IMM]
 	case(0x12):{
 		//retrieve SP
-		fastldr((u8*)&dummyreg, exRegs, (0xd), 32,0); 
+		//exRegs[(0xd)]
 		
 		//RD
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>8)&0x7), 32,0); 
+		//exRegs[((thumbinstr>>8)&0x7)]
 		
 		//#imm 
-		dummyreg3=((thumbinstr&0xff)<<2);
+		u32 destroyableRegister = ((thumbinstr&0xff)<<2);
+		cpuwrite_word((exRegs[(0xd)]+destroyableRegister), exRegs[((thumbinstr>>8)&0x7)]);
 		
 		#ifdef DEBUGEMU
-			printf("str rd(%d)[%x], [SP:(%x),#[%x]] ",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg2,(unsigned int)dummyreg,(unsigned int)dummyreg3);
+			printf("str rd(%d)[%x], [SP:(%x),#[%x]] ",(int)((thumbinstr>>8)&0x7), (unsigned int)exRegs[((thumbinstr>>8)&0x7)],(unsigned int)exRegs[(0xd)],(unsigned int)destroyableRegister);
 		#endif
 		
-		//printf("str: content: %x ",dummyreg2);
-		cpuwrite_word((dummyreg+dummyreg3),dummyreg2);
-		
 		//note: this opcode doesn't increase SP
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//LDR RD, [SP,#IMM]
 	case(0x13):{
 		//retrieve SP
-		fastldr((u8*)&dummyreg, exRegs, (0xd), 32,0); 
+		//exRegs[(0xd)]
 		
 		//#imm 
-		dummyreg2=((thumbinstr&0xff)<<2);
+		u32 destroyableRegister = ((thumbinstr&0xff)<<2);
 		
-		dummyreg3=cpuread_word((dummyreg+dummyreg2));
+		u32 destroyableRegister2 = cpuread_word(exRegs[(0xd)] + destroyableRegister);
+		//save Rd
+		exRegs[((thumbinstr>>8)&0x7)] = destroyableRegister2;
 		
 		#ifdef DEBUGEMU
-			printf("ldr rd(%d)[%x], [SP:(%x),#[%x]] ",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg3,(unsigned int)dummyreg,(unsigned int)dummyreg2);
+			printf("ldr rd(%d)[%x], [SP:(%x),#[%x]] ",(int)((thumbinstr>>8)&0x7),(unsigned int)destroyableRegister2,(unsigned int)exRegs[(0xd)],(unsigned int)destroyableRegister);
 		#endif
 		
-		//save Rd
-		faststr((u8*)&dummyreg3, exRegs, ((thumbinstr>>8)&0x7), 32,0);
 		//note: this opcode doesn't increase SP
 		return 0;
 	}
@@ -758,22 +734,23 @@ switch(thumbinstr>>11){
 	//ADD  Rd, [PC,#IMM] (5.12)
 	case(0x14):{
 		//PC
-		fastldr((u8*)&dummyreg, exRegs, (0xf), 32,0);
+		//exRegs[(0xf)]
 		
 		//get #Imm
-		dummyreg2=((thumbinstr&0xff)<<2);
+		//((thumbinstr&0xff)<<2)
+		
+		//Rd
+		//exRegs[((thumbinstr>>8)&0x7)]
 		
 		//add with #imm
-		dummyreg3=addsasm(dummyreg,dummyreg2);
-		
-		dummyreg3=cpuread_word(dummyreg3);
+		u32 destroyableRegister = addsasm(exRegs[(0xf)], ((thumbinstr&0xff)<<2));
+		u32 destroyableRegister2 = cpuread_word(destroyableRegister);
+		exRegs[((thumbinstr>>8)&0x7)] = destroyableRegister2;
 		
 		#ifdef DEBUGEMU
-			printf("add rd(%d)[%x], [PC:(%x),#[%x]] (5.12) ",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg3,(unsigned int)dummyreg,(unsigned int)dummyreg2);
+		printf("add rd(%d)[%x], [PC:(%x),#[%x]] (5.12) ",(int)((thumbinstr>>8)&0x7),(unsigned int)destroyableRegister2,(unsigned int)exRegs[(0xf)],(unsigned int)((thumbinstr&0xff)<<2));
 		#endif
-		
-		faststr((u8*)&dummyreg3, exRegs, ((thumbinstr>>8)&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
@@ -781,110 +758,106 @@ switch(thumbinstr>>11){
 	//ADD  Rd, [SP,#IMM] (5.12)
 	case(0x15):{	
 		//SP
-		fastldr((u8*)&dummyreg, exRegs, (0xd), 32,0);
+		//exRegs[(0xd)]
 		
 		//get #Imm
-		dummyreg2=((thumbinstr&0xff)<<2);
+		//((thumbinstr&0xff)<<2)
+		
+		//Rd
+		//((thumbinstr>>8)&0x7)
 		
 		//add with #imm
-		dummyreg3=addsasm(dummyreg,dummyreg2);
+		u32 destroyableRegister = addsasm(exRegs[(0xd)], ((thumbinstr&0xff)<<2));
 		
-		dummyreg3=cpuread_word(dummyreg3);
+		u32 destroyableRegister2 = cpuread_word(destroyableRegister);
+		exRegs[((thumbinstr>>8)&0x7)] = destroyableRegister2;
 		
 		#ifdef DEBUGEMU
-			printf("add rd(%d)[%x], [r13:(%x),#[%x]] (5.12) ",(int)((thumbinstr>>8)&0x7),(unsigned int)dummyreg3,(unsigned int)dummyreg,(unsigned int)dummyreg2);
+		printf("add rd(%d)[%x], [r13:(%x),#[%x]] (5.12) ",(int)((thumbinstr>>8)&0x7),(unsigned int)destroyableRegister2,(unsigned int)exRegs[(0xd)],(unsigned int)((thumbinstr&0xff)<<2));
 		#endif
-		
-		faststr((u8*)&dummyreg3, exRegs, ((thumbinstr>>8)&0x7), 32,0);
-	return 0;
+		return 0;
 	}	
 	break;
-	//coto
+	
 	/////////////////////5.15 multiple load store
 	//STMIA rb!,{Rlist}
 	case(0x18):{
-			//Rb
-			fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
-			
-			#ifdef DEBUGEMU
-			printf("STMIA r%d![%x], {R: %d %d %d %d %d %d %d %x }:regs op:%x (5.15)",
-			(int)(thumbinstr>>8)&0x7,
-			(unsigned int)dummyreg,
-			(int)(thumbinstr&0xff)&0x80,
-			(int)(thumbinstr&0xff)&0x40,
-			(int)(thumbinstr&0xff)&0x20,
-			(int)(thumbinstr&0xff)&0x10,
-			(int)(thumbinstr&0xff)&0x08,
-			(int)(thumbinstr&0xff)&0x04,
-			(int)(thumbinstr&0xff)&0x02,
-			(int)(thumbinstr&0xff)&0x01,
-			(unsigned int)(thumbinstr&0xff)
-			);
-			#endif
-			
-			//deprecated
-			//stack operation STMIA
-			//stmiavirt( ((u8*)(u32)&exRegs[0]), (u32)dummyreg2, (thumbinstr&0xff), 32, 3, 0);	//special LDMIA/STMIA mode transfer	
-			
-			//new
-			int cntr=0;	//enum thumb regs
-			int offset=0; //enum found regs
-			while(cntr<0x8){ //8 working low regs for thumb cpu 
-					if( ((1<<cntr) & (thumbinstr&0xff)) > 0 ){
-						//stmia reg! is (forcefully for thumb) descendent
-						cpuwrite_word(dummyreg-(offset*4), exRegs[(1<<cntr)]); //word aligned
-						offset++;
-					}
-				cntr++;
+		//Rb
+		//exRegs[((thumbinstr>>8)&0x7)]
+		
+		//stack operation STMIA
+		int cntr=0;	//enum thumb regs
+		int offset=0; //enum found regs
+		while(cntr<0x8){ //8 working low regs for thumb cpu 
+			if( ((1<<cntr) & (thumbinstr&0xff)) > 0 ){
+				//stmia reg! is (forcefully for thumb) descendent
+				cpuwrite_word(exRegs[((thumbinstr>>8)&0x7)]-(offset*4), exRegs[(1<<cntr)]); //word aligned
+				offset++;
 			}
-			
-			//update rd <-(address+reg ammount*4) starting from zero (so last 4 bytes are next pointer available)
-			dummyreg=(u32)subsasm((u32)dummyreg,(lutu16bitcnt(thumbinstr&0xff))*4);		//get decimal value from registers selected
-			
-			//writeback always the new Rb
-			faststr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
-	return 0;
+			cntr++;
+		}
+		
+		//update rd <-(address+reg ammount*4) starting from zero (so last 4 bytes are next pointer available)
+		u32 destroyableRegister = (u32)subsasm((u32)exRegs[((thumbinstr>>8)&0x7)],(lutu16bitcnt(thumbinstr&0xff))*4);		//get decimal value from registers selected
+		
+		//writeback always the new Rb
+		exRegs[((thumbinstr>>8)&0x7)] = destroyableRegister;
+		
+		#ifdef DEBUGEMU
+		printf("STMIA r%d![%x], {R: %d %d %d %d %d %d %d %x }:regs op:%x (5.15)",
+		(int)(thumbinstr>>8)&0x7,
+		(unsigned int)exRegs[((thumbinstr>>8)&0x7)],
+		(int)(thumbinstr&0xff)&0x80,
+		(int)(thumbinstr&0xff)&0x40,
+		(int)(thumbinstr&0xff)&0x20,
+		(int)(thumbinstr&0xff)&0x10,
+		(int)(thumbinstr&0xff)&0x08,
+		(int)(thumbinstr&0xff)&0x04,
+		(int)(thumbinstr&0xff)&0x02,
+		(int)(thumbinstr&0xff)&0x01,
+		(unsigned int)(thumbinstr&0xff)
+		);
+		#endif
+		
+		return 0;
 	}
 	break;
 	
 	//LDMIA rd!,{Rlist}
 	case(0x19):{
-			//Rb
-			fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
-			
-			#ifdef DEBUGEMU
-			printf("LDMIA r%d![%x], {R: %d %d %d %d %d %d %d %d }:regs op:%x (5.15)",
-			(int)((thumbinstr>>8)&0x7),
-			(unsigned int)dummyreg2,
-			(int)(thumbinstr&0xff)&0x80,
-			(int)(thumbinstr&0xff)&0x40,
-			(int)(thumbinstr&0xff)&0x20,
-			(int)(thumbinstr&0xff)&0x10,
-			(int)(thumbinstr&0xff)&0x08,
-			(int)(thumbinstr&0xff)&0x04,
-			(int)(thumbinstr&0xff)&0x02,
-			(int)(thumbinstr&0xff)&0x01,
-			(unsigned int)(thumbinstr&0xff)
-			);
-			#endif
-			
-			//new
-			int cntr=0;	//enum thumb regs
-			int offset=0; //enum found regs
-			while(cntr<0x8){ //8 working low regs for thumb cpu 
-					if( ((1<<cntr) & (thumbinstr&0xff)) > 0 ){
-						//ldmia reg! is (forcefully for thumb) ascendent
-						cpuwrite_word(dummyreg+(offset*4), exRegs[(1<<cntr)]); //word aligned
-						offset++;
-					}
-				cntr++;
+		//Rb
+		//exRegs[((thumbinstr>>8)&0x7)]
+		
+		#ifdef DEBUGEMU
+		printf("LDMIA r%d![%x], {R: %d %d %d %d %d %d %d %d }:regs op:%x (5.15)",
+		(int)((thumbinstr>>8)&0x7),
+		(unsigned int)exRegs[((thumbinstr>>8)&0x7)],
+		(int)(thumbinstr&0xff)&0x80,
+		(int)(thumbinstr&0xff)&0x40,
+		(int)(thumbinstr&0xff)&0x20,
+		(int)(thumbinstr&0xff)&0x10,
+		(int)(thumbinstr&0xff)&0x08,
+		(int)(thumbinstr&0xff)&0x04,
+		(int)(thumbinstr&0xff)&0x02,
+		(int)(thumbinstr&0xff)&0x01,
+		(unsigned int)(thumbinstr&0xff)
+		);
+		#endif
+		
+		int cntr=0;	//enum thumb regs
+		int offset=0; //enum found regs
+		while(cntr<0x8){ //8 working low regs for thumb cpu 
+			if( ((1<<cntr) & (thumbinstr&0xff)) > 0 ){
+				//ldmia reg! is (forcefully for thumb) ascendent
+				cpuwrite_word(exRegs[((thumbinstr>>8)&0x7)]+(offset*4), exRegs[(1<<cntr)]); //word aligned
+				offset++;
 			}
-			//update rd <-(address+reg ammount*4) starting from zero (so last 4 bytes are next pointer available)
-			dummyreg=(u32)addsasm((u32)dummyreg,(lutu16bitcnt(thumbinstr&0xff))*4);		//get decimal value from registers selected
-			
-			//update Rb
-			faststr((u8*)&dummyreg, exRegs, ((thumbinstr>>8)&0x7), 32,0);
-	return 0;
+			cntr++;
+		}
+		//update Rb <-(address+reg ammount*4) starting from zero (so last 4 bytes are next pointer available)
+		exRegs[((thumbinstr>>8)&0x7)] = (u32)addsasm((u32)exRegs[((thumbinstr>>8)&0x7)],(lutu16bitcnt(thumbinstr&0xff))*4);		//get decimal value from registers selected
+		
+		return 0;
 	}
 	break;
 	
@@ -1016,85 +989,90 @@ switch(thumbinstr>>9){
 	case(0xc):{
 		//stored regs have already checked values / address translated, they don't need to be re-checked when retrieved
 		//rs
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0); 
-
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		//rn
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>6)&0x7), 32,0);
+		//exRegs[((thumbinstr>>6)&0x7)]
+		
 		#ifdef DEBUGEMU
-		printf("add rd(%d),rs(%d)[%x],rn(%d)[%x] (5.2)", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg);
+		printf("add rd(%d),rs(%d)[%x],rn(%d)[%x] (5.2)", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)],(int)((thumbinstr>>6)&0x7),(unsigned int)exRegs[((thumbinstr>>6)&0x7)]);
 		#endif
-		dummyreg2=addasm(dummyreg2,dummyreg);
+		
+		u32 destroyableRegister = addasm(exRegs[((thumbinstr>>3)&0x7)], exRegs[((thumbinstr>>6)&0x7)]);
+		
+		//done? update desired reg content
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
-		//done? update desired reg content
-		faststr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
-	
 	
 	//sub rd, rs, rn
 	case(0xd):{
 	
 		//stored regs have already checked values / address translated, they don't need to be re-checked when retrieved
 		//rs
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//exRegs[((thumbinstr>>3)&0x7)]
 		
 		//rn
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>6)&0x7), 32,0);
+		//exRegs[((thumbinstr>>6)&0x7)]
+		
 		#ifdef DEBUGEMU
-		printf("sub r%d,r%d[%x],r%d[%x] (5.2)", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg);
+		printf("sub r%d,r%d[%x],r%d[%x] (5.2)", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)],(int)((thumbinstr>>6)&0x7),(unsigned int)exRegs[((thumbinstr>>6)&0x7)]);
 		#endif
-		dummyreg2=subasm(dummyreg2,dummyreg);
+		u32 destroyableRegister = subasm(exRegs[((thumbinstr>>3)&0x7)], exRegs[((thumbinstr>>6)&0x7)]);
+		
+		//done? update desired reg content
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
-		//done? update desired reg content
-		faststr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//add rd, rs, #imm
 	case(0xe):{
-	
 		//stored regs have already checked values / address translated, they don't need to be re-checked when retrieved
 		//rs
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
+		//#imm
+		//((thumbinstr>>6)&0x7)
+		
 		#ifdef DEBUGEMU
-		printf("add r%d,r%d[%x],#0x%x (5.2)", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2,(unsigned int)((thumbinstr>>6)&0x7));
+		printf("add r%d,r%d[%x],#0x%x (5.2)", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)],(unsigned int)((thumbinstr>>6)&0x7));
 		#endif
-		dummyreg2=addasm(dummyreg2,(thumbinstr>>6)&0x7);
+		u32 destroyableRegister = addasm(exRegs[((thumbinstr>>3)&0x7)],(thumbinstr>>6)&0x7);
+		
+		//done? update desired reg content
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
-		//done? update desired reg content
-		faststr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//sub rd, rs, #imm
 	case(0xf):{
-	
 		//stored regs have already checked values / address translated, they don't need to be re-checked when retrieved
 		//rs
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		#ifdef DEBUGEMU
-		printf("sub r(%d),r(%d)[%x],#0x%x (5.2)", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2,(unsigned int)((thumbinstr>>6)&0x7));
+		printf("sub r(%d),r(%d)[%x],#0x%x (5.2)", (int)(thumbinstr&0x7),(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)],(unsigned int)((thumbinstr>>6)&0x7));
 		#endif
-		dummyreg2=subasm(dummyreg2,(thumbinstr>>6)&0x7);
+		u32 destroyableRegister = subasm(exRegs[((thumbinstr>>3)&0x7)], (thumbinstr>>6)&0x7);
+		
+		//done? update desired reg content
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
-		//done? update desired reg content
-		faststr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
@@ -1104,54 +1082,50 @@ switch(thumbinstr>>9){
 	//STR RD, [Rb,Ro]
 	case(0x28):{ //40dec
 		//Rb
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//exRegs[((thumbinstr>>3)&0x7)]
 		
 		//Ro
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>6)&0x7), 32,0);
+		//exRegs[((thumbinstr>>6)&0x7)]
 		
 		//Rd
-		fastldr((u8*)&dummyreg3, exRegs, (thumbinstr&0x7), 32,0);
-		
-		//dummyreg4=addsasm(dummyreg,dummyreg2);
+		//exRegs[(thumbinstr&0x7)]
 		
 		#ifdef DEBUGEMU
 		printf("str rd(%d)[%x] ,rb(%d)[%x],ro(%d)[%x] (5.7)",
-		(int)(thumbinstr&0x7),(unsigned int)dummyreg3,
-		(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
-		(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg2
+		(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],
+		(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)],
+		(int)((thumbinstr>>6)&0x7),(unsigned int)exRegs[((thumbinstr>>6)&0x7)]
 		);
 		#endif
 		
 		//store RD into [RB,#Imm]
-		cpuwrite_word((dummyreg+dummyreg2),dummyreg3);
-	return 0;
+		cpuwrite_word((exRegs[((thumbinstr>>3)&0x7)] + exRegs[((thumbinstr>>6)&0x7)]), exRegs[(thumbinstr&0x7)]);
+		return 0;
 	}	
 	break;
 	
 	//STRB RD ,[Rb,Ro] (5.7) (little endian lsb <-)
 	case(0x2a):{ //42dec
 		//Rb
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//exRegs[((thumbinstr>>3)&0x7)]
 		
 		//Ro
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>6)&0x7), 32,0);
+		//exRegs[((thumbinstr>>6)&0x7)]
 		
 		//Rd
-		fastldr((u8*)&dummyreg3, exRegs, (thumbinstr&0x7), 32,0);
+		//exRegs[(thumbinstr&0x7)]
 		
-		//dummyreg4=addsasm(dummyreg,dummyreg2);
+		//store RD into [RB,#Imm]
+		cpuwrite_byte((exRegs[((thumbinstr>>3)&0x7)] + exRegs[((thumbinstr>>6)&0x7)]), (exRegs[(thumbinstr&0x7)]&0xff));
 		
 		#ifdef DEBUGEMU
 		printf("strb rd(%d)[%x] ,rb(%d)[%x],ro(%d)[%x] (5.7)",
-		(int)(thumbinstr&0x7),(unsigned int)dummyreg3,
-		(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
-		(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg2
+		(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],
+		(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)],
+		(int)((thumbinstr>>6)&0x7),(unsigned int)exRegs[((thumbinstr>>6)&0x7)]
 		);
 		#endif
-		
-		//store RD into [RB,#Imm]
-		cpuwrite_byte((dummyreg+dummyreg2),(dummyreg3&0xff));
-	return 0;
+		return 0;
 	}	
 	break;
 	
@@ -1159,97 +1133,99 @@ switch(thumbinstr>>9){
 	//LDR rd,[rb,ro] (correct method for reads)
 	case(0x2c):{ //44dec
 		//Rb
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		//Ro
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>6)&0x7), 32,0);
-		
-		dummyreg3=cpuread_word((dummyreg+dummyreg2));
-		
-		#ifdef DEBUGEMU
-		printf("LDR rd(%d)[%x] ,[rb(%d)[%x],ro(%d)[%x]] (5.7)",
-		(int)(thumbinstr&0x7),(unsigned int)dummyreg3,
-		(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
-		(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg2
-		);
-		#endif
+		//exRegs[((thumbinstr>>6)&0x7)]
 		
 		//Rd
-		faststr((u8*)&dummyreg3, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		//exRegs[(thumbinstr&0x7)]
+		u32 destroyableRegister = cpuread_word(exRegs[((thumbinstr>>3)&0x7)]+exRegs[((thumbinstr>>6)&0x7)]);
+		#ifdef DEBUGEMU
+		printf("LDR rd(%d)[%x] ,[rb(%d)[%x],ro(%d)[%x]] (5.7)",
+		(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],
+		(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)],
+		(int)((thumbinstr>>6)&0x7),(unsigned int)exRegs[((thumbinstr>>6)&0x7)]
+		);
+		#endif
+		return 0;
 	}
 	break;
 	
 	//ldrb rd,[rb,ro]
 	case(0x2e):{ //46dec
 		//Rb
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
-		//Ro
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>6)&0x7), 32,0);
+		//exRegs[((thumbinstr>>3)&0x7)]
 		
-		dummyreg3=cpuread_byte((dummyreg+dummyreg2));
+		//Ro
+		//exRegs[((thumbinstr>>6)&0x7)]
+		
+		u32 destroyableRegister = cpuread_byte((exRegs[((thumbinstr>>3)&0x7)]+exRegs[((thumbinstr>>6)&0x7)]));
+		
+		//Rd
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		#ifdef DEBUGEMU
 		printf("LDRB rd(%d)[%x] ,[rb(%d)[%x],ro(%d)[%x]] (5.7)",
-		(int)(thumbinstr&0x7),(unsigned int)dummyreg3,
-		(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
-		(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg2
+		(int)(thumbinstr&0x7),(unsigned int)destroyableRegister,
+		(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)],
+		(int)((thumbinstr>>6)&0x7),(unsigned int)exRegs[((thumbinstr>>6)&0x7)]
 		);
 		#endif
 		
-		//Rd
-		faststr((u8*)&dummyreg3, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
-	
 	
 	//////////////////////5.8
 	//halfword
 	//printf("STRH RD ,[Rb,Ro] (5.8) "); //thumbinstr
 	case(0x29):{ //41dec strh
 		//Rb
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//exRegs[((thumbinstr>>3)&0x7)]
 		
 		//Ro
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>6)&0x7), 32,0);
+		//exRegs[((thumbinstr>>6)&0x7)]
 		
 		//Rd
-		fastldr((u8*)&dummyreg3, exRegs, (thumbinstr&0x7), 32,0);
+		//exRegs[(thumbinstr&0x7)]
+		
+		//store RD into [RB,#Imm]
+		cpuwrite_hword((exRegs[((thumbinstr>>3)&0x7)]+exRegs[((thumbinstr>>6)&0x7)]), (exRegs[(thumbinstr&0x7)]&0xffff));	
 		
 		#ifdef DEBUGEMU
 		printf("strh rd(%d)[%x] ,rb(%d)[%x],ro(%d)[%x] (5.7)",
-		(int)(thumbinstr&0x7),(unsigned int)dummyreg3,
-		(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
-		(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg2
+		(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],
+		(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)],
+		(int)((thumbinstr>>6)&0x7),(unsigned int)exRegs[((thumbinstr>>6)&0x7)]
 		);
 		#endif
-		
-		//store RD into [RB,#Imm]
-		cpuwrite_hword((dummyreg+dummyreg2),(dummyreg3&0xffff));	
-	return 0;
+		return 0;
 	}	
 	break;
 	
 	// LDRH RD ,[Rb,Ro] (5.8)
 	case(0x2b):{ //43dec ldrh
 		//Rb
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
-		//Ro
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>6)&0x7), 32,0);
+		//exRegs[((thumbinstr>>3)&0x7)]
 		
-		dummyreg3=cpuread_hword((dummyreg+dummyreg2));
+		//Ro
+		//exRegs[((thumbinstr>>6)&0x7)]
+		
+		u32 destroyableRegister = cpuread_hword((exRegs[((thumbinstr>>3)&0x7)]+exRegs[((thumbinstr>>6)&0x7)]));
+		
+		//Rd
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		#ifdef DEBUGEMU
 		printf("LDRB rd(%d)[%x] ,[rb(%d)[%x],ro(%d)[%x]] (5.7)",
-		(int)(thumbinstr&0x7),(unsigned int)dummyreg3,
-		(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
-		(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg2
+		(int)(thumbinstr&0x7),(unsigned int)destroyableRegister,
+		(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)],
+		(int)((thumbinstr>>6)&0x7),(unsigned int)exRegs[((thumbinstr>>6)&0x7)]
 		);
 		#endif
 		
-		//Rd
-		faststr((u8*)&dummyreg3, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
@@ -1257,44 +1233,48 @@ switch(thumbinstr>>9){
 	
 	case(0x2d):{ //45dec ldsb	
 		//Rb
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
-		//Ro
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>6)&0x7), 32,0);
+		//exRegs[((thumbinstr>>3)&0x7)]
 		
-		s8 sbyte=cpuread_byte(dummyreg+dummyreg2);
+		//Ro
+		//exRegs[((thumbinstr>>6)&0x7)]
+		
+		s8 sbyte=cpuread_byte(exRegs[((thumbinstr>>3)&0x7)]+exRegs[((thumbinstr>>6)&0x7)]);
+		
+		//Rd
+		exRegs[(thumbinstr&0x7)] = (u32)sbyte;
 		
 		#ifdef DEBUGEMU
 		printf("ldsb rd(%d)[%x] ,Rb(%d)[%x],Ro(%d)[%x] (5.7)",
-		(int)(thumbinstr&0x7),(signed int)sbyte,
-		(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
-		(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg2);
+		(int)(thumbinstr&0x7),(signed int)exRegs[(thumbinstr&0x7)],
+		(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)],
+		(int)((thumbinstr>>6)&0x7),(unsigned int)exRegs[((thumbinstr>>6)&0x7)]);
 		#endif
 		
-		//Rd
-		faststr((u8*)&sbyte, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//LDSH RD ,[RS0,RS1] (5.8) //kept to use hardware opcode
 	case(0x2f):{ //47dec ldsh
 		//Rb
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
-		//Ro
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>6)&0x7), 32,0);
+		//exRegs[((thumbinstr>>3)&0x7)]
 		
-		s16 shword=cpuread_hword(dummyreg+dummyreg2);
+		//Ro
+		//exRegs[((thumbinstr>>6)&0x7)]
+		
+		s16 shword=cpuread_hword(exRegs[((thumbinstr>>3)&0x7)] + exRegs[((thumbinstr>>6)&0x7)]);
+		
+		//Rd
+		exRegs[(thumbinstr&0x7)] = (u32)shword;
 		
 		#ifdef DEBUGEMU
 		printf("ldsh rd(%d)[%x] ,Rb(%d)[%x],Ro(%d)[%x] (5.7)",
 		(int)(thumbinstr&0x7),(signed int)shword,
-		(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg,
-		(int)((thumbinstr>>6)&0x7),(unsigned int)dummyreg2);
+		(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)],
+		(int)((thumbinstr>>6)&0x7),(unsigned int)exRegs[((thumbinstr>>6)&0x7)]);
 		#endif
 		
-		//Rd
-		faststr((u8*)&shword, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 }
@@ -1305,7 +1285,7 @@ switch(thumbinstr>>8){
 	case(0xB4):{
 		
 		//gba stack method (stack pointer) / requires descending pointer
-		fastldr((u8*)&dummyreg, exRegs, (0xd), 32,0); 
+		//exRegs[(0xd)]
 		
 		#ifdef DEBUGEMU
 		printf("[THUMB] PUSH {R: %d %d %d %d %d %d %d %x }:regout:%x (5.14)",
@@ -1321,53 +1301,49 @@ switch(thumbinstr>>8){
 		); 
 		#endif
 		//new
-			int cntr=0;	//enum thumb regs
-			int offset=0; //enum found regs
-			while(cntr<0x8){ //8 working low regs for thumb cpu 
-					if( ((1<<cntr) & (thumbinstr&0xff)) > 0 ){
-						//ldmia reg! is (forcefully for thumb) descendent
-						cpuwrite_word(dummyreg-(offset*4), exRegs[(1<<cntr)]); //word aligned
-						offset++;
-					}
-				cntr++;
-			}
+		int cntr=0;	//enum thumb regs
+		int offset=0; //enum found regs
+		while(cntr<0x8){ //8 working low regs for thumb cpu 
+				if( ((1<<cntr) & (thumbinstr&0xff)) > 0 ){
+					//ldmia reg! is (forcefully for thumb) descendent
+					cpuwrite_word(exRegs[(0xd)]-(offset*4), exRegs[(1<<cntr)]); //word aligned
+					offset++;
+				}
+			cntr++;
+		}
 			
 		//full descending stack
-		dummyreg=subsasm(dummyreg,(lutu16bitcnt(thumbinstr&0xff))*4); 
-		
-		faststr((u8*)&dummyreg, exRegs, (0xd) , 32,0);
-		
-	return 0;
+		u32 destroyableRegister = subsasm(exRegs[(0xd)],(lutu16bitcnt(thumbinstr&0xff))*4); 
+		exRegs[(0xd)] = destroyableRegister;
+		return 0;
 	}
 	break;
 	
 	//b: 10110101 = PUSH {Rlist,LR}  low regs (0-7) & LR
 	case(0xB5):{
-		
 		//gba r13 descending stack operation
-		fastldr((u8*)&dummyreg, exRegs, (0xd), 32,0); 
-		
+		//exRegs[(0xd)]
 		int cntr=0;	//enum thumb regs
 		int offset=0; //enum found regs
 		while(cntr<0x9){ //8 working low regs for thumb cpu 
 			if(cntr!=0x8){
 				if( ((1<<cntr) & (thumbinstr&0xff)) > 0 ){
 					//push is descending stack
-					cpuwrite_word(dummyreg-(offset*4), exRegs[(1<<cntr)]); //word aligned
+					cpuwrite_word(exRegs[(0xd)]-(offset*4), exRegs[(1<<cntr)]); //word aligned
 					offset++;
 				}
 			}
 			else{ //our lr operator
-				cpuwrite_word(dummyreg-(offset*4), exRegs[0xe]); //word aligned
+				cpuwrite_word(exRegs[(0xd)]-(offset*4), exRegs[0xe]); //word aligned
 				//#ifdef DEBUGEMU
 				//	printf("offset(%x):LR! ",(int)cntr);
 				//#endif
 			}
-		cntr++;
+			cntr++;
 		}
 		
-		dummyreg=subsasm(dummyreg,(lutu16bitcnt(thumbinstr&0xff)+1)*4); //+1 because LR push
-		faststr((u8*)&dummyreg, exRegs, (0xd) , 32,0);
+		u32 destroyableRegister = subsasm(exRegs[(0xd)],(lutu16bitcnt(thumbinstr&0xff)+1)*4); //+1 because LR push
+		exRegs[(0xd)] = destroyableRegister;
 		
 		#ifdef DEBUGEMU
 		printf("[THUMB] PUSH {R: %x %x %x %x %x %x %x %x },LR :regout:%x (5.14)",
@@ -1382,42 +1358,41 @@ switch(thumbinstr>>8){
 			(unsigned int)((thumbinstr&0xff)+0x1) //because LR
 		);
 		#endif
-		
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//b: 10111100 = POP  {Rlist} low regs (0-7)
 	case(0xBC):{
 		//gba r13 ascending stack operation
-		fastldr((u8*)&dummyreg, exRegs, (0xd), 32,0);
+		//exRegs[(0xd)]
 		
 		//restore is ascending (so Fixup stack offset address, to restore n registers)
-		dummyreg=addsasm(dummyreg,(lutu16bitcnt(thumbinstr&0xff))*4);
+		u32 destroyableRegister = addsasm(exRegs[(0xd)],(lutu16bitcnt(thumbinstr&0xff))*4);
 		
 		int cntr=0;
 		int offset=0;
 		while(cntr<0x8){ //8 working low regs for thumb cpu
 			if( ((1<<cntr) & (thumbinstr&0xff)) > 0 ){
 				//pop is ascending
-				exRegs[(1<<cntr)]=cpuread_word(dummyreg+(offset*4)); //word aligned
+				exRegs[(1<<cntr)]=cpuread_word(destroyableRegister+(offset*4)); //word aligned
 				offset++;
 			}
 			cntr++;
 		}
 		
-		faststr((u8*)&dummyreg, exRegs, (0xd) , 32,0);
-	return 0;
+		exRegs[(0xd)] = destroyableRegister;
+		return 0;
 	}
 	break;
 	
 	//b: 10111101 = POP  {Rlist,PC} low regs (0-7) & PC
 	case(0xBD):{
 		//gba r13 ascending stack operation
-		fastldr((u8*)&dummyreg, exRegs, (0xd), 32,0);
+		//exRegs[(0xd)]
 		
 		//restore is ascending (so fixup offset to restore n registers)
-		dummyreg=addsasm(dummyreg,(lutu16bitcnt(thumbinstr&0xff))*4);
+		u32 destroyableRegister = addsasm(exRegs[(0xd)],(lutu16bitcnt(thumbinstr&0xff))*4);
 		
 		int cntr=0;
 		int offset=0;
@@ -1425,16 +1400,16 @@ switch(thumbinstr>>8){
 			if(cntr!=0x8){
 				if(((1<<cntr) & (thumbinstr&0xff)) > 0){
 					//restore is ascending (so Fixup stack offset address, to restore n registers)
-					exRegs[(1<<cntr)]=cpuread_word(dummyreg+(offset*4)); //word aligned
+					exRegs[(1<<cntr)]=cpuread_word(destroyableRegister+(offset*4)); //word aligned
 					offset++;
 				}
 			}
 			else{//our pc operator
-				exRegs[0xf]=(cpuread_word(dummyreg+(offset*4))&0xfffffffe); //word aligned
+				exRegs[0xf]=(cpuread_word(destroyableRegister+(offset*4))&0xfffffffe); //word aligned
 			}
 			cntr++;
 		}
-	return 0;
+		return 0;
 	}
 	break;
 	
@@ -1819,19 +1794,17 @@ switch(thumbinstr>>7){
 		//cvert to 8 bit + bit[9] for sign extend
 		s32 dbyte_tmp=((thumbinstr&0x7f)<<2);
 		
-		fastldr((u8*)&dummyreg, exRegs, (0xd), 32,0); 
-		
-		#ifdef DEBUGEMU
-		printf("ADD SP:%x, +#%d (5.13) ",(unsigned int)dummyreg,(signed int)dbyte_tmp);
-		#endif
-		
-		dummyreg2=addsasm(dummyreg,dbyte_tmp);
+		u32 destroyableRegister = addsasm(exRegs[(0xd)], dbyte_tmp);
+		exRegs[(0xd)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		faststr((u8*)&dummyreg2, exRegs, (0xd), 32,0); 
-	return 0;
+		#ifdef DEBUGEMU
+		printf("ADD SP:%x, +#%d (5.13) ",(unsigned int)exRegs[(0xd)],(signed int)dbyte_tmp);
+		#endif
+		
+		return 0;
 	}	
 	break;
 	
@@ -1840,19 +1813,16 @@ switch(thumbinstr>>7){
 		//cvert to 8 bit + bit[9] for sign extend
 		s32 dbyte_tmp=((thumbinstr&0x7f)<<2);
 		
-		fastldr((u8*)&dummyreg, exRegs, (0xd), 32,0); 
-		
-		#ifdef DEBUGEMU
-			printf("ADD SP:%x, -#%d (5.13) ",(unsigned int)dummyreg,(signed int) dbyte_tmp);
-		#endif
-		
-		dummyreg2=subsasm(dummyreg,dbyte_tmp);
+		u32 destroyableRegister = subsasm(exRegs[(0xd)],dbyte_tmp);
+		exRegs[(0xd)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		faststr((u8*)&dummyreg2, exRegs, (0xd), 32,0); 
-	return 0;
+		#ifdef DEBUGEMU
+		printf("ADD SP:%x, -#%d (5.13) ",(unsigned int)exRegs[(0xd)], (signed int) dbyte_tmp);
+		#endif
+		return 0;
 	}
 	break;
 	
@@ -1862,319 +1832,361 @@ switch(thumbinstr>>6){
 	//5.4
 	//ALU OP: AND rd(thumbinstr&0x7),rs((thumbinstr>>3)&0x7)
 	case(0x100):{
-		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//rd
+		//exRegs[(thumbinstr&0x7)]
+		
+		//rs
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		#ifdef DEBUGEMU
-		printf("ALU OP: AND r%d[%x], r%d[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: AND r%d[%x], r%d[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
 		#endif
-		dummyreg=andasm(dummyreg,dummyreg2);
+		u32 destroyableRegister = andasm(exRegs[(thumbinstr&0x7)], exRegs[((thumbinstr>>3)&0x7)]);
+		
+		//done? update desired reg content
+		exRegs[(thumbinstr&0x7)]=destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
 		//printf("CPSR:%x ",cpsrvirt);
-		
-		//done? update desired reg content
-		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}	
 	break;
 	
 	//ALU OP: EOR rd(thumbinstr&0x7),rs((thumbinstr>>3)&0x7)
 	case(0x101):{
-		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//rd
+		//exRegs[(thumbinstr&0x7)]
+		
+		//rs
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		#ifdef DEBUGEMU
-		printf("ALU OP: EOR rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: EOR rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
 		#endif
-		dummyreg=eorasm(dummyreg,dummyreg2);
+		u32 destroyableRegister = eorasm(exRegs[(thumbinstr&0x7)], exRegs[((thumbinstr>>3)&0x7)]);
+		
+		//done? update desired reg content
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
 		//printf("CPSR:%x ",cpsrvirt);
-		
-		//done? update desired reg content
-	faststr((u8*)&dummyreg,exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//ALU OP: LSL rd(thumbinstr&0x7),rs((thumbinstr>>3)&0x7)
 	case(0x102):{
-		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//rd:
+		//exRegs[(thumbinstr&0x7)]
+		
+		//rs:
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
+		u32 destroyableRegister = lslasm(exRegs[(thumbinstr&0x7)], exRegs[((thumbinstr>>3)&0x7)]);
+		
+		//done? update desired reg content
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
+		
 		#ifdef DEBUGEMU
-		printf("ALU OP: LSL r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: LSL r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
 		#endif
-		dummyreg=lslasm(dummyreg,dummyreg2);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
 		//printf("CPSR:%x ",cpsrvirt);
-		
-		//done? update desired reg content
-		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);	
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//ALU OP: LSR rd, rs
 	case(0x103):{
-	
-		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//rd
+		//exRegs[(thumbinstr&0x7)]
+		
+		//rs
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		#ifdef DEBUGEMU
-		printf("ALU OP: LSR r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: LSR r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
 		#endif
-		dummyreg=lsrasm(dummyreg,dummyreg2);
+		u32 destroyableRegister = lsrasm(exRegs[(thumbinstr&0x7)],exRegs[((thumbinstr>>3)&0x7)]);
+		
+		//done? update desired reg content
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
 		//printf("CPSR:%x ",cpsrvirt);
-		
-		//done? update desired reg content
-		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//ALU OP: ASR rd, rs (5.4)
 	case(0x104):{
-	
-		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//rd
+		//exRegs[(thumbinstr&0x7)]
+		
+		//rs
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
+		u32 destroyableRegister = asrasm(exRegs[(thumbinstr&0x7)],exRegs[((thumbinstr>>3)&0x7)]);
+		//done? update desired reg content
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
+		
 		#ifdef DEBUGEMU
-		printf("ALU OP: ASR r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: ASR r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
 		#endif
-		dummyreg=asrasm(dummyreg,dummyreg2);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
 		//printf("CPSR:%x ",cpsrvirt);
-		
-		//done? update desired reg content
-		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//ALU OP: ADC rd, rs (5.4)
 	case(0x105):{
-		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//rd
+		//exRegs[(thumbinstr&0x7)]
+		
+		//rs
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		#ifdef DEBUGEMU
-		printf("ALU OP: ADC r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: ADC r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
 		#endif
-		dummyreg=adcasm(dummyreg,dummyreg2);
+		u32 destroyableRegister = adcasm(exRegs[(thumbinstr&0x7)], exRegs[((thumbinstr>>3)&0x7)]);
+		
+		//done? update desired reg content
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
 		//printf("CPSR:%x ",cpsrvirt);
-		
-		//done? update desired reg content
-		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//ALU OP: SBC rd, rs (5.4)
 	case(0x106):{
-		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//rd
+		//exRegs[(thumbinstr&0x7)]
+		
+		//rs
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		#ifdef DEBUGEMU
-		printf("ALU OP: SBC r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: SBC r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
 		#endif
-		dummyreg=sbcasm(dummyreg,dummyreg2);
+		u32 destroyableRegister = sbcasm(exRegs[(thumbinstr&0x7)], exRegs[((thumbinstr>>3)&0x7)]);
+		
+		//done? update desired reg content
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
 		//printf("CPSR:%x ",cpsrvirt);
-		
-		//done? update desired reg content
-		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//ALU OP: ROR rd, rs (5.4)
 	case(0x107):{
-	
-		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//rd
+		//exRegs[(thumbinstr&0x7)]
+		
+		//rs
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		#ifdef DEBUGEMU
-		printf("ALU OP: ROR r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: ROR r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
 		#endif
-		dummyreg=rorasm(dummyreg,dummyreg2);
+		u32 destroyableRegister = rorasm(exRegs[(thumbinstr&0x7)], exRegs[((thumbinstr>>3)&0x7)]);
+		
+		//done? update desired reg content
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
 		//printf("CPSR:%x ",cpsrvirt);
-		
-		//done? update desired reg content
-		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//ALU OP: TST rd, rs (5.4) (and with cpuflag output only)
 	case(0x108):{
-	
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//rd
+		//exRegs[(thumbinstr&0x7)]
 		
-		fastldr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
+		//rs
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		#ifdef DEBUGEMU
-		printf("ALU OP: TST rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg);
+		printf("ALU OP: TST rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
 		#endif
-		dummyreg=tstasm(dummyreg2,dummyreg); 	//opcode rd,rs
+		u32 destroyableRegister = tstasm(exRegs[(thumbinstr&0x7)], exRegs[((thumbinstr>>3)&0x7)]); 	//opcode rd,rs
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
 		//printf("CPSR:%x ",cpsrvirt);
-	return 0;
+		return 0;
 	}	
 	break;
 	
-	//ALU OP: NEG rd, rs (5.4)
-	case(0x109):{	
-	
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+	//ALU OP: NEG(pseudo)/RSB rd, rs (5.4)
+	case(0x109):{
+		//rd
+		//exRegs[(thumbinstr&0x7)]
 		
-		dummyreg=negasm(dummyreg2);
+		//rs
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
+		u32 destroyableRegister = negasm(exRegs[((thumbinstr>>3)&0x7)]);
+		#ifdef DEBUGEMU
+		printf("ALU OP: NEG rd(%d)[%x], rs%d[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
+		#endif
+		
+		//done? update desired reg content
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		#ifdef DEBUGEMU
-		printf("ALU OP: NEG rd(%d)[%x], rs%d[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
-		#endif
 		//printf("CPSR:%x ",cpsrvirt);
-		
-		//done? update desired reg content
-		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//ALU OP: CMP rd, rs (5.4)
-	case(0x10a):{	
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+	case(0x10a):{
+		//rd
+		//exRegs[(thumbinstr&0x7)]
 		
-		fastldr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
+		//rs
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		#ifdef DEBUGEMU
-		printf("ALU OP: CMP rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg);
+		printf("ALU OP: CMP rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
 		#endif
-		dummyreg=cmpasm(dummyreg2,dummyreg); 	//opcode rd,rs
+		u32 destroyableRegister = cmpasm(exRegs[(thumbinstr&0x7)], exRegs[((thumbinstr>>3)&0x7)]); 	//opcode rd,rs
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
 		//printf("CPSR:%x ",cpsrvirt);
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//ALU OP: CMN rd, rs (5.4)
-	case(0x10b):{	
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+	case(0x10b):{
+		//rd
+		//exRegs[(thumbinstr&0x7)]
 		
-		fastldr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
+		//rs
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		#ifdef DEBUGEMU
-		printf("ALU OP: CMN rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg2,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg);
+		printf("ALU OP: CMN rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
 		#endif
-		dummyreg=cmnasm(dummyreg2,dummyreg); 	//opcode rd,rs
+		u32 destroyableRegister = cmnasm(exRegs[(thumbinstr&0x7)], exRegs[((thumbinstr>>3)&0x7)]); 	//opcode rd,rs
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
 		//printf("CPSR:%x ",cpsrvirt);
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//ALU OP: ORR rd, rs (5.4)
 	case(0x10c):{	
-		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//rd
+		//exRegs[(thumbinstr&0x7)]
+		
+		//rs
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		#ifdef DEBUGEMU
-		printf("ALU OP: ORR r%d[%x], r%d[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: ORR r%d[%x], r%d[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
 		#endif
-		dummyreg=orrasm(dummyreg,dummyreg2);
+		u32 destroyableRegister = orrasm(exRegs[(thumbinstr&0x7)], exRegs[((thumbinstr>>3)&0x7)]);
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
 		//printf("CPSR:%x ",cpsrvirt);
-		
-		//done? update desired reg content
-		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//ALU OP: MUL rd, rs (5.4)
-	case(0x10d):{	
-		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+	case(0x10d):{
+		//rd
+		//exRegs[(thumbinstr&0x7)]
+		
+		//rs
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		#ifdef DEBUGEMU
-		printf("ALU OP: MUL r%d[%x], r%d[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: MUL r%d[%x], r%d[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
 		#endif
-		dummyreg=mulasm(dummyreg,dummyreg2);
+		
+		u32 destroyableRegister = mulasm(exRegs[(thumbinstr&0x7)], exRegs[((thumbinstr>>3)&0x7)]);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
 		//printf("CPSR:%x ",cpsrvirt);
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
+		return 0;
 	}
 	break;
 	
 	//ALU OP: BIC rd, rs (5.4)
-	case(0x10e):{	
-		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+	case(0x10e):{
+		//rd
+		//exRegs[(thumbinstr&0x7)]
+		
+		//rs
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		#ifdef DEBUGEMU
-		printf("ALU OP: BIC r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("ALU OP: BIC r(%d)[%x], r(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
 		#endif
-		dummyreg=bicasm(dummyreg,dummyreg2);
+		
+		u32 destroyableRegister = bicasm(exRegs[(thumbinstr&0x7)], exRegs[((thumbinstr>>3)&0x7)]);
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
 		//printf("CPSR:%x ",cpsrvirt);
-		
-		//done? update desired reg content
-		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//ALU OP: MVN rd, rs (5.4)
-	case(0x10f):{	
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+	case(0x10f):{
+		//rd
+		//exRegs[(thumbinstr&0x7)]
 		
-		dummyreg=mvnasm(dummyreg2);
+		//rs
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
+		u32 destroyableRegister = mvnasm(exRegs[((thumbinstr>>3)&0x7)]);
+		
+		#ifdef DEBUGEMU
+		printf("ALU OP: MVN rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
+		#endif
+		
+		//done? update desired reg content
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
-		#ifdef DEBUGEMU
-		printf("ALU OP: MVN rd(%d)[%x], rs(%d)[%x] (5.4)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
-		#endif
 		//printf("CPSR:%x ",cpsrvirt);
 		
-		//done? update desired reg content
-		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
@@ -2183,161 +2195,190 @@ switch(thumbinstr>>6){
 	////////////////////////////5.5
 	//ADD rd,hs (5.5)
 	case(0x111):{
-		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
+		//rd
+		//exRegs[(thumbinstr&0x7)]
 		
-		fastldr((u8*)&dummyreg2, exRegs, (((thumbinstr>>3)&0x7)+8), 32,0);
+		//hs
+		//exRegs[(((thumbinstr>>3)&0x7)+8)]
 		
-		dummyreg=addasm(dummyreg,dummyreg2);
+		u32 destroyableRegister = addasm(exRegs[(thumbinstr&0x7)], exRegs[(((thumbinstr>>3)&0x7)+8)]);
 		
 		//these don't update CPSR flags
-		
 		#ifdef DEBUGEMU
-		printf("HI reg ADD rd(%d)[%x], hs(%d)[%x] (5.5)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)(((thumbinstr>>3)&0x7)+8),(unsigned int)dummyreg2);
+		printf("HI reg ADD rd(%d)[%x], hs(%d)[%x] (5.5)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)(((thumbinstr>>3)&0x7)+8),(unsigned int)exRegs[(((thumbinstr>>3)&0x7)+8)]);
 		#endif
+		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		exRegs[(thumbinstr&0x7)] = destroyableRegister;
+		return 0;
 	}
 	break;
 
 	//ADD hd,rs (5.5)	
 	case(0x112):{
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr&0x7)+0x8), 32,0);
+		//hd
+		//exRegs[((thumbinstr&0x7)+0x8)]
 		
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//rs
+		//exRegs[((thumbinstr>>3)&0x7)]
 		
-		dummyreg=addasm(dummyreg,dummyreg2);
+		u32 destroyableRegister = addasm(exRegs[((thumbinstr&0x7)+0x8)], exRegs[((thumbinstr>>3)&0x7)]);
 		
 		//these don't update CPSR flags
 		
 		#ifdef DEBUGEMU
-		printf("HI reg op ADD hd%d[%x], rs%d[%x] (5.5)",(int)((thumbinstr&0x7)+8),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("HI reg op ADD hd%d[%x], rs%d[%x] (5.5)",(int)((thumbinstr&0x7)+0x8),(unsigned int)exRegs[(thumbinstr&0x7)+0x8],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
 		#endif
+		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, exRegs, ((thumbinstr&0x7)+0x8), 32,0);
-	return 0;
+		exRegs[(thumbinstr&0x7)+0x8] = destroyableRegister;
+		return 0;
 	}
 	break;
 	
 	//ADD hd,hs (5.5) 
 	case(0x113):{
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr&0x7)+0x8), 32,0);
-		fastldr((u8*)&dummyreg2, exRegs, (((thumbinstr>>3)&0x7)+0x8), 32,0);
+		//hd
+		//exRegs[((thumbinstr&0x7)+0x8)]
+		
+		//hs
+		//exRegs[(((thumbinstr>>3)&0x7)+0x8)]
+		
 		#ifdef DEBUGEMU
-		printf("HI reg op ADD hd%d[%x], hs%d[%x] (5.5)",(int)((thumbinstr&0x7)+0x8),(unsigned int)dummyreg,(int)(((thumbinstr>>3)&0x7)+0x8),(unsigned int)dummyreg2);
+		printf("HI reg op ADD hd%d[%x], hs%d[%x] (5.5)",(int)((thumbinstr&0x7)+0x8),(unsigned int)exRegs[((thumbinstr&0x7)+0x8)],(int)(((thumbinstr>>3)&0x7)+0x8),(unsigned int)exRegs[(((thumbinstr>>3)&0x7)+0x8)]);
 		#endif
-		dummyreg=addasm(dummyreg,dummyreg2);
+		u32 destroyableRegister = addasm(exRegs[((thumbinstr&0x7)+0x8)], exRegs[(((thumbinstr>>3)&0x7)+0x8)]);
 		
 		//these don't update CPSR flags
 		
 		//done? update desired reg content
-		faststr((u8*)&dummyreg, exRegs, ((thumbinstr&0x7)+0x8), 32,0);
-	return 0;
+		exRegs[((thumbinstr&0x7)+0x8)] = destroyableRegister;
+		return 0;
 	}
 	break;
 	
 	//CMP rd,hs (5.5)
 	case(0x115):{
-		fastldr((u8*)&dummyreg, exRegs, (thumbinstr&0x7), 32,0);
-		fastldr((u8*)&dummyreg2, exRegs, (((thumbinstr>>3)&0x7)+0x8), 32,0);
+		//rd
+		//exRegs[(thumbinstr&0x7)]
+		
+		//hs
+		//exRegs[(((thumbinstr>>3)&0x7)+0x8)]
+		
 		#ifdef DEBUGEMU
-		printf("HI reg op CMP rd%d[%x], hs%d[%x] (5.5)",(int)(thumbinstr&0x7),(unsigned int)dummyreg,(int)(((thumbinstr>>3)&0x7)+0x8),(unsigned int)dummyreg2);
+		printf("HI reg op CMP rd%d[%x], hs%d[%x] (5.5)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)(((thumbinstr>>3)&0x7)+0x8),(unsigned int)exRegs[(((thumbinstr>>3)&0x7)+0x8)]);
 		#endif
-		dummyreg=cmpasm(dummyreg,dummyreg2);
+		u32 destroyableRegister = cmpasm(exRegs[(thumbinstr&0x7)], exRegs[(((thumbinstr>>3)&0x7)+0x8)]);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
 		//printf("CPSR:%x ",cpsrvirt);	
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//CMP hd,rs (5.5)
 	case(0x116):{
-	
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr&0x7)+0x8), 32,0);
-		fastldr((u8*)&dummyreg2, exRegs, ((thumbinstr>>3)&0x7), 32,0);
+		//hd
+		//exRegs[((thumbinstr&0x7)+0x8)]
+		
+		//rs
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		#ifdef DEBUGEMU
-		printf("HI reg op CMP hd(%d)[%x], rs(%d)[%x] (5.5)",(int)((thumbinstr&0x7)+0x8),(unsigned int)dummyreg,(int)((thumbinstr>>3)&0x7),(unsigned int)dummyreg2);
+		printf("HI reg op CMP hd(%d)[%x], rs(%d)[%x] (5.5)",(int)((thumbinstr&0x7)+0x8),(unsigned int)exRegs[((thumbinstr&0x7)+0x8)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
 		#endif
-		dummyreg=cmpasm(dummyreg,dummyreg2);
+		u32 destroyableRegister = cmpasm(exRegs[((thumbinstr&0x7)+0x8)], exRegs[((thumbinstr>>3)&0x7)]);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
 		//printf("CPSR:%x ",cpsrvirt);
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//CMP hd,hs (5.5)  /* only CMP opcodes set CPSR flags */
 	case(0x117):{
+		//hd
+		//exRegs[((thumbinstr&0x7)+0x8)]
 		
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr&0x7)+0x8), 32,0);
-		fastldr((u8*)&dummyreg2, exRegs, (((thumbinstr>>3)&0x7)+0x8), 32,0);
+		//hs
+		//exRegs[(((thumbinstr>>3)&0x7)+0x8)]
+		
 		#ifdef DEBUGEMU
-		printf("HI reg op CMP hd%d[%x], hd%d[%x] (5.5)",(int)((thumbinstr&0x7)+0x8),(unsigned int)dummyreg,(int)(((thumbinstr>>3)&0x7)+0x8),(unsigned int)dummyreg2);
+		printf("HI reg op CMP hd%d[%x], hd%d[%x] (5.5)",(int)((thumbinstr&0x7)+0x8),(unsigned int)exRegs[((thumbinstr&0x7)+0x8)],(int)(((thumbinstr>>3)&0x7)+0x8),(unsigned int)exRegs[(((thumbinstr>>3)&0x7)+0x8)]);
 		#endif
-		dummyreg=cmpasm(dummyreg,dummyreg2);
+		u32 destroyableRegister = cmpasm(exRegs[((thumbinstr&0x7)+0x8)], exRegs[(((thumbinstr>>3)&0x7)+0x8)]);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
 		//printf("CPSR:%x ",cpsrvirt);
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//MOV
 	//MOV rd,hs (5.5)	
 	case(0x119):{
-		fastldr((u8*)&dummyreg, exRegs, (((thumbinstr>>0x3)&0x7)+0x8), 32,0);
+		//rd
+		//exRegs[(thumbinstr&0x7)]
+		
+		//hs
+		//exRegs[(((thumbinstr>>3)&0x7)+0x8)]
 		
 		#ifdef DEBUGEMU
-		printf("mov rd(%d),hs(%d)[%x] ",(int)(thumbinstr&0x7),(int)(((thumbinstr>>0x3)&0x7)+0x8),(unsigned int)dummyreg);
+		printf("mov rd(%d),hs(%d)[%x] ",(int)(thumbinstr&0x7),(int)(((thumbinstr>>3)&0x7)+0x8),(unsigned int)exRegs[(((thumbinstr>>3)&0x7)+0x8)]);
 		#endif
 		
-		dummyreg2=movasm(dummyreg);
+		exRegs[(thumbinstr&0x7)] = movasm(exRegs[(((thumbinstr>>3)&0x7)+0x8)]);
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
-		faststr((u8*)&dummyreg2, exRegs, (thumbinstr&0x7), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//MOV Hd,Rs (5.5) 
 	case(0x11a):{
-		fastldr((u8*)&dummyreg, exRegs, ((thumbinstr>>0x3)&0x7), 32,0);
+		//hd
+		//exRegs[((thumbinstr&0x7)+0x8)]
+		
+		//rs
+		//exRegs[((thumbinstr>>3)&0x7)]
+		
 		#ifdef DEBUGEMU
-		printf("mov hd%d,rs%d[%x] ",(int)(((thumbinstr)&0x7)+0x8),(int)(thumbinstr>>0x3)&0x7,(unsigned int)dummyreg);
+		printf("mov hd%d,rs%d[%x] ",(int)((thumbinstr&0x7)+0x8),(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)]);
 		#endif
 
-		dummyreg2=movasm(dummyreg);
+		u32 destroyableRegister = movasm(exRegs[((thumbinstr>>3)&0x7)]);
+		exRegs[((thumbinstr&0x7)+0x8)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
-		faststr((u8*)&dummyreg2,exRegs, ((thumbinstr&0x7)+0x8), 32,0);
-	return 0;
+		return 0;
 	}
 	break;
 	
 	//MOV hd,hs (5.5)
 	case(0x11b):{
-		fastldr((u8*)&dummyreg, exRegs, (((thumbinstr>>0x3)&0x7)+0x8), 32,0);
+		//hd
+		//exRegs[((thumbinstr&0x7)+0x8)]
+		
+		//hs
+		//exRegs[(((thumbinstr>>3)&0x7)+0x8)]
+		
 		#ifdef DEBUGEMU
-		printf("mov hd(%d),hs(%d)[%x] ",(int)(((thumbinstr)&0x7)+0x8),(int)(((thumbinstr>>0x3)&0x7)+0x8),(unsigned int)dummyreg);
+		printf("mov hd(%d),hs(%d)[%x] ",(int)((thumbinstr&0x7)+0x8),(int)(((thumbinstr>>3)&0x7)+0x8),(unsigned int)exRegs[(((thumbinstr>>3)&0x7)+0x8)]);
 		#endif
 		
-		dummyreg2=movasm(dummyreg);
+		u32 destroyableRegister = movasm(exRegs[(((thumbinstr>>3)&0x7)+0x8)]);
+		exRegs[((thumbinstr&0x7)+0x8)] = destroyableRegister;
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		
-		faststr((u8*)&dummyreg2, exRegs, ((thumbinstr&0x7)+0x8), 32,0);
+		return 0;
 	}
 	break;
 	
@@ -3027,7 +3068,6 @@ switch((dummyreg=(arminstr)) & 0xff000000){
 //ARM 5.3 b (Branch exchange) BX
 switch(((arminstr) & 0x012fff10)){
 	case(0x012fff10):
-	//coto
 	//Rn
 	fastldr((u8*)&dummyreg, exRegs, ((arminstr)&0xf), 32,0); 
 	
@@ -5866,42 +5906,46 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 				//lsl
 				if((dummyreg5&0x6)==0x0){
 					//rs loaded
-					fastldr((u8*)&gbachunk, exRegs, ((dummyreg5>>4)&0xf), 32,0); 
+					u32 destroyableRegister = 0;
+					fastldr((u8*)&destroyableRegister, exRegs, ((dummyreg5>>4)&0xf), 32,0); 
 					#ifdef DEBUGEMU
-					printf("LSL rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)gbachunk);
+					printf("LSL rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)destroyableRegister);
 					#endif
 					//least signif byte (rs) uses: opcode rm,rs
-					dummyreg4=lslasm(dummyreg4,(gbachunk&0xff));
+					dummyreg4=lslasm(dummyreg4,(destroyableRegister&0xff));
 				}
 				//lsr
 				else if ((dummyreg5&0x6)==0x2){
 					//rs loaded
-					fastldr((u8*)&gbachunk, exRegs, ((dummyreg5>>4)&0xf), 32,0); 
+					u32 destroyableRegister = 0;
+					fastldr((u8*)&destroyableRegister, exRegs, ((dummyreg5>>4)&0xf), 32,0); 
 					#ifdef DEBUGEMU
-					printf("LSR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)gbachunk);
+					printf("LSR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)destroyableRegister);
 					#endif
 					//least signif byte (rs) uses: opcode rm,rs
-					dummyreg4=lsrasm(dummyreg4,(gbachunk&0xff));
+					dummyreg4=lsrasm(dummyreg4,(destroyableRegister&0xff));
 				}
 				//asr
 				else if ((dummyreg5&0x6)==0x4){
 					//rs loaded
-					fastldr((u8*)&gbachunk, exRegs, ((dummyreg5>>4)&0xf), 32,0); 
+					u32 destroyableRegister = 0;
+					fastldr((u8*)&destroyableRegister, exRegs, ((dummyreg5>>4)&0xf), 32,0); 
 					#ifdef DEBUGEMU
-					printf("ASR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)gbachunk);
+					printf("ASR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)destroyableRegister);
 					#endif
 					//least signif byte (rs) uses: opcode rm,rs
-					dummyreg4=asrasm(dummyreg4,(gbachunk&0xff));
+					dummyreg4=asrasm(dummyreg4,(destroyableRegister&0xff));
 				}
 				//ror
 				else if ((dummyreg5&0x6)==0x6){
 					//rs loaded
-					fastldr((u8*)&gbachunk, exRegs, ((dummyreg5>>4)&0xf), 32,0); 
+					u32 destroyableRegister = 0;
+					fastldr((u8*)&destroyableRegister, exRegs, ((dummyreg5>>4)&0xf), 32,0); 
 					#ifdef DEBUGEMU
-					printf("ROR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)gbachunk);
+					printf("ROR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((dummyreg5>>4)&0xf),(unsigned int)destroyableRegister);
 					#endif
 					//least signif byte (rs) uses: opcode rm,rs
-					dummyreg4=rorasm(dummyreg4,(gbachunk&0xff));
+					dummyreg4=rorasm(dummyreg4,(destroyableRegister&0xff));
 				}
 			//compatibility: refresh CPU flags when barrel shifter is used
 			updatecpuflags(0,cpsrasm,0x0);
@@ -6073,42 +6117,43 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 			
 			//LDR : 
 			else{
-				//transfer byte quantity
+				u32 destroyableRegister = 0;
+				//Transfer byte quantity
 				if((dummyreg&0x4)==0x4){
 					//printf(" LDRB #imm");
 					//if rn == r15 use rom / generate [PC, #imm] value into rd
 					if(((arminstr>>16)&0xf)==0xf){
 						dummyreg2=(dummyreg3+(0x8)); //align +8 for prefetching
-						gbachunk=cpuread_byte(dummyreg2);
+						destroyableRegister=cpuread_byte(dummyreg2);
 					}
 					//else rn / generate [Rn, #imm] value into rd
 					else{
-						dummyreg2=dummyreg3; //rd is gbachunk now, old rd is rewritten
-						gbachunk=cpuread_byte(dummyreg2);
+						dummyreg2=dummyreg3; //rd is destroyableRegister now, old rd is rewritten
+						destroyableRegister=cpuread_byte(dummyreg2);
 					}
 					
 					#ifdef DEBUGEMU
-						printf("LDRB rd(%d)[%x]<-LOADED [Rn(%d),#IMM]:(%x)",(int)((arminstr>>12)&0xf),(unsigned int)gbachunk,(unsigned int)((arminstr>>16)&0xf),(unsigned int)dummyreg2);
+						printf("LDRB rd(%d)[%x]<-LOADED [Rn(%d),#IMM]:(%x)",(int)((arminstr>>12)&0xf),(unsigned int)destroyableRegister,(unsigned int)((arminstr>>16)&0xf),(unsigned int)dummyreg2);
 					#endif
 				}
-				//transfer word quantity
+				//Transfer word quantity
 				else{
 					//if rn == r15 use rom / generate [PC, #imm] value into rd
 					if(((arminstr>>16)&0xf)==0xf){
 						dummyreg2=(dummyreg3+(0x8)); //align +8 for prefetching
-						gbachunk=cpuread_word(dummyreg2);
+						destroyableRegister=cpuread_word(dummyreg2);
 					}
 					//else rn / generate [Rn, #imm] value into rd
 					else{
-						dummyreg2=dummyreg3; //rd is gbachunk now, old rd is rewritten
-						gbachunk=cpuread_word(dummyreg2);
+						dummyreg2=dummyreg3; //rd is destroyableRegister now, old rd is rewritten
+						destroyableRegister=cpuread_word(dummyreg2);
 					}
 					
 					#ifdef DEBUGEMU
-						printf("LDR rd(%d)[%x]<-LOADED [Rn(%d),#IMM]:(%x)",(int)((arminstr>>12)&0xf),(unsigned int)gbachunk,(unsigned int)((arminstr>>16)&0xf),(unsigned int)dummyreg2);
+						printf("LDR rd(%d)[%x]<-LOADED [Rn(%d),#IMM]:(%x)",(int)((arminstr>>12)&0xf),(unsigned int)destroyableRegister,(unsigned int)((arminstr>>16)&0xf),(unsigned int)dummyreg2);
 					#endif
 				}
-				faststr((u8*)&gbachunk, exRegs, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&destroyableRegister, exRegs, ((arminstr>>12)&0xf), 32,0);
 			}
 		}
 		
