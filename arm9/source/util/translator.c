@@ -3138,13 +3138,13 @@ if(isalu==1){
 				//to rotate right by twice the value in rotate field:
 				u32 DestroyableRegister2 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
 				
-				dummyreg3=andasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2);
+				u32 DestroyableRegister3=andasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2);
 			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0);
+				faststr((u8*)&DestroyableRegister3, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("AND rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) ",
-				(int)(arminstr>>12)&0xf,(unsigned int)dummyreg3,
+				(int)(arminstr>>12)&0xf,(unsigned int)DestroyableRegister3,
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
 				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)),(unsigned int)DestroyableRegister2,
@@ -3157,8 +3157,8 @@ if(isalu==1){
 				//exRegs[((arminstr>>16)&0xf)]
 				
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
-			
+				//exRegs[((arminstr)&0xf)]
+				
 				//shifting part:
 				//applied to Rm available to shifted register
 				//Use bit[11]---bit[8](Rs's) bottom byte ammount 
@@ -3168,50 +3168,47 @@ if(isalu==1){
 			
 				//(currently at: shift field) rs shift opcode to Rm
 				u32 DestroyableRegister2 = 0;
+				u32 DestroyableRegister3 = 0;
+				
 				if( ((DestroyableRegister2=((arminstr>>4)&0xfff)) &0x1) == 1){
 					//lsl
 					if((DestroyableRegister2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister2>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister3=lslasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
 					//lsr
 					else if ((DestroyableRegister2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister2>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister3=lsrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
 					//asr
 					else if ((DestroyableRegister2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister2>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister3=asrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
 					//ror
 					else if ((DestroyableRegister2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister2>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
-
+						DestroyableRegister3=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
-				//compatibility: refresh CPU flags when barrel shifter is used
-				updatecpuflags(0,cpsrasm,0x0);
+					//compatibility: refresh CPU flags when barrel shifter is used
+					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//#Imm ammount shift & opcode to Rm
 				else{
@@ -3220,50 +3217,46 @@ if(isalu==1){
 					//lsl
 					if((DestroyableRegister2&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lslasm(dummyreg3,(DestroyableRegister2>>3)&0x1f);
+						DestroyableRegister3=lslasm(exRegs[((arminstr)&0xf)],(DestroyableRegister2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister2>>3)&0x1f));
+						printf("LSL rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
 					//lsr
 					else if ((DestroyableRegister2&0x6)==0x2){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lsrasm(dummyreg3,(DestroyableRegister2>>3)&0x1f);
+						DestroyableRegister3=lsrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister2>>3)&0x1f));
+						printf("LSR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
 					//asr
 					else if ((DestroyableRegister2&0x6)==0x4){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=asrasm(dummyreg3,(DestroyableRegister2>>3)&0x1f);
+						DestroyableRegister3=asrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister2>>3)&0x1f));
+						printf("ASR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
 					//ror
 					else if ((DestroyableRegister2&0x6)==0x6){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=rorasm(dummyreg3,(DestroyableRegister2>>3)&0x1f);
+						DestroyableRegister3=rorasm(exRegs[((arminstr)&0xf)],(DestroyableRegister2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister2>>3)&0x1f));
+						printf("ROR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//op 1 opc op 2
-				exRegs[((arminstr>>12)&0xf)] = andasm(exRegs[((arminstr>>16)&0xf)], dummyreg3);
+				exRegs[((arminstr>>12)&0xf)] = andasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister3);
 				
 				#ifdef DEBUGEMU
 				printf("AND rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x] (5.4)",
 				(int)(arminstr>>12)&0xf,(unsigned int)DestroyableRegister2,
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
-				(int)(arminstr)&0xf,(unsigned int)dummyreg3
+				(int)(arminstr)&0xf,(unsigned int)DestroyableRegister3
 				);
 				#endif
 			}
@@ -3288,12 +3281,12 @@ if(isalu==1){
 				//#imm value is zero extended to 32bit, then subject
 				//to rotate right by twice the value in rotate field:
 				u32 DestroyableRegister2 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
-				dummyreg3 = eorasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2);
+				u32 DestroyableRegister3 = eorasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2);
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0);
+				exRegs[((arminstr>>12)&0xf)] = DestroyableRegister3;
 				#ifdef DEBUGEMU
 				printf("EOR rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) ",
-				(int)(arminstr>>12)&0xf,(unsigned int)dummyreg3,
+				(int)(arminstr>>12)&0xf,(unsigned int)DestroyableRegister3,
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
 				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)),(unsigned int)DestroyableRegister2,
@@ -3306,8 +3299,8 @@ if(isalu==1){
 				//exRegs[((arminstr>>16)&0xf)]
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
-			
+				//exRegs[((arminstr)&0xf)]
+				
 				//shifting part:
 				//applied to Rm available to shifted register
 				//Use bit[11]---bit[8](Rs's) bottom byte ammount 
@@ -3317,47 +3310,43 @@ if(isalu==1){
 			
 				//(currently at: shift field) rs shift opcode to Rm
 				DestroyableRegister3 = 0; 
+				DestroyableRegister4 = 0; 
 				if( ((DestroyableRegister3=((arminstr>>4)&0xfff)) &0x1) == 1){
-			
 					//lsl
 					if((DestroyableRegister3&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister3>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister3>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister3>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister3>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister4=lslasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister3>>4)&0xf)]&0xff));
 					}
 					//lsr
 					else if ((DestroyableRegister3&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister3>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister3>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister3>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister3>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister4=lsrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister3>>4)&0xf)]&0xff));
 					}
 					//asr
 					else if ((DestroyableRegister3&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister3>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister3>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister3>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister3>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister4=asrasm(exRegs[((arminstr)&0xf)], (exRegs[((DestroyableRegister3>>4)&0xf)]&0xff));
 					}
 					//ror
 					else if ((DestroyableRegister3&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister3>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister3>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister3>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister3>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister4=rorasm(exRegs[((arminstr)&0xf)], (exRegs[((DestroyableRegister3>>4)&0xf)]&0xff));
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
@@ -3366,55 +3355,50 @@ if(isalu==1){
 				else{
 				//show arminstr>>4
 				//printf("DestroyableRegister3:%x",DestroyableRegister3);
-			
 					//lsl
 					if((DestroyableRegister3&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lslasm(dummyreg3,(DestroyableRegister3>>3)&0x1f);
+						DestroyableRegister4=lslasm(exRegs[((arminstr)&0xf)], (DestroyableRegister3>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister3>>3)&0x1f));
+						printf("LSL rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister3>>3)&0x1f));
 						#endif
 					}
 					//lsr
 					else if ((DestroyableRegister3&0x6)==0x2){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lsrasm(dummyreg3,(DestroyableRegister3>>3)&0x1f);
+						DestroyableRegister4=lsrasm(exRegs[((arminstr)&0xf)], (DestroyableRegister3>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister3>>3)&0x1f));
+						printf("LSR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister3>>3)&0x1f));
 						#endif
 					}
 					//asr
 					else if ((DestroyableRegister3&0x6)==0x4){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=asrasm(dummyreg3,(DestroyableRegister3>>3)&0x1f);
+						DestroyableRegister4=asrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister3>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister3>>3)&0x1f));
+						printf("ASR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister3>>3)&0x1f));
 						#endif
 					}
 					//ror
 					else if ((DestroyableRegister3&0x6)==0x6){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=rorasm(dummyreg3,(DestroyableRegister3>>3)&0x1f);
+						DestroyableRegister4=rorasm(exRegs[((arminstr)&0xf)],(DestroyableRegister3>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister3>>3)&0x1f));
+						printf("ROR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister3>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//op 1 opc op 2
-				u32 DestroyableRegister4 = eorasm(exRegs[((arminstr>>16)&0xf)], dummyreg3);
+				u32 DestroyableRegister5 = eorasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister4);
 				//rd destination reg	 bit[15]---bit[12]
-				exRegs[((arminstr>>12)&0xf)] = DestroyableRegister4;
+				exRegs[((arminstr>>12)&0xf)] = DestroyableRegister5;
 				#ifdef DEBUGEMU
 				printf("EOR rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x] (5.4)",
-				(int)(arminstr>>12)&0xf,(unsigned int)DestroyableRegister4,
+				(int)(arminstr>>12)&0xf,(unsigned int)DestroyableRegister5,
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
-				(int)((arminstr)&0xf),(unsigned int)dummyreg3
+				(int)((arminstr)&0xf),(unsigned int)DestroyableRegister4
 				);
 				#endif
 			}
@@ -3455,7 +3439,7 @@ if(isalu==1){
 				//exRegs[((arminstr>>16)&0xf)]
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
+				//exRegs[((arminstr)&0xf)]
 				
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -3466,47 +3450,43 @@ if(isalu==1){
 				
 				//(currently at: shift field) rs shift opcode to Rm
 				u32 DestroyableRegister1 = 0;
+				u32 DestroyableRegister2 = 0;
 				if( ((DestroyableRegister1=((arminstr>>4)&0xfff)) &0x1) == 1){
-			
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
@@ -3518,51 +3498,47 @@ if(isalu==1){
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lslasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSL rm(%x),#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lsrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=asrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ASR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=rorasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ROR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//op 1 opc op 2
-				u32 DestroyableRegister2 = subasm(exRegs[((arminstr>>16)&0xf)], dummyreg3);
+				u32 DestroyableRegister3 = subasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2);
 				//rd destination reg	 bit[15]---bit[12]
-				exRegs[((arminstr>>12)&0xf)] = DestroyableRegister2;
+				exRegs[((arminstr>>12)&0xf)] = DestroyableRegister3;
 				#ifdef DEBUGEMU
 				printf("SUB rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x] (5.4)",
-				(int)((arminstr>>12)&0xf),(unsigned int)DestroyableRegister2,
+				(int)((arminstr>>12)&0xf),(unsigned int)DestroyableRegister3,
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
-				(int)((arminstr)&0xf),(unsigned int)dummyreg3
+				(int)((arminstr)&0xf),(unsigned int)DestroyableRegister2
 				);
 				#endif
 			}
@@ -3585,14 +3561,13 @@ if(isalu==1){
 				//#imm value is zero extended to 32bit, then subject
 				//to rotate right by twice the value in rotate field:
 				u32 DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
-				
-				dummyreg3=rsbasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister1);
-			
+				u32 DestroyableRegister2=rsbasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister1);
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0);
+				exRegs[((arminstr>>12)&0xf)] = DestroyableRegister2;
+				
 				#ifdef DEBUGEMU
 				printf("RSB rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) ",
-				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
+				(int)((arminstr>>12)&0xf),(unsigned int)DestroyableRegister2,
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
 				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)), (unsigned int)DestroyableRegister1,
@@ -3604,8 +3579,8 @@ if(isalu==1){
 				//exRegs[((arminstr>>16)&0xf)]
 				
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
-			
+				//exRegs[((arminstr)&0xf)]
+				
 				//shifting part:
 				//applied to Rm available to shifted register
 				//Use bit[11]---bit[8](Rs's) bottom byte ammount 
@@ -3615,47 +3590,44 @@ if(isalu==1){
 			
 				//(currently at: shift field) rs shift opcode to Rm
 				u32 DestroyableRegister1 = 0;
+				u32 DestroyableRegister2 = 0;
+				
 				if( ((DestroyableRegister1=((arminstr>>4)&0xfff)) &0x1) == 1){
-			
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
@@ -3668,37 +3640,33 @@ if(isalu==1){
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lslasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSL rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lsrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=asrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ASR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=rorasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ROR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -3706,13 +3674,13 @@ if(isalu==1){
 				}
 				//op 1 opc op 2
 				//rd destination reg	 bit[15]---bit[12]
-				exRegs[((arminstr>>12)&0xf)] = rsbasm(exRegs[((arminstr>>16)&0xf)], dummyreg3);
+				exRegs[((arminstr>>12)&0xf)] = rsbasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2);
 				
 				#ifdef DEBUGEMU
 				printf("RSB rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x] (5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)],
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
-				(int)((arminstr)&0xf),(unsigned int)dummyreg3
+				(int)((arminstr)&0xf),(unsigned int)DestroyableRegister2
 				);
 				#endif
 			}
@@ -3740,17 +3708,12 @@ if(isalu==1){
 				//PC directive (+0x8 prefetch)
 				if (((arminstr>>16)&0xf)==0xf){
 					//printf("[imm]PC fetch!");
-					DestroyableRegister1+=0x8;
-					dummyreg4=addasm(exRegs[((arminstr>>16)&0xf)],DestroyableRegister1); //+0x8 for prefetch
-				}
-				else{
-					dummyreg4=addasm(exRegs[((arminstr>>16)&0xf)],DestroyableRegister1);
+					DestroyableRegister1+=0x8; //+0x8 for prefetch
 				}
 				
 				//rd destination reg	 bit[15]---bit[12] ((arminstr>>12)&0xf)
-				//faststr((u8*)&dummyreg4, exRegs,((arminstr>>12)&0xf) , 32,0);
+				exRegs[(arminstr>>12)&0xf]=addasm(exRegs[((arminstr>>16)&0xf)],DestroyableRegister1);
 				
-				exRegs[(arminstr>>12)&0xf]=dummyreg4;
 				#ifdef DEBUGEMU
 				printf("ADD rd%d[%x]",(int)((arminstr>>12)&0xf),(unsigned int)exRegs[(arminstr>>12)&0xf]);
 				#endif
@@ -3762,7 +3725,7 @@ if(isalu==1){
 				//exRegs[((arminstr>>16)&0xf)]
 				
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
+				//exRegs[((arminstr)&0xf)]
 				
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -3771,47 +3734,44 @@ if(isalu==1){
 				
 				//(currently at: shift field) rs shift opcode to Rm
 				u32 DestroyableRegister1 = 0;
+				u32 DestroyableRegister2 = 0;
 				if( ((DestroyableRegister1=((arminstr>>4)&0xfff)) &0x1) == 1){
 			
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d),rs(%x)[%x] ",(int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(int)dummyreg4);
+						printf("LSL rm(%d),rs(%x)[%x] ",(int)((arminstr)&0xf),(int)((DestroyableRegister1>>4)&0xf),(int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4,exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d),rs(%d)[%x] ",(int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d),rs(%d)[%x] ",(int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d),rs(%d)[%x] ",(int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
@@ -3824,37 +3784,33 @@ if(isalu==1){
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lslasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSL rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lsrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=asrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ASR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=rorasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ROR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -3868,31 +3824,29 @@ if(isalu==1){
 					printf("[reg]PC fetch!");
 					#endif
 					
-					dummyreg3=addasm(exRegs[((arminstr>>16)&0xf)], dummyreg3+(0x12)); //+0x12 for prefetch
+					DestroyableRegister2=addasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2+(0x12)); //+0x12 for prefetch
 			
 					//check for S bit here and update (virt<-asm) processor flags
 					if(setcond_arm==1)
 						updatecpuflags(0,cpsrasm,0x0);
 				}
 				else{
-					dummyreg3=addasm(exRegs[((arminstr>>16)&0xf)], dummyreg3);
+					DestroyableRegister2=addasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2);
 					//check for S bit here and update (virt<-asm) processor flags
 					if(setcond_arm==1)
 						updatecpuflags(0,cpsrasm,0x0);
 				}
 				
 				//rd destination reg	 bit[15]---bit[12]
-				//faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,1);
-				exRegs[(arminstr>>12)&0xf]=dummyreg3;
+				exRegs[(arminstr>>12)&0xf]=DestroyableRegister2;
 				
 				#ifdef DEBUGEMU
 				printf("ADD rd(%d)<-rn(%d)[%x],rm(%d)[%x] (5.4)",
 				(int)((arminstr>>12)&0xf),
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
-				(int)((arminstr)&0xf),(unsigned int)dummyreg3
+				(int)((arminstr)&0xf),(unsigned int)DestroyableRegister2
 				);
 				#endif
-				
 			}
 			return 0;
 		}
@@ -3911,13 +3865,12 @@ if(isalu==1){
 				//to rotate right by twice the value in rotate field:
 				u32 DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
 				
-				dummyreg3=adcasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister1);
-			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0);
+				exRegs[((arminstr>>12)&0xf)]=adcasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister1);
+				
 				#ifdef DEBUGEMU
 				printf("ADC rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
-				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
+				(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)],
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
 				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)), (unsigned int)DestroyableRegister1
@@ -3930,8 +3883,8 @@ if(isalu==1){
 				//exRegs[((arminstr>>16)&0xf)]
 				
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
-			
+				//exRegs[((arminstr)&0xf)]
+				
 				//shifting part:
 				//applied to Rm available to shifted register
 				//Use bit[11]---bit[8](Rs's) bottom byte ammount 
@@ -3939,47 +3892,44 @@ if(isalu==1){
 				
 				//(currently at: shift field) rs shift opcode to Rm
 				u32 DestroyableRegister1 = 0;
+				u32 DestroyableRegister2 = 0;
+				
 				if( ((DestroyableRegister1=((arminstr>>4)&0xfff)) &0x1) == 1){
-			
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
@@ -3992,37 +3942,33 @@ if(isalu==1){
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lslasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSL rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lsrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=asrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ASR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=rorasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ROR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -4030,12 +3976,12 @@ if(isalu==1){
 				}
 				//op 1 opc op 2
 				//rd destination reg	 bit[15]---bit[12]
-				exRegs[((arminstr>>12)&0xf)] = adcasm(exRegs[((arminstr>>16)&0xf)], dummyreg3);
+				exRegs[((arminstr>>12)&0xf)] = adcasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2);
 				#ifdef DEBUGEMU
 				printf("ADC rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)],
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
-				(int)((arminstr)&0xf),(unsigned int)dummyreg3
+				(int)((arminstr)&0xf),(unsigned int)DestroyableRegister2
 				);
 				#endif
 			}
@@ -4051,7 +3997,6 @@ if(isalu==1){
 		//sbc rd,rs
 		case(0x6):{
 			if(immop_arm==1){	//for #Inmediate OP operate
-			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -4061,13 +4006,12 @@ if(isalu==1){
 				//to rotate right by twice the value in rotate field:
 				u32 DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
 				
-				dummyreg3=sbcasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister1);
-			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0);
+				exRegs[((arminstr>>12)&0xf)]=sbcasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister1);
+				
 				#ifdef DEBUGEMU
 				printf("SBC rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
-				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
+				(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)],
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
 				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)), (unsigned int)DestroyableRegister1
@@ -4080,58 +4024,54 @@ if(isalu==1){
 				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
-			
+				//exRegs[((arminstr)&0xf)]
+				
 				//shifting part:
 				//applied to Rm available to shifted register
 				//Use bit[11]---bit[8](Rs's) bottom byte ammount 
 				//to do shift #Imm & opcode
 			
 				//printf("bits:%x",((arminstr>>4)&0xfff));
-			
+				
 				//(currently at: shift field) rs shift opcode to Rm
 				u32 DestroyableRegister2 = 0;
+				u32 DestroyableRegister3 = 0;
 				if( ((DestroyableRegister2=((arminstr>>4)&0xfff)) &0x1) == 1){
-			
 					//lsl
 					if((DestroyableRegister2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister2>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister3=lslasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
 					//lsr
 					else if ((DestroyableRegister2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4,exRegs, ((DestroyableRegister2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister2>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister3=lsrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
 					//asr
 					else if ((DestroyableRegister2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister2>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister3=asrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
 					//ror
 					else if ((DestroyableRegister2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister2>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister3=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
@@ -4144,37 +4084,33 @@ if(isalu==1){
 					//lsl
 					if((DestroyableRegister2&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lslasm(dummyreg3,(DestroyableRegister2>>3)&0x1f);
+						DestroyableRegister3=lslasm(exRegs[((arminstr)&0xf)],(DestroyableRegister2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister2>>3)&0x1f));
+						printf("LSL rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
 					//lsr
 					else if ((DestroyableRegister2&0x6)==0x2){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lsrasm(dummyreg3,(DestroyableRegister2>>3)&0x1f);
+						DestroyableRegister3=lsrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister2>>3)&0x1f));
+						printf("LSR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
 					//asr
 					else if ((DestroyableRegister2&0x6)==0x4){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=asrasm(dummyreg3,(DestroyableRegister2>>3)&0x1f);
+						DestroyableRegister3=asrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister2>>3)&0x1f));
+						printf("ASR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
 					//ror
 					else if ((DestroyableRegister2&0x6)==0x6){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=rorasm(dummyreg3,(DestroyableRegister2>>3)&0x1f);
+						DestroyableRegister3=rorasm(exRegs[((arminstr)&0xf)],(DestroyableRegister2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister2>>3)&0x1f));
+						printf("ROR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -4182,13 +4118,13 @@ if(isalu==1){
 				}
 				//op 1 opc op 2
 				//rd destination reg	 bit[15]---bit[12]
-				exRegs[((arminstr>>12)&0xf)] = sbcasm(dummyreg,dummyreg3);
+				exRegs[((arminstr>>12)&0xf)] = sbcasm(dummyreg, DestroyableRegister3);
 				
 				#ifdef DEBUGEMU
 				printf("SBC rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)],
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
-				(unsigned int)((arminstr)&0xf),(unsigned int)dummyreg3
+				(unsigned int)((arminstr)&0xf),(unsigned int)DestroyableRegister3
 				);
 				#endif
 			}
@@ -4213,13 +4149,13 @@ if(isalu==1){
 				//#imm value is zero extended to 32bit, then subject
 				//to rotate right by twice the value in rotate field:
 				u32 DestroyableRegister2 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
-				dummyreg3=rscasm(dummyreg, DestroyableRegister2);
-			
+				
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0);
+				exRegs[((arminstr>>12)&0xf)]=rscasm(dummyreg, DestroyableRegister2);
+				
 				#ifdef DEBUGEMU
 				printf("RSC rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
-				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
+				(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)],
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(unsigned int)(arminstr&0xff),
 				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)),(unsigned int)DestroyableRegister2
@@ -4232,8 +4168,8 @@ if(isalu==1){
 				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
-			
+				//exRegs[((arminstr)&0xf)]
+				
 				//shifting part:
 				//applied to Rm available to shifted register
 				//Use bit[11]---bit[8](Rs's) bottom byte ammount 
@@ -4243,47 +4179,45 @@ if(isalu==1){
 			
 				//(currently at: shift field) rs shift opcode to Rm
 				u32 DestroyableRegister2 = 0;
+				u32 DestroyableRegister3 = 0;
+				
 				if( ((DestroyableRegister2=((arminstr>>4)&0xfff)) &0x1) == 1){
 			
 					//lsl
 					if((DestroyableRegister2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister2>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister3=lslasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
 					//lsr
 					else if ((DestroyableRegister2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister2>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister3=lsrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
 					//asr
 					else if ((DestroyableRegister2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister2>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister3=asrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
 					//ror
 					else if ((DestroyableRegister2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)dummyreg3,(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%x),rs(%x)[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister2>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister3=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
@@ -4292,41 +4226,36 @@ if(isalu==1){
 				else{
 					//show arminstr>>4
 					//printf("DestroyableRegister2:%x", DestroyableRegister2);
-			
 					//lsl
 					if((DestroyableRegister2&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lslasm(dummyreg3,(DestroyableRegister2>>3)&0x1f);
+						DestroyableRegister3=lslasm(exRegs[((arminstr)&0xf)],(DestroyableRegister2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister2>>3)&0x1f));
+						printf("LSL rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
 					//lsr
 					else if ((DestroyableRegister2&0x6)==0x2){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lsrasm(dummyreg3,(DestroyableRegister2>>3)&0x1f);
+						DestroyableRegister3=lsrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister2>>3)&0x1f));
+						printf("LSR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
 					//asr
 					else if ((DestroyableRegister2&0x6)==0x4){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=asrasm(dummyreg3,(DestroyableRegister2>>3)&0x1f);
+						DestroyableRegister3=asrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister2>>3)&0x1f));
+						printf("ASR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
 					//ror
 					else if ((DestroyableRegister2&0x6)==0x6){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=rorasm(dummyreg3,(DestroyableRegister2>>3)&0x1f);
+						DestroyableRegister3=rorasm(exRegs[((arminstr)&0xf)],(DestroyableRegister2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm[%x],#imm[%x] ",(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister2>>3)&0x1f));
+						printf("ROR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -4334,13 +4263,13 @@ if(isalu==1){
 				}
 				//op 1 opc op 2
 				//rd destination reg	 bit[15]---bit[12]
-				exRegs[((arminstr>>12)&0xf)] = rscasm(dummyreg,dummyreg3);
+				exRegs[((arminstr>>12)&0xf)] = rscasm(dummyreg, DestroyableRegister3);
 			
 				#ifdef DEBUGEMU
 				printf("RSC rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)],
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
-				(int)((arminstr)&0xf),(unsigned int)dummyreg3
+				(int)((arminstr)&0xf),(unsigned int)DestroyableRegister3
 				);
 				#endif
 			}
@@ -4365,8 +4294,8 @@ if(isalu==1){
 				//#imm value is zero extended to 32bit, then subject
 				//to rotate right by twice the value in rotate field:
 				u32 DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
+				tstasm(dummyreg, DestroyableRegister1);
 				
-				dummyreg3=tstasm(dummyreg,DestroyableRegister1);
 				#ifdef DEBUGEMU
 				printf("TST [and] rn%d[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
@@ -4381,8 +4310,8 @@ if(isalu==1){
 				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
-			
+				//exRegs[((arminstr)&0xf)]
+				
 				//shifting part:
 				//applied to Rm available to shifted register
 				//Use bit[11]---bit[8](Rs's) bottom byte ammount 
@@ -4392,46 +4321,43 @@ if(isalu==1){
 				
 				//(currently at: shift field) rs shift opcode to Rm
 				u32 DestroyableRegister1 = 0;
+				u32 DestroyableRegister2= 0;
 				if( ((DestroyableRegister1=((arminstr>>4)&0xfff)) &0x1) == 1){
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
@@ -4444,37 +4370,33 @@ if(isalu==1){
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lslasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lsrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=asrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=rorasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -4482,13 +4404,13 @@ if(isalu==1){
 				}
 		
 				//op 1 opc op 2
-				u32 DestroyableRegister2 = tstasm(dummyreg,dummyreg3);
+				u32 DestroyableRegister3 = tstasm(dummyreg, DestroyableRegister2);
 					
 				#ifdef DEBUGEMU
 				printf("TST [%x]<-rn(%d)[%x],rm(%d)[%x](5.4)",
-				(unsigned int)DestroyableRegister2,
+				(unsigned int)DestroyableRegister3,
 				(int)((arminstr>>16)&0xf),(unsigned)dummyreg,
-				(int)((arminstr)&0xf),(unsigned int)dummyreg3
+				(int)((arminstr)&0xf),(unsigned int)DestroyableRegister2
 				);
 				#endif
 			}
@@ -4497,7 +4419,7 @@ if(isalu==1){
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
 				//printf(" CPSR:%x",cpsrvirt);
-		return 0;
+			return 0;
 		}
 		break;
 	
@@ -4529,8 +4451,8 @@ if(isalu==1){
 				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
-			
+				//exRegs[((arminstr)&0xf)]
+				
 				//shifting part:
 				//applied to Rm available to shifted register
 				//Use bit[11]---bit[8](Rs's) bottom byte ammount 
@@ -4540,47 +4462,43 @@ if(isalu==1){
 			
 				//(currently at: shift field) rs shift opcode to Rm
 				u32 DestroyableRegister2 = 0;
+				u32 DestroyableRegister3 = 0;
 				if( ((DestroyableRegister2=((arminstr>>4)&0xfff)) &0x1) == 1){
-			
 					//lsl
 					if((DestroyableRegister2&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister2>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister2>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister3=lslasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
 					//lsr
 					else if ((DestroyableRegister2&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister2>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister2>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister3=lsrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
 					//asr
 					else if ((DestroyableRegister2&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister2>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister2>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister3=asrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
 					//ror
 					else if ((DestroyableRegister2&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister2>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister2>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister2>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister2>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister3=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
@@ -4593,48 +4511,44 @@ if(isalu==1){
 					//lsl
 					if((DestroyableRegister2&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lslasm(dummyreg3,(DestroyableRegister2>>3)&0x1f);
+						DestroyableRegister3=lslasm(exRegs[((arminstr)&0xf)],(DestroyableRegister2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister2>>3)&0x1f));
+						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
 					//lsr
 					else if ((DestroyableRegister2&0x6)==0x2){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lsrasm(dummyreg3,(DestroyableRegister2>>3)&0x1f);
+						DestroyableRegister3=lsrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister2>>3)&0x1f));
+						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
 					//asr
 					else if ((DestroyableRegister2&0x6)==0x4){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=asrasm(dummyreg3,(DestroyableRegister2>>3)&0x1f);
+						DestroyableRegister3=asrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister2>>3)&0x1f));
+						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
 					//ror
 					else if ((DestroyableRegister2&0x6)==0x6){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=rorasm(dummyreg3,(DestroyableRegister2>>3)&0x1f);
+						DestroyableRegister3=rorasm(exRegs[((arminstr)&0xf)],(DestroyableRegister2>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister2>>3)&0x1f));
+						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//op 1 opc op 2
-				teqasm(dummyreg,dummyreg3);
+				teqasm(dummyreg, DestroyableRegister3);
 				#ifdef DEBUGEMU
 				printf("TEQ rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
-				(int)((arminstr)&0xf),(unsigned int)dummyreg3
+				(int)((arminstr)&0xf),(unsigned int)DestroyableRegister3
 				);
 				#endif
 			}
@@ -4675,8 +4589,8 @@ if(isalu==1){
 				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
-			
+				//exRegs[((arminstr)&0xf)]
+				
 				//shifting part:
 				//applied to Rm available to shifted register
 				//Use bit[11]---bit[8](Rs's) bottom byte ammount 
@@ -4686,46 +4600,43 @@ if(isalu==1){
 			
 				//(currently at: shift field) rs shift opcode to Rm
 				u32 DestroyableRegister1 = 0;
+				u32 DestroyableRegister2 = 0;
 				if( ((DestroyableRegister1=((arminstr>>4)&0xfff)) &0x1) == 1){
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
@@ -4734,52 +4645,47 @@ if(isalu==1){
 				else{
 					//show arminstr>>4
 					//printf("DestroyableRegister1:%x",DestroyableRegister1);
-			
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lslasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lsrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=asrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=rorasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//op 1 opc op 2
-				cmpasm(dummyreg,dummyreg3);
+				cmpasm(dummyreg, exRegs[((arminstr)&0xf)]);
 				#ifdef DEBUGEMU
 				printf("CMP rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
-				(int)((arminstr)&0xf),(unsigned int)dummyreg3
+				(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)]
 				);
 				#endif
 			}
@@ -4795,7 +4701,6 @@ if(isalu==1){
 		//cmn rd,rs //set CPSR
 		case(0xb):{
 			if(immop_arm==1){	//for #Inmediate OP operate
-			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
@@ -4818,10 +4723,10 @@ if(isalu==1){
 		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
-			
+				
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
-			
+				//exRegs[((arminstr)&0xf)]
+				
 				//shifting part:
 				//applied to Rm available to shifted register
 				//Use bit[11]---bit[8](Rs's) bottom byte ammount 
@@ -4831,47 +4736,45 @@ if(isalu==1){
 			
 				//(currently at: shift field) rs shift opcode to Rm
 				u32 DestroyableRegister1 = 0;
+				u32 DestroyableRegister2 = 0;
+				
 				if( ((DestroyableRegister1=((arminstr>>4)&0xfff)) &0x1) == 1){
 			
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
@@ -4884,37 +4787,33 @@ if(isalu==1){
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lslasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lsrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=asrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=rorasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -4922,15 +4821,15 @@ if(isalu==1){
 				}
 		
 				//op 1 opc op 2
-				cmnasm(dummyreg, dummyreg3);
+				cmnasm(dummyreg, DestroyableRegister2);
 				#ifdef DEBUGEMU
 				printf("CMN rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
-				(int)((arminstr)&0xf),(unsigned int)dummyreg3
+				(int)((arminstr)&0xf),(unsigned int)DestroyableRegister2
 				);
 				#endif
 			}
-		
+			
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
@@ -4942,23 +4841,21 @@ if(isalu==1){
 		//orr rd,rs	//set CPSR
 		case(0xc):{
 			if(immop_arm==1){	//for #Inmediate OP operate
-			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
-			
+				
 				//#Imm (operand 2)		 bit[11]---bit[0]
 				//rotate field:
 				//#imm value is zero extended to 32bit, then subject
 				//to rotate right by twice the value in rotate field:
 				u32 DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
 				
-				dummyreg3=orrasm(dummyreg, DestroyableRegister1);
-			
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0);
+				exRegs[((arminstr>>12)&0xf)]=orrasm(dummyreg, DestroyableRegister1);
+				
 				#ifdef DEBUGEMU
 				printf("ORR rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
-				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
+				(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)],
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(unsigned int)(arminstr&0xff),
 				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)), (unsigned int)DestroyableRegister1
@@ -4971,8 +4868,8 @@ if(isalu==1){
 				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
-			
+				//exRegs[((arminstr)&0xf)]
+				
 				//shifting part:
 				//applied to Rm available to shifted register
 				//Use bit[11]---bit[8](Rs's) bottom byte ammount 
@@ -4982,47 +4879,44 @@ if(isalu==1){
 			
 				//(currently at: shift field) rs shift opcode to Rm
 				u32 DestroyableRegister1 = 0;
+				u32 DestroyableRegister2 = 0;
 				if( ((DestroyableRegister1=((arminstr>>4)&0xfff)) &0x1) == 1){
 			
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
@@ -5035,44 +4929,40 @@ if(isalu==1){
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lslasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lsrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=asrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=rorasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//op 1 opc op 2
-				DestroyableRegister1=orrasm(dummyreg,dummyreg3);
+				DestroyableRegister1=orrasm(dummyreg, DestroyableRegister2);
 			
 				//rd destination reg	 bit[15]---bit[12]
 				exRegs[((arminstr>>12)&0xf)] = DestroyableRegister1;
@@ -5081,7 +4971,7 @@ if(isalu==1){
 				printf("ORR rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)DestroyableRegister1,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
-				(int)((arminstr)&0xf),(unsigned int)dummyreg3
+				(int)((arminstr)&0xf),(unsigned int)DestroyableRegister2
 				);
 				#endif
 			}
@@ -5100,7 +4990,7 @@ if(isalu==1){
 			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//fastldr((u8*)&dummyreg, (u32)gbavirtreg[0], ((arminstr>>16)&0xf), 32,0);
-			
+				
 				//#Imm (operand 2)		 bit[11]---bit[0]
 				//rotate field:
 				//#imm value is zero extended to 32bit, then subject
@@ -5124,7 +5014,7 @@ if(isalu==1){
 				//fastldr((u8*)&dummyreg, (u32)gbavirtreg[0], ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
+				//exRegs[((arminstr)&0xf)]
 				
 				//shifting part:
 				//applied to Rm available to shifted register
@@ -5135,46 +5025,42 @@ if(isalu==1){
 			
 				//(currently at: shift field) rs shift opcode to Rm
 				u32 DestroyableRegister1 = 0;
+				u32 DestroyableRegister2 = 0;
 				if( ((DestroyableRegister1=((arminstr>>4)&0xfff)) &0x1) == 1){
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
-						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
@@ -5187,44 +5073,40 @@ if(isalu==1){
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lslasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lsrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=asrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=rorasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//opcode rd,rm
-				dummyreg=movasm(dummyreg3);
+				dummyreg=movasm(DestroyableRegister2);
 				
 				//if PC align for prefetch
 				if(((arminstr)&0xf)==0xf)
@@ -5235,13 +5117,13 @@ if(isalu==1){
 				#ifdef DEBUGEMU
 				printf("MOV rd(%x)[%x],rm(%d)[%x] (5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg,
-				(int)((arminstr&0xfff) << 0x14) >> ((arminstr&0xfff) * 2),(unsigned int)dummyreg3
+				(int)((arminstr&0xfff) << 0x14) >> ((arminstr&0xfff) * 2),(unsigned int)DestroyableRegister2
 				);
 				#endif
 				//check for S bit here and update (virt<-asm) processor flags
 				if(setcond_arm==1)
 					updatecpuflags(0,cpsrasm,0x0);
-					//printf(" CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",cpsrvirt);
 			}
 			return 0;
 		}
@@ -5259,14 +5141,13 @@ if(isalu==1){
 				//#imm value is zero extended to 32bit, then subject
 				//to rotate right by twice the value in rotate field:
 				u32 DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
-			
-				dummyreg3=bicasm(dummyreg,DestroyableRegister1);
-			
+				
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0);
+				exRegs[((arminstr>>12)&0xf)]=bicasm(dummyreg,DestroyableRegister1);
+				
 				#ifdef DEBUGEMU
 				printf("BIC rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
-				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3,
+				(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)],
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
 				(unsigned int)(arminstr&0xff),
 				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)), (unsigned int)DestroyableRegister1
@@ -5279,8 +5160,8 @@ if(isalu==1){
 				fastldr((u8*)&dummyreg, exRegs, ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
-			
+				//exRegs[((arminstr)&0xf)]
+				
 				//shifting part:
 				//applied to Rm available to shifted register
 				//Use bit[11]---bit[8](Rs's) bottom byte ammount 
@@ -5290,47 +5171,43 @@ if(isalu==1){
 			
 				//(currently at: shift field) rs shift opcode to Rm
 				u32 DestroyableRegister1 = 0;
+				u32 DestroyableRegister2 = 0;
 				if( ((DestroyableRegister1=((arminstr>>4)&0xfff)) &0x1) == 1){
-			
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
@@ -5343,37 +5220,33 @@ if(isalu==1){
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lslasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lsrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=asrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=rorasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
@@ -5381,14 +5254,14 @@ if(isalu==1){
 				}
 				//op 1 opc op 2
 				//rd destination reg	 bit[15]---bit[12]
-				DestroyableRegister1=bicasm(dummyreg,dummyreg3);
+				DestroyableRegister1=bicasm(dummyreg, DestroyableRegister2);
 				exRegs[((arminstr>>12)&0xf)] = DestroyableRegister1;
 				
 				#ifdef DEBUGEMU
 				printf("BIC rd(%d)[%x]<-rn(%d)[%x],rm(%d)[%x](5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)DestroyableRegister1,
 				(int)((arminstr>>16)&0xf),(unsigned int)dummyreg,
-				(int)((arminstr)&0xf),(unsigned int)dummyreg3
+				(int)((arminstr)&0xf),(unsigned int)DestroyableRegister2
 				);
 				#endif
 			}
@@ -5431,8 +5304,8 @@ if(isalu==1){
 				//fastldr((u8*)&dummyreg, (u32)gbavirtreg[0], ((arminstr>>16)&0xf), 32,0);
 			
 				//rm (operand 2 )		 bit[11]---bit[0]
-				fastldr((u8*)&dummyreg3, exRegs, ((arminstr)&0xf), 32,0);
-			
+				//exRegs[((arminstr)&0xf)]
+				
 				//shifting part:
 				//applied to Rm available to shifted register
 				//Use bit[11]---bit[8](Rs's) bottom byte ammount 
@@ -5442,47 +5315,43 @@ if(isalu==1){
 			
 				//(currently at: shift field) rs shift opcode to Rm
 				u32 DestroyableRegister1 = 0;
+				u32 DestroyableRegister2 = 0;
 				if( ((DestroyableRegister1=((arminstr>>4)&0xfff)) &0x1) == 1){
-			
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSL rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lslasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("LSR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=lsrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ASR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=asrasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//rs loaded into dr4
-						fastldr((u8*)&dummyreg4, exRegs, ((DestroyableRegister1>>4)&0xf), 32,0); 
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg3,(int)((DestroyableRegister1>>4)&0xf),(unsigned int)dummyreg4);
+						printf("ROR rm(%d)[%x],rs(%d)[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(int)((DestroyableRegister1>>4)&0xf),(unsigned int)exRegs[((DestroyableRegister1>>4)&0xf)]);
 						#endif
 						//least signif byte (rs) used opc rm,rs
-						dummyreg3=rorasm(dummyreg3,(dummyreg4&0xff));
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
@@ -5495,51 +5364,47 @@ if(isalu==1){
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lslasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lslasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//lsr
 					else if ((DestroyableRegister1&0x6)==0x2){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=lsrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=lsrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//asr
 					else if ((DestroyableRegister1&0x6)==0x4){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=asrasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=asrasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//ror
 					else if ((DestroyableRegister1&0x6)==0x6){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
-						dummyreg4=dummyreg3;
-						dummyreg3=rorasm(dummyreg3,(DestroyableRegister1>>3)&0x1f);
+						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(DestroyableRegister1>>3)&0x1f);
 						#ifdef DEBUGEMU
-						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((DestroyableRegister1>>3)&0x1f));
+						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
 					//compatibility: refresh CPU flags when barrel shifter is used
 					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//opcode rd,rm
-				dummyreg=mvnasm(dummyreg3);
+				dummyreg=mvnasm(DestroyableRegister2);
 		
 				//rd (1st op reg) 		 bit[19]---bit[16] 
 				faststr((u8*)&dummyreg, exRegs, ((arminstr>>12)&0xf), 32,0);
 				#ifdef DEBUGEMU
 				printf("MVN rd(%d)[%x],rm(%d)[%x] (5.4)",
 				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg,
-				(int)((arminstr)&0xf),(unsigned int)dummyreg3
+				(int)((arminstr)&0xf),(unsigned int)DestroyableRegister2
 				);
 				#endif
 			}
@@ -5753,19 +5618,19 @@ switch( ((arminstr>>22)&0x3f) + ((arminstr>>4)&0xf) ){
 				//exRegs[((arminstr>>8)&0xf)]
 				
 				//rn
-				fastldr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0); 
+				//exRegs[((arminstr>>12)&0xf)]
 				
 				#ifdef DEBUGEMU
 				printf("mla rd(%d),rm(%d)[%x],rs(%d)[%x],rn(%d)[%x] ",
 				(int)((arminstr>>16)&0xf),
 				(int)(arminstr&0xf),(unsigned int)dummyreg,
 				(int)((arminstr>>8)&0xf),(unsigned int)exRegs[((arminstr>>8)&0xf)],
-				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3
+				(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)]
 				);
 				#endif
 				
 				//rd
-				exRegs[((arminstr>>16)&0xf)]=mlaasm(dummyreg, exRegs[((arminstr>>8)&0xf)], dummyreg3);
+				exRegs[((arminstr>>16)&0xf)]=mlaasm(dummyreg, exRegs[((arminstr>>8)&0xf)], exRegs[((arminstr>>12)&0xf)]);
 				
 			break;
 			
@@ -5778,19 +5643,19 @@ switch( ((arminstr>>22)&0x3f) + ((arminstr>>4)&0xf) ){
 				//exRegs[((arminstr>>8)&0xf)]
 				
 				//rn
-				fastldr((u8*)&dummyreg3, exRegs, ((arminstr>>12)&0xf), 32,0); 
+				//exRegs[((arminstr>>12)&0xf)]
 				
 				#ifdef DEBUGEMU
 				printf("mla rd(%d),rm(%d)[%x],rs(%d)[%x],rn(%d)[%x] (PSR s)",
 				(int)((arminstr>>16)&0xf),
 				(int)(arminstr&0xf),(unsigned int)dummyreg,
 				(int)((arminstr>>8)&0xf),(unsigned int)exRegs[((arminstr>>8)&0xf)],
-				(int)((arminstr>>12)&0xf),(unsigned int)dummyreg3
+				(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)]
 				);
 				#endif
 				
 				//rd
-				exRegs[((arminstr>>16)&0xf)]=mlaasm(dummyreg, exRegs[((arminstr>>8)&0xf)], dummyreg3);
+				exRegs[((arminstr>>16)&0xf)]=mlaasm(dummyreg, exRegs[((arminstr>>8)&0xf)], exRegs[((arminstr>>12)&0xf)]);
 				
 				//update cpu flags
 				updatecpuflags(0,cpsrasm,0x0);
@@ -5811,26 +5676,27 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 		//exRegs[((arminstr>>12)&0xf)]
 		
 		//rn
-		fastldr((u8*)&dummyreg3, exRegs, ((arminstr>>16)&0xf), 32,0); 
+		//exRegs[((arminstr>>16)&0xf), 32,0)]
+		
+		u32 DestroyableRegister3 = exRegs[((arminstr>>16)&0xf), 32,0)];
 		
 		//IF NOT INMEDIATE (i=1)
-		//decode = dummyreg / rd = exRegs[((arminstr>>12)&0xf)] / rn = dummyreg3 / #imm|rm index /
-		//post shifted OR #imm shifted = dummyreg4
+		//decode = dummyreg / rd = exRegs[((arminstr>>12)&0xf)] / rn = DestroyableRegister3 / #imm|rm index /
+		//post shifted OR #imm shifted = exRegs[((arminstr)&0xf)]
 		
-		//dummyreg4 = calculated address/value (inside #imm/reg)
+		u32 DestroyableRegister5 = 0;
+		//DestroyableRegister5 = calculated address/value (inside #imm/reg)
 		//If shifted register? (offset is register Rm)
 		if((dummyreg&0x20)==0x20){
-			
 			//R15/PC must not be chosen at Rm!
 			if (((arminstr)&0xf)==0xf) return 0;
 			
 			//rm (operand 2 )		 bit[11]---bit[0]
-			fastldr((u8*)&dummyreg4, exRegs, ((arminstr)&0xf), 32,0);
+			//exRegs[((arminstr)&0xf)]
 			
 			//(currently at: shift field) rs shift opcode to Rm
 			u32 destroyableRegister4 = 0;
 			if( ((destroyableRegister4=((arminstr>>4)&0xff)) &0x1) == 1){
-			
 				//lsl
 				if((destroyableRegister4&0x6)==0x0){
 					//rs loaded
@@ -5840,7 +5706,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 					printf("LSL rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((destroyableRegister4>>4)&0xf),(unsigned int)destroyableRegister);
 					#endif
 					//least signif byte (rs) uses: opcode rm,rs
-					dummyreg4=lslasm(dummyreg4,(destroyableRegister&0xff));
+					DestroyableRegister5=lslasm(exRegs[((arminstr)&0xf)],(destroyableRegister&0xff));
 				}
 				//lsr
 				else if ((destroyableRegister4&0x6)==0x2){
@@ -5851,7 +5717,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 					printf("LSR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((destroyableRegister4>>4)&0xf),(unsigned int)destroyableRegister);
 					#endif
 					//least signif byte (rs) uses: opcode rm,rs
-					dummyreg4=lsrasm(dummyreg4,(destroyableRegister&0xff));
+					DestroyableRegister5=lsrasm(exRegs[((arminstr)&0xf)],(destroyableRegister&0xff));
 				}
 				//asr
 				else if ((destroyableRegister4&0x6)==0x4){
@@ -5862,7 +5728,7 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 					printf("ASR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((destroyableRegister4>>4)&0xf),(unsigned int)destroyableRegister);
 					#endif
 					//least signif byte (rs) uses: opcode rm,rs
-					dummyreg4=asrasm(dummyreg4,(destroyableRegister&0xff));
+					DestroyableRegister5=asrasm(exRegs[((arminstr)&0xf)],(destroyableRegister&0xff));
 				}
 				//ror
 				else if ((destroyableRegister4&0x6)==0x6){
@@ -5873,46 +5739,46 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 					printf("ROR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((destroyableRegister4>>4)&0xf),(unsigned int)destroyableRegister);
 					#endif
 					//least signif byte (rs) uses: opcode rm,rs
-					dummyreg4=rorasm(dummyreg4,(destroyableRegister&0xff));
+					DestroyableRegister5=rorasm(exRegs[((arminstr)&0xf)],(destroyableRegister&0xff));
 				}
-			//compatibility: refresh CPU flags when barrel shifter is used
-			updatecpuflags(0,cpsrasm,0x0);
+				//compatibility: refresh CPU flags when barrel shifter is used
+				updatecpuflags(0,cpsrasm,0x0);
 			}
 			//#Imm ammount shift & opcode to Rm
 			else{
 				//show arminstr>>4
 				//printf("exRegs[((arminstr>>12)&0xf)]:%x",exRegs[((arminstr>>12)&0xf)]);
-			
+				
 				//lsl
 				if((destroyableRegister4&0x6)==0x0){
 					//bit[11]---bit[7] #Imm used opc rm,#Imm
-					dummyreg4=lslasm(dummyreg4,((destroyableRegister4>>3)&0x1f));
+					DestroyableRegister5=lslasm(exRegs[((arminstr)&0xf)],((destroyableRegister4>>3)&0x1f));
 					#ifdef DEBUGEMU
-					printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((destroyableRegister4>>3)&0x1f));
+					printf("LSL rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((destroyableRegister4>>3)&0x1f));
 					#endif
 				}
 				//lsr
 				else if ((destroyableRegister4&0x6)==0x2){
 					//bit[11]---bit[7] #Imm used opc rm,#Imm
-					dummyreg4=lsrasm(dummyreg4,((destroyableRegister4>>3)&0x1f));
+					DestroyableRegister5=lsrasm(exRegs[((arminstr)&0xf)],((destroyableRegister4>>3)&0x1f));
 					#ifdef DEBUGEMU
-					printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((destroyableRegister4>>3)&0x1f));
+					printf("LSR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((destroyableRegister4>>3)&0x1f));
 					#endif
 				}
 				//asr
 				else if ((destroyableRegister4&0x6)==0x4){
 					//bit[11]---bit[7] #Imm used opc rm,#Imm
-					dummyreg4=asrasm(dummyreg4,((destroyableRegister4>>3)&0x1f));
+					DestroyableRegister5=asrasm(exRegs[((arminstr)&0xf)],((destroyableRegister4>>3)&0x1f));
 					#ifdef DEBUGEMU
-					printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((destroyableRegister4>>3)&0x1f));
+					printf("ASR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((destroyableRegister4>>3)&0x1f));
 					#endif
 				}
 				//ror
 				else if ((destroyableRegister4&0x6)==0x6){
 					//bit[11]---bit[7] #Imm used opc rm,#Imm
-					dummyreg4=rorasm(dummyreg4,((destroyableRegister4>>3)&0x1f));
+					DestroyableRegister5=rorasm(exRegs[((arminstr)&0xf)],((destroyableRegister4>>3)&0x1f));
 					#ifdef DEBUGEMU
-					printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)dummyreg4,(unsigned int)((destroyableRegister4>>3)&0x1f));
+					printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((destroyableRegister4>>3)&0x1f));
 					#endif
 				}
 				//compatibility: refresh CPU flags when barrel shifter is used
@@ -5923,11 +5789,10 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 		//ELSE IF INMEDIATE (i=0)(absolute #Imm value)
 		else{
 			//#Imm value (operand 2)		 bit[11]---bit[0]
-			dummyreg4=(arminstr&0xfff);
+			DestroyableRegister5=(arminstr&0xfff);
 			#ifdef DEBUGEMU
-			printf(" #Imm(0x%x) ",(unsigned int)dummyreg4);			
+			printf(" #Imm(0x%x) ",(unsigned int)DestroyableRegister5);	
 			#endif
-			
 		}
 		
 		//pre indexing bit 	(add offset before transfer)
@@ -5935,12 +5800,12 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 			
 			//up / increase  (Rn+=Rm)
 			if((dummyreg&0x8)==0x8){
-				dummyreg3+=dummyreg4;
+				DestroyableRegister3+=DestroyableRegister5;
 			}
 		
 			//down / decrease bit (Rn-=Rm)
 			else{
-				dummyreg3-=dummyreg4;
+				DestroyableRegister3-=DestroyableRegister5;
 			}
 			
 			//pre indexed says base is updated [!] (writeback = 1)
@@ -5956,8 +5821,8 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 		
 		//1)LDR/STR dummyreg as rd 
 		
-		//decode = dummyreg / rd = exRegs[((arminstr>>12)&0xf)] / rn = dummyreg3 / 
-		//dummyreg4 = either #Imm OR register offset
+		//decode = dummyreg / rd = exRegs[((arminstr>>12)&0xf)] / rn = DestroyableRegister3 / 
+		//DestroyableRegister5 = either #Imm OR register offset
 		
 		//BEGIN MODIFIED
 		
@@ -5971,17 +5836,17 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 				if((dummyreg&0x4)==0x4){
 					//dereference Rn+offset
 					//store RD into [Rn,#Imm]
-					cpuwrite_byte(dummyreg3,(exRegs[((arminstr>>12)&0xf)]&0xff));
+					cpuwrite_byte(DestroyableRegister3,(exRegs[((arminstr>>12)&0xf)]&0xff));
 					#ifdef DEBUGEMU
-						printf("ARM:5.7 trying STRB rd(%d), [b:rn(%d)[%x],xxx] (5.9) ",(int)((arminstr>>12)&0xf),(int)((arminstr>>16)&0xf),(unsigned int)dummyreg3);
+						printf("ARM:5.7 trying STRB rd(%d), [b:rn(%d)[%x],xxx] (5.9) ",(int)((arminstr>>12)&0xf),(int)((arminstr>>16)&0xf),(unsigned int)DestroyableRegister3);
 					#endif
 				}
 				//transfer word quantity
 				else{
 					//store RD into [RB,#Imm]
-					cpuwrite_word(dummyreg3,exRegs[((arminstr>>12)&0xf)]);
+					cpuwrite_word(DestroyableRegister3,exRegs[((arminstr>>12)&0xf)]);
 					#ifdef DEBUGEMU
-						printf("ARM:5.7 trying to STR rd(%d), [b:rn(%d)[%x],xxx] (5.9)",(int)((arminstr>>12)&0xf),(int)((arminstr>>16)&0xf),(unsigned int)dummyreg3);
+						printf("ARM:5.7 trying to STR rd(%d), [b:rn(%d)[%x],xxx] (5.9)",(int)((arminstr>>12)&0xf),(int)((arminstr>>16)&0xf),(unsigned int)DestroyableRegister3);
 					#endif
 				}
 			}
@@ -5992,10 +5857,10 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 				//transfer byte quantity
 				if((dummyreg&0x4)==0x4){
 					//dereference Rn+offset
-					u32 DestroyableRegister1 = cpuread_byte(dummyreg3);
+					u32 DestroyableRegister1 = cpuread_byte(DestroyableRegister3);
 					#ifdef DEBUGEMU
 						printf(" GBA LDRB rd(%d)[%x], [#0x%x] (5.9)",
-						(int)((arminstr>>12)&0xf),(unsigned int)DestroyableRegister1,(unsigned int)(dummyreg3));
+						(int)((arminstr>>12)&0xf),(unsigned int)DestroyableRegister1,(unsigned int)(DestroyableRegister3));
 					#endif
 					exRegs[((arminstr>>12)&0xf)] = DestroyableRegister1;
 				}
@@ -6003,11 +5868,11 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 				//transfer word quantity
 				else{
 					//dereference Rn+offset
-					u32 DestroyableRegister1=cpuread_word(dummyreg3);
+					u32 DestroyableRegister1=cpuread_word(DestroyableRegister3);
 					
 					#ifdef DEBUGEMU
 						printf(" GBA LDR rd(%d)[%x], [#0x%x] (5.9)",
-						(int)((arminstr>>12)&0xf),(unsigned int)DestroyableRegister1, (unsigned int)(dummyreg3));
+						(int)((arminstr>>12)&0xf),(unsigned int)DestroyableRegister1, (unsigned int)(DestroyableRegister3));
 					#endif
 					exRegs[((arminstr>>12)&0xf)] = DestroyableRegister1;
 				}
@@ -6025,19 +5890,19 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 				if((dummyreg&0x4)==0x4){
 					#ifdef DEBUGEMU
 					printf("STRB rd(%d)[%x],[rn(%d)](%x)",
-					(int)((arminstr>>12)&0xf),(unsigned int)(exRegs[((arminstr>>12)&0xf)]&0xff),(int)((arminstr>>16)&0xf),(unsigned int)dummyreg3);
+					(int)((arminstr>>12)&0xf),(unsigned int)(exRegs[((arminstr>>12)&0xf)]&0xff),(int)((arminstr>>16)&0xf),(unsigned int)DestroyableRegister3);
 					#endif
 					//str rd,[rn]
-					cpuwrite_byte(dummyreg3, exRegs[((arminstr>>12)&0xf)]&0xff);
+					cpuwrite_byte(DestroyableRegister3, exRegs[((arminstr>>12)&0xf)]&0xff);
 				}
 				//word quantity
 				else{
 					#ifdef DEBUGEMU
 					printf("STR rd(%d)[%x],[rn(%d)](%x)",
-					(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)],(int)((arminstr>>16)&0xf),(unsigned int)dummyreg3);
+					(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)],(int)((arminstr>>16)&0xf),(unsigned int)DestroyableRegister3);
 					#endif
 					//str rd,[rn]
-					cpuwrite_word(dummyreg3, exRegs[((arminstr>>12)&0xf)]); //broken?
+					cpuwrite_word(DestroyableRegister3, exRegs[((arminstr>>12)&0xf)]); //broken?
 				}
 			}
 			
@@ -6052,12 +5917,12 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 					//printf(" LDRB #imm");
 					//if rn == r15 use rom / generate [PC, #imm] value into rd
 					if(((arminstr>>16)&0xf)==0xf){
-						DestroyableRegister1=(dummyreg3+(0x8)); //align +8 for prefetching
+						DestroyableRegister1=(DestroyableRegister3+(0x8)); //align +8 for prefetching
 						destroyableRegister=cpuread_byte(DestroyableRegister1);
 					}
 					//else rn / generate [Rn, #imm] value into rd
 					else{
-						DestroyableRegister1=dummyreg3; //rd is destroyableRegister now, old rd is rewritten
+						DestroyableRegister1=DestroyableRegister3; //rd is destroyableRegister now, old rd is rewritten
 						destroyableRegister=cpuread_byte(DestroyableRegister1);
 					}
 					
@@ -6070,12 +5935,12 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 					u32 DestroyableRegister2=0;
 					//if rn == r15 use rom / generate [PC, #imm] value into rd
 					if(((arminstr>>16)&0xf)==0xf){
-						DestroyableRegister2=(dummyreg3+(0x8)); //align +8 for prefetching
+						DestroyableRegister2=(DestroyableRegister3+(0x8)); //align +8 for prefetching
 						destroyableRegister=cpuread_word(DestroyableRegister2);
 					}
 					//else rn / generate [Rn, #imm] value into rd
 					else{
-						DestroyableRegister2=dummyreg3; //rd is destroyableRegister now, old rd is rewritten
+						DestroyableRegister2=DestroyableRegister3; //rd is destroyableRegister now, old rd is rewritten
 						destroyableRegister=cpuread_word(DestroyableRegister2);
 					}
 					
@@ -6104,19 +5969,19 @@ switch( ((dummyreg=((arminstr>>20)&0xff)) &0x40) ){
 			
 			//up / increase  (Rn+=Rm)
 			if((dummyreg&0x8)==0x8){
-				dummyreg3+=dummyreg4;
+				DestroyableRegister3+=DestroyableRegister5;
 			}
 		
 			//down / decrease bit (Rn-=Rm)
 			else{
-				dummyreg3-=dummyreg4;
+				DestroyableRegister3-=DestroyableRegister5;	//old: dummyreg4
 			}
 			
 			#ifdef DEBUGEMU
-			printf("(new) rn writeback base addr! [%x]",(unsigned int)dummyreg3);
+			printf("(new) rn writeback base addr! [%x]",(unsigned int)DestroyableRegister3);
 			#endif
 			
-			faststr((u8*)&dummyreg3, exRegs, ((arminstr>>16)&0xf), 32,0);
+			exRegs[((arminstr>>16)&0xf)] = DestroyableRegister3;
 		}
 		//else: don't write-back address into base
 		#ifdef DEBUGEMU
@@ -6136,7 +6001,7 @@ switch( ( (dummyreg=((arminstr>>20)&0xff)) & 0x80)  ){
 		//rn
 		//exRegs[((arminstr>>16)&0xf)]
 		
-		//1a)force 0x10 usr mode 
+		//1a)force 0x10 usr mode
 		if( ((dummyreg&0x4)==0x4) && ((cpsrvirt&0x1f)!=0x10)){
 			savedcpsr=cpsrvirt;
 			updatecpuflags(1,cpsrvirt,0x10);
@@ -6157,8 +6022,7 @@ switch( ( (dummyreg=((arminstr>>20)&0xff)) & 0x80)  ){
 			#ifdef DEBUGEMU
 			printf("STMIA r(%d)[%x], {R: %d %d %d %d %d %d %d %x  %d %d %d %d %d %d %d %d } ",
 			(int)((arminstr>>16)&0xf),
-			(unsigned int)dummyreg3,
-			
+			(unsigned int)dummyreg,
 			(int)((arminstr&0xffff)&0x8000),
 			(int)((arminstr&0xffff)&0x4000),
 			(int)((arminstr&0xffff)&0x2000),
@@ -6226,7 +6090,7 @@ switch( ( (dummyreg=((arminstr>>20)&0xff)) & 0x80)  ){
 			#ifdef DEBUGEMU
 			printf("LDMIA rd(%d)[%x], {R: %d %d %d %d %d %d %d %x  %d %d %d %d %d %d %d %d } ",
 			(int)((arminstr>>16)&0xf),
-			(unsigned int)dummyreg3,
+			(unsigned int)dummyreg,
 			
 			(int)((arminstr&0xffff)&0x8000),
 			(int)((arminstr&0xffff)&0x4000),
@@ -6303,20 +6167,20 @@ switch( ( (dummyreg=((arminstr>>20)&0xff)) & 0x80)  ){
 		//write-back new address into base (updated offset from base +index read) Rn
 		if((dummyreg&0x2)==0x2){
 			
+			u32 DestroyableRegister2 = 0;
 			//if asc/ up / ascending 0, bit  (add cpsr bit[5] depth from Rn)
 			if((dummyreg&0x8)==0x8){
-				dummyreg3=(u32)addsasm((u32)exRegs[((arminstr>>16)&0xf)],(lutu32bitcnt(arminstr&0xffff))*4);	//required for writeback later
+				DestroyableRegister2=(u32)addsasm((u32)exRegs[((arminstr>>16)&0xf)],(lutu32bitcnt(arminstr&0xffff))*4);	//required for writeback later
 			}
 			
 			//else descending stack 1 bit
 			else{
-				dummyreg3=(u32)subsasm((u32)exRegs[((arminstr>>16)&0xf)],(lutu32bitcnt(arminstr&0xffff))*4);	//required for writeback later
+				DestroyableRegister2=(u32)subsasm((u32)exRegs[((arminstr>>16)&0xf)],(lutu32bitcnt(arminstr&0xffff))*4);	//required for writeback later
 			}
-			
-			faststr((u8*)&dummyreg3, exRegs, ((arminstr>>16)&0xf), 32,0);
+			exRegs[((arminstr>>16)&0xf)]=DestroyableRegister2;
 			
 			#ifdef DEBUGEMU
-			printf(" updated addr: %x / Bytes workd onto stack: %x ", (unsigned int)dummyreg3,((lutu32bitcnt(arminstr&0xffff))*4));
+			printf(" updated addr: %x / Bytes workd onto stack: %x ", (unsigned int)DestroyableRegister2, ((lutu32bitcnt(arminstr&0xffff))*4));
 			#endif
 		}
 		//else: don't write-back address into base
@@ -6343,35 +6207,34 @@ switch( ( (dummyreg=(arminstr)) & 0x1000090)  ){
 		
 		//rd is writeonly
 		//rm
-		fastldr((u8*)&dummyreg4, exRegs, ((dummyreg)&0xf), 32,0); 
-
+		//exRegs[((dummyreg)&0xf)]
+		
 		//swap byte
 		if(dummyreg & (1<<22)){
 			//printf("byte quantity!");
 			//[rn]->rd
-			dummyreg3=cpuread_byte(exRegs[((dummyreg>>16)&0xf)]);
-			faststr((u8*)&dummyreg3, exRegs, ((dummyreg>>12)&0xf), 32,0);
+			u32 DestroyableRegister2=cpuread_byte(exRegs[((dummyreg>>16)&0xf)]);
+			exRegs[((dummyreg>>12)&0xf)]=DestroyableRegister2;
 			#ifdef DEBUGEMU
-			printf("SWPB 1/2 [rn(%d):%x]->rd(%d)[%x] ",(int)((dummyreg>>16)&0xf),(unsigned int)exRegs[((dummyreg>>16)&0xf)],(int)((dummyreg>>12)&0xf),(unsigned int)dummyreg3);
+			printf("SWPB 1/2 [rn(%d):%x]->rd(%d)[%x] ",(int)((dummyreg>>16)&0xf),(unsigned int)exRegs[((dummyreg>>16)&0xf)],(int)((dummyreg>>12)&0xf),(unsigned int)DestroyableRegister2);
 			#endif
 			//rm->[rn]
-			cpuwrite_byte(exRegs[((dummyreg>>16)&0xf)],dummyreg4&0xff);
+			cpuwrite_byte(exRegs[((dummyreg>>16)&0xf)],exRegs[((dummyreg)&0xf)]&0xff);
 			#ifdef DEBUGEMU
-			printf("SWPB 2/2 rm(%d):[%x]->[rn(%d):[%x]] ",(int)((dummyreg)&0xf),(unsigned int)(dummyreg4&0xff),(int)((dummyreg>>16)&0xf),(unsigned int)exRegs[((dummyreg>>16)&0xf)]);
+			printf("SWPB 2/2 rm(%d):[%x]->[rn(%d):[%x]] ",(int)((dummyreg)&0xf),(unsigned int)(exRegs[((dummyreg)&0xf)]&0xff),(int)((dummyreg>>16)&0xf),(unsigned int)exRegs[((dummyreg>>16)&0xf)]);
 			#endif
 		}
 		else{
 			//printf("word quantity!");
 			//[rn]->rd
-			dummyreg3=cpuread_word(exRegs[((dummyreg>>16)&0xf)]);
-			faststr((u8*)&dummyreg3, exRegs, ((dummyreg>>12)&0xf), 32,0);
+			exRegs[((dummyreg>>12)&0xf)]=cpuread_word(exRegs[((dummyreg>>16)&0xf)]);
 			#ifdef DEBUGEMU
-			printf("SWP 1/2 rm(%d):[%x]->[rn(%d):[%x]] ",(int)((dummyreg)&0xf),(unsigned int)(dummyreg4&0xff),(int)((dummyreg>>16)&0xf),(unsigned int)exRegs[((dummyreg>>16)&0xf)]);
+			printf("SWP 1/2 rm(%d):[%x]->[rn(%d):[%x]] ",(int)((dummyreg)&0xf),(unsigned int)(exRegs[((dummyreg)&0xf)]&0xff),(int)((dummyreg>>16)&0xf),(unsigned int)exRegs[((dummyreg>>16)&0xf)]);
 			#endif
 			//rm->[rn]
-			cpuwrite_word(exRegs[((dummyreg>>16)&0xf)],dummyreg4);
+			cpuwrite_word(exRegs[((dummyreg>>16)&0xf)],exRegs[((dummyreg)&0xf)]);
 			#ifdef DEBUGEMU
-			printf("SWP 2/2 rm(%d):[%x]->[rn(%d):[%x]] ",(int)((dummyreg)&0xf),(unsigned int)(dummyreg4&0xff),(int)((dummyreg>>16)&0xf),(unsigned int)exRegs[((dummyreg>>16)&0xf)]);
+			printf("SWP 2/2 rm(%d):[%x]->[rn(%d):[%x]] ",(int)((dummyreg)&0xf),(unsigned int)(exRegs[((dummyreg)&0xf)]&0xff),(int)((dummyreg>>16)&0xf),(unsigned int)exRegs[((dummyreg>>16)&0xf)]);
 			#endif
 		}
 		
