@@ -224,9 +224,7 @@ u32 bios_registerramreset(u32 flags){
 
 //swi 2 (halt not emulated?)
 u32 bios_cpuhalt(){
-	u32 destroyableRegister = 0;
-	fastldr((u8*)&destroyableRegister, exRegs, (0x0), 32,0); 		//+r0
-	faststr((u8*)&destroyableRegister, exRegs, (0x0), 32,0); 		//=r0
+	exRegs[(0x0)]=exRegs[(0x0)];//+r0 / //=r0
 	return 0;
 }
 

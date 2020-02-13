@@ -1103,8 +1103,7 @@ u8 __attribute__ ((hot)) cpuread_byte(u32 address){
 
 switch(address >> 24) {
 	case 0:{
-		u32 destroyableRegister = 0;
-		fastldr((u8*)&destroyableRegister, exRegs, (0xf), 32,0);	//PC fetch
+		u32 destroyableRegister = exRegs[(0xf)];	//PC fetch
 		if ((destroyableRegister) >> 24) {
 			if(address < 0x4000) {
 				#ifdef DEBUGEMU
@@ -1277,8 +1276,7 @@ u16 __attribute__ ((hot)) cpuread_hword(u32 address){
 u32 value=0;
 switch(address >> 24) {
 	case 0:{
-		u32 destroyableRegister = 0;
-		fastldr((u8*)&destroyableRegister, exRegs, (0xf), 32,0); 
+		u32 destroyableRegister = exRegs[(0xf)];
 		if ((destroyableRegister) >> 24) {
 			if(address < 0x4000) {
 				//value = ldru16extasm((u32)(u8*)biosProtected,(address&2)); 	//value = READ16LE(((u16 *)&biosProtected[address&2]));
@@ -1472,8 +1470,7 @@ u32 __attribute__ ((hot)) cpuread_word(u32 address){
 	u32 value=0;
 	switch(address >> 24) {
 		case 0:{
-			u32 destroyableRegister = 0;
-			fastldr((u8*)&destroyableRegister, exRegs, (0xf), 32,0); //pc
+			u32 destroyableRegister = exRegs[(0xf)];	//pc
 			if(destroyableRegister >> 24) {
 				if(address < 0x4000) {
 					//value = READ32LE(((u32 *)&biosProtected));
@@ -2374,102 +2371,6 @@ u32 __attribute__ ((hot)) stmiavirt(u8 * input_buf, u32 stackptr, u16 regs, u8 a
 		break;
 	} //switch
 
-	return 0;
-}
-
-//fast single ldr / str opcodes for virtual environment gbaregs
-u32 __attribute__ ((hot)) faststr(u8 * input_buf, u32 gbareg[0x10], u16 regs, u8 access, u8 byteswapped){
-	switch(byteswapped){
-		//0: gbavirtreg handles.
-		case(0):{
-			if (access == (u8)8){
-				switch(regs){
-					case(0xf):
-						exRegs[0xf]=(* ((u8*)input_buf+ 0));
-					break;
-					
-					default:
-						gbareg[regs] = (* ((u8*)input_buf+ 0));	//this starts from current offset (required by unsorted registers)
-						//printf(" str: %x:srcvalue[%x]",regs,(* ((u32*)input_buf+ 0)) ); // stmia:  rn value = *(level_addsrc[0] + offset)	
-					break;
-				} //don't care after this point
-			}
-			else if (access == (u8)16){
-				switch(regs){
-					case(0xf):
-						exRegs[0xf]=(* ((u16*)input_buf+ 0));
-					break;
-					
-					default:
-						gbareg[regs] = (* ((u16*)input_buf+ 0));	//this starts from current offset (required by unsorted registers)
-						//printf(" str: %x:srcvalue[%x]",regs,(* ((u32*)input_buf+ 0)) ); // stmia:  rn value = *(level_addsrc[0] + offset)	
-					break;
-				} //don't care after this point
-			}
-			else if (access == (u8)32){
-				
-				switch(regs){
-					case(0xf):
-						exRegs[0xf]=(* ((u32*)input_buf+ 0));
-					break;
-					
-					default:
-						gbareg[regs] = (* ((u32*)input_buf+ 0));	//this starts from current offset (required by unsorted registers)
-						//printf(" str: %x:srcvalue[%x]",regs,(* ((u32*)input_buf+ 0)) ); // stmia:  rn value = *(level_addsrc[0] + offset)	
-					break;
-				} //don't care after this point
-			}
-		}
-		break;
-	}
-
-	return 0;
-}
-//gbaregs[] arg 2
-u32 __attribute__ ((hot)) fastldr(u8 * output_buf, u32 gbareg[0x10], u16 regs, u8 access, u8 byteswapped){
-	switch(byteswapped){
-		//0: gbavirtreg handles.
-		case(0):{
-			if (access == (u8)8){
-				switch(regs){
-					case(0xf):
-						*((u8*)output_buf+(0))=(exRegs[0xf]&0xfffffffe);
-					break;
-					
-					default:
-						*((u8*)output_buf+(0))= gbareg[regs];
-						//printf(" ldr:%x[%x]",regs,*((u32*)stackptr+(regs)));
-					break;
-				}//don't care after this point
-			}
-			else if (access == (u8)16){
-					switch(regs){
-					case(0xf):
-						*((u16*)output_buf+(0))=(exRegs[0xf]&0xfffffffe);
-					break;
-					
-					default:
-						*((u16*)output_buf+(0))= gbareg[regs];
-						//printf(" ldr:%x[%x]",regs,*((u32*)stackptr+(regs)));
-					break;
-				}//don't care after this point
-			}
-			else if (access == (u8)32){
-			
-				switch(regs){
-					case(0xf):
-						*((u32*)output_buf+(0))=(exRegs[0xf]&0xfffffffe);
-					break;
-					
-					default:
-						*((u32*)output_buf+(0))= gbareg[regs] ;
-						//printf(" ldr:%x[%x]",regs,*((u32*)stackptr+(regs)));
-					break;
-				}//don't care after this point
-			}
-		break;
-		}
-	}
 	return 0;
 }
 

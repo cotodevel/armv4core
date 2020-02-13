@@ -3137,11 +3137,11 @@ if(isalu==1){
 				//#imm value is zero extended to 32bit, then subject
 				//to rotate right by twice the value in rotate field:
 				u32 DestroyableRegister2 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
-				
 				u32 DestroyableRegister3=andasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2);
-			
+				
 				//rd destination reg	 bit[15]---bit[12]
-				faststr((u8*)&DestroyableRegister3, exRegs, ((arminstr>>12)&0xf), 32,0);
+				exRegs[((arminstr>>12)&0xf)] = DestroyableRegister3;
+				
 				#ifdef DEBUGEMU
 				printf("AND rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) ",
 				(int)(arminstr>>12)&0xf,(unsigned int)DestroyableRegister3,
@@ -5685,8 +5685,7 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 				//lsl
 				if((destroyableRegister4&0x6)==0x0){
 					//rs loaded
-					u32 destroyableRegister = 0;
-					fastldr((u8*)&destroyableRegister, exRegs, ((destroyableRegister4>>4)&0xf), 32,0); 
+					u32 destroyableRegister = exRegs[((destroyableRegister4>>4)&0xf)];
 					#ifdef DEBUGEMU
 					printf("LSL rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((destroyableRegister4>>4)&0xf),(unsigned int)destroyableRegister);
 					#endif
@@ -5696,8 +5695,7 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 				//lsr
 				else if ((destroyableRegister4&0x6)==0x2){
 					//rs loaded
-					u32 destroyableRegister = 0;
-					fastldr((u8*)&destroyableRegister, exRegs, ((destroyableRegister4>>4)&0xf), 32,0); 
+					u32 destroyableRegister = exRegs[((destroyableRegister4>>4)&0xf)];
 					#ifdef DEBUGEMU
 					printf("LSR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((destroyableRegister4>>4)&0xf),(unsigned int)destroyableRegister);
 					#endif
@@ -5707,8 +5705,7 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 				//asr
 				else if ((destroyableRegister4&0x6)==0x4){
 					//rs loaded
-					u32 destroyableRegister = 0;
-					fastldr((u8*)&destroyableRegister, exRegs, ((destroyableRegister4>>4)&0xf), 32,0); 
+					u32 destroyableRegister = exRegs[((destroyableRegister4>>4)&0xf)];
 					#ifdef DEBUGEMU
 					printf("ASR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((destroyableRegister4>>4)&0xf),(unsigned int)destroyableRegister);
 					#endif
@@ -5718,8 +5715,7 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 				//ror
 				else if ((destroyableRegister4&0x6)==0x6){
 					//rs loaded
-					u32 destroyableRegister = 0;
-					fastldr((u8*)&destroyableRegister, exRegs, ((destroyableRegister4>>4)&0xf), 32,0); 
+					u32 destroyableRegister = exRegs[((destroyableRegister4>>4)&0xf)];
 					#ifdef DEBUGEMU
 					printf("ROR rm(%d),rs(%d)[%x] ",(int)((arminstr)&0xf),(int)((destroyableRegister4>>4)&0xf),(unsigned int)destroyableRegister);
 					#endif
@@ -5931,7 +5927,7 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 						printf("LDR rd(%d)[%x]<-LOADED [Rn(%d),#IMM]:(%x)",(int)((arminstr>>12)&0xf),(unsigned int)destroyableRegister,(unsigned int)((arminstr>>16)&0xf),(unsigned int)DestroyableRegister2);
 					#endif
 				}
-				faststr((u8*)&destroyableRegister, exRegs, ((arminstr>>12)&0xf), 32,0);
+				exRegs[((arminstr>>12)&0xf)] = destroyableRegister;
 			}
 		}
 		

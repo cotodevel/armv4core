@@ -150,10 +150,6 @@ extern u32 armcode(u32); //jump to thumbmode gba
 extern u32 ldmiavirt(u8 * output_buf, u32 stackptr, u16 regs, u8 access, u8 byteswapped, u8 order);
 extern u32 stmiavirt(u8 * input_buf, u32 stackptr, u16 regs, u8 access, u8 byteswapped, u8 order);
 
-//fast single ldr/str opcodes
-extern u32 fastldr(u8 * output_buf, u32 gbaregs[], u16 regs, u8 access, u8 byteswapped);
-extern u32 faststr(u8 * input_buf, u32 gbaregs[], u16 regs, u8 access, u8 byteswapped);
-
 extern u32 addspvirt(u32 stackptr,int ammount);
 extern u32 subspvirt(u32 stackptr,int ammount);
 
