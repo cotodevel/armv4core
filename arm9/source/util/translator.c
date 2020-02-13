@@ -430,7 +430,7 @@ debuggeroutput();
 switch(thumbinstr>>11){
 	////////////////////////5.1
 	//LSL opcode
-	case 0x0:
+	case 0x0:{
 		//extract reg
 		u32 destroyableRegister = exRegs[((thumbinstr>>3)&7)];
 		u32 destroyableRegister2 = lslasm(destroyableRegister,((thumbinstr>>6)&0x1f));
@@ -442,10 +442,11 @@ switch(thumbinstr>>11){
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		return 0;
+	}
 	break;
 	
 	//LSR opcode
-	case 0x1: 
+	case 0x1:{
 		//extract reg
 		u32 destroyableRegister = exRegs[((thumbinstr>>3)&7)];
 		u32 destroyableRegister2 = lsrasm(destroyableRegister,((thumbinstr>>6)&0x1f));
@@ -457,10 +458,11 @@ switch(thumbinstr>>11){
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		return 0;
+	}
 	break;
 	
 	//ASR opcode
-	case 0x2:
+	case 0x2:{
 		//extract reg
 		u32 destroyableRegister = exRegs[((thumbinstr>>3)&7)];
 		u32 destroyableRegister2 = (u32)asrasm((int)destroyableRegister,((thumbinstr>>6)&0x1f));
@@ -472,11 +474,12 @@ switch(thumbinstr>>11){
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		return 0;
+	}
 	break;
 	
 	//5.3
 	//mov #imm bit[0-8] / move 8 bit value into rd
-	case 0x4:
+	case 0x4:{
 		//mov
 		#ifdef DEBUGEMU
 		printf("mov r%d,#0x%x (5.3)",(int)((thumbinstr>>8)&0x7),(unsigned int)thumbinstr&0xff);
@@ -487,6 +490,7 @@ switch(thumbinstr>>11){
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		return 0;
+	}
 	break;
 	
 	//cmp / compare contents of rd with #imm bit[0-8] / gba flags affected
@@ -503,7 +507,7 @@ switch(thumbinstr>>11){
 	break;
 	
 	//add / add #imm bit[7] value to contents of rd and then place result on rd
-	case 0x6:
+	case 0x6:{
 		//rn
 		#ifdef DEBUGEMU
 		printf("add r%d[%x], #%x (5.3)", (int)((thumbinstr>>8)&0x7),(unsigned int)exRegs[((thumbinstr>>8)&0x7)],(unsigned int)(thumbinstr&0xff));
@@ -515,10 +519,11 @@ switch(thumbinstr>>11){
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		return 0;
+	}
 	break;
 	
 	//sub / sub #imm bit[0-8] value from contents of rd and then place result on rd
-	case 0x7:	
+	case 0x7:{
 		//rn
 		#ifdef DEBUGEMU
 		printf("sub r%d[%x], #%x (5.3)", (int)((thumbinstr>>8)&0x7),(unsigned int)exRegs[((thumbinstr>>8)&0x7)],(unsigned int)(thumbinstr&0xff));
@@ -530,17 +535,19 @@ switch(thumbinstr>>11){
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		return 0;
+	}
 	break;
 
 	//5.6
 	//PC relative load WORD 10-bit Imm
-	case 0x9:
+	case 0x9:{
 		u32 destroyableRegister = cpuread_word(((exRegs[0xf]&0xfffffffe)+0x4)+((thumbinstr&0xff)<<2)); //[PC+0x4,#(8<<2)Imm] / because prefetch and alignment
 		#ifdef DEBUGEMU
 		printf("(WORD) LDR r%d[%x], [PC:%x,#%x] (5.6) ",(int)((thumbinstr>>8)&0x7),(unsigned int)destroyableRegister,(unsigned int)exRegs[0xf],(unsigned int)(thumbinstr&0xff));
 		#endif
 		exRegs[((thumbinstr>>8)&0x7)] = destroyableRegister;
 		return 0;
+	}
 	break;
 	
 	////////////////////////////////////5.9 LOAD/STORE low reg with #Imm
@@ -3309,8 +3316,8 @@ if(isalu==1){
 				//printf("bits:%x",((arminstr>>4)&0xfff));
 			
 				//(currently at: shift field) rs shift opcode to Rm
-				DestroyableRegister3 = 0; 
-				DestroyableRegister4 = 0; 
+				u32 DestroyableRegister3 = 0; 
+				u32 DestroyableRegister4 = 0; 
 				if( ((DestroyableRegister3=((arminstr>>4)&0xfff)) &0x1) == 1){
 					//lsl
 					if((DestroyableRegister3&0x6)==0x0){
@@ -5663,7 +5670,7 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 		//rn
 		//exRegs[((arminstr>>16)&0xf), 32,0)]
 		
-		u32 DestroyableRegister3 = exRegs[((arminstr>>16)&0xf), 32,0)];
+		u32 DestroyableRegister3 = exRegs[((arminstr>>16)&0xf)];
 		
 		//IF NOT INMEDIATE (i=1)
 		//decode = DestroyableRegister6 / rd = exRegs[((arminstr>>12)&0xf)] / rn = DestroyableRegister3 / #imm|rm index /
