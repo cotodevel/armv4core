@@ -64,9 +64,9 @@ struct sIPCSharedTGDSSpecific{
 //#define testGBAEMU4DSFSCode	//Enable for generating a file you can later test in any emu, that file is created (you pick from the list) is using the same gbaemu4ds streaming driver.
 
 //#define ROMTEST 		//Enabled:
-							//A default, and light gbarom that is mapped to 0x08000000	(GBA Rom entrypoint)
+							//Light GBA homebrew, also FS calls are redirected to this homebrew. 	(GBA Rom entrypoint)
 						//Disabled:
-							//arm7tdmi payload support! allows to execute a small payload before jumping to 0x08000000 (GBA Rom entrypoint)
+							//arm7tdmi payload support + FS calls redirect to opened file handle, which is set to 0x08000000 (GBA Rom entrypoint)
 						
 //#define DEBUGEMU	//Enables LR tracing / debugging by printf
 

@@ -1169,14 +1169,7 @@ switch(address >> 24) {
 		return u8read((u32)oam+(address & 0x3ff));
 	break;
 	case 8: case 9: case 10: case 11: case 12:
-		#ifndef ROMTEST
-			return (u8)(stream_readu8(address % 0x08000000)); //gbareads SHOULD NOT be aligned
-		#endif
-			
-		#ifdef ROMTEST
-			return (u8)*(u8*)(&rom_pl_bin+((address % 0x08000000)/4 ));
-		#endif
-		//return 0;
+		return (u8)(stream_readu8(address)); //gbareads SHOULD NOT be aligned
 	break;
 	case 13:
 		if(cpuEEPROMEnabled)
@@ -1373,14 +1366,7 @@ switch(address >> 24) {
 		}
 		else
 			//value = READ16LE(((u16 *)&rom[address & 0x1FFFFFE]));
-			
-		#ifndef ROMTEST
-			return stream_readu16(address % 0x08000000); //gbareads are never word aligned. (why would you want that?!)
-		#endif
-		
-		#ifdef ROMTEST
-			return (u32)*(u32*)(&rom_pl_bin+((address % 0x08000000)/4 ));
-		#endif
+			value = stream_readu16(address & 0x1FFFFFE);
 		
 	break;
 	case 13:
@@ -1543,7 +1529,7 @@ u32 __attribute__ ((hot)) cpuread_word(u32 address){
 			#endif
 					
 			//value = READ32LE(((u32 *)&paletteRAM[address & 0x3fC]));
-			value = u16read((u32)palram+(address & 0x3fC));
+			value = u32read((u32)palram+(address & 0x3fC));
 		break;
 		case 6:
 			address = (address & 0x1fffc);
@@ -1559,7 +1545,7 @@ u32 __attribute__ ((hot)) cpuread_word(u32 address){
 			#endif
 			
 			//value = READ32LE(((u32 *)&vram[address]));
-			value = u16read((u32)vram+address);	
+			value = u32read((u32)vram+address);	
 		break;
 		case 7:
 			#ifdef DEBUGEMU
@@ -1568,21 +1554,13 @@ u32 __attribute__ ((hot)) cpuread_word(u32 address){
 			
 			//value = READ32LE(((u32 *)&oam[address & 0x3FC]));
 			//value = ldru32extasm((u32)(u8*)oam,(address & 0x3FC));
-			value = u16read((u32)oam+(address & 0x3FC));
+			value = u32read((u32)oam+(address & 0x3FC));
 		break;
 		case 8: case 9: case 10: case 11: case 12:{
 			//#ifdef DEBUGEMU
 			//printf("Word gba read! (%x) ",(unsigned int)address);
 			//#endif
-			
-			#ifndef ROMTEST
-				return (u32)(stream_readu32(address % 0x08000000)); //gbareads are OK and from HERE should NOT be aligned (that is module dependant)
-			#endif
-			
-			#ifdef ROMTEST
-				return (u32)*(u32*)(&rom_pl_bin+((address % 0x08000000)/4 ));
-			#endif
-			
+			value = (u32)(stream_readu32(address & 0x1FFFFFC));
 		break;
 		}
 		case 13:

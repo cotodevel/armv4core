@@ -6,6 +6,10 @@
 #include "buffer.h"
 #include "ipcfifoTGDSUSer.h"
 
+#ifdef ROMTEST
+#include "rom_pl.h"
+#endif
+
 FILE* ichflyfilestream;
 int ichflyfilestreamsize=0;
 u32 *sectortabel;
@@ -378,15 +382,30 @@ void testGBAEMU4DSFSTGDS(FILE * f, sint32 fileSize){	//FILE * f is already open 
 #endif
 
 u8 stream_readu8(u32 pos){
-	return ichfly_readu8((unsigned int)pos);
+	#ifndef ROMTEST
+		return ichfly_readu8((unsigned int)pos);
+	#endif
+	#ifdef ROMTEST
+		return (u8)*((u8*)&rom_pl[0] + ((pos % (32*1024*1024))/1) );
+	#endif
 }
 
 u16 stream_readu16(u32 pos){
-	return ichfly_readu16((unsigned int)pos);
+	#ifndef ROMTEST
+		return ichfly_readu16((unsigned int)pos);
+	#endif
+	#ifdef ROMTEST
+		return (u16)*((u16*)&rom_pl[0] + ((pos % (32*1024*1024))/2) );
+	#endif
 }
 
 u32 stream_readu32(u32 pos){
-	return ichfly_readu32((unsigned int)pos);
+	#ifndef ROMTEST
+		return ichfly_readu32((unsigned int)pos);
+	#endif
+	#ifdef ROMTEST
+		return (u32)*((u32*)&rom_pl[0] + ((pos % (32*1024*1024))/4) );
+	#endif
 }
 
 

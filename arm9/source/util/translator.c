@@ -736,16 +736,12 @@ switch(thumbinstr>>11){
 	
 	case(0x1e):{
 	
-		/* //deprecated branch with link
 		//1 / 2
 		//H bit[11<0]
 		//Instruction 1:
 		//In the first instruction the offset field contains the upper 11 bits
 		//of the target address. This is shifted left by 12 bits and added to
 		//the current PC address. The resulting address is placed in LR.
-	
-		//offset high part
-		exRegs[0xe]=((thumbinstr&0x7ff)<<12)+((exRegs[0xf]&0xfffffffe));
 	
 		//2 / 2
 		//H bit[11<1]
@@ -759,56 +755,19 @@ switch(thumbinstr>>11){
 		//The branch offset must take account of the prefetch operacion, which
 		//causes the PC to be 1 word (4 bytes) ahead of the current instruction.
 	
-		//fetch 2/2
-		//(dual u16 reads are broken so we cast a u32 read once again for the sec part)
-		#ifndef ROMTEST
-			u32 u32read=stream_readu32((exRegs[0xf]&0xfffffffe) ^ 0x08000000);
-		#endif
-		#ifdef ROMTEST
-			u32 u32read=(u32)*(u32*)(&rom_pl_bin+(((exRegs[0xf]&0xfffffffe) ^ 0x08000000)/4 ));
-		#endif
-		
-		u32 temppc=(exRegs[0xf]&0xfffffffe);
-	
-		//rebuild PC from LR + (low part) + prefetch (0x4-2 because PC will +2 after this)
-		exRegs[0xf]=(exRegs[0xe]+(((u32read>>16)&0x7ff)<<1)+(0x2)&0xfffffffe);
-	
-		//update LR
-		exRegs[0xe]=((temppc+(0x4)) | (1<<0));
-		#ifdef DEBUGEMU
-			printf("LONG BRANCH WITH LINK: PC:[%x],LR[%x] (5.19) ",(unsigned int)((exRegs[0xf]&0xfffffffe)+(0x2)),(unsigned int)exRegs[0xe]);
-		#endif
-	
-		*/
-		
-		//new branch with link
-		
-		/* //deprecated in favour of cpuread_word
-		#ifndef ROMTEST
-			u32 u32read=stream_readu32((exRegs[0xf]&0xfffffffe) ^ 0x08000000);
-			u32read=rorasm(u32read,0x10); // :) fix
-		#endif
-		#ifdef ROMTEST
-			u32 u32read=(u32)*(u32*)(&rom_pl_bin+(((exRegs[0xf]&0xfffffffe) ^ 0x08000000)/4 ));
-		#endif
-		*/
 		u32 u32read=0;
 		//if only a gbarom area read..
 		if( (((uint32)(exRegs[0xf]&0xfffffffe)>>24) == 0x8) || (((uint32)(exRegs[0xf]&0xfffffffe)>>24) == 0x9) ){
-			
 			//new read method (reads from gba cpu core)
 			u32read=cpuread_word((uint32)(exRegs[0xf]&0xfffffffe));
-			
 			#ifndef ROMTEST //gbareads (stream) are byte swapped, we swap bytes here if streamed data
 				printf("byteswap gbaread! ");
 				u32read=rorasm(u32read,0x10);
 			#endif
 		}
 		else{
-			
 			//new read method (reads from gba cpu core)
 			u32read=cpuread_word(( ((uint32)(exRegs[0xf]&0xfffffffe) >>2) )<<2);
-			
 		}
 		
 		printf("BL rom @(%x):[%x] ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)u32read);

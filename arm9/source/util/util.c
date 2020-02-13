@@ -28,11 +28,12 @@
 #include "Sram.h"
 #include "System.h"
 
+#ifdef ROMTEST
+#include "rom_pl.h"
+#endif
+
 int i=0;
 u32 gba_entrypoint = 0;
-
-//VA + ( DTCMTOP - (stack_size)*4) - dtcm_reservedcode[end_of_usedDTCMstorage] (we use for the emu)  in a loop of CACHE_LINE size
-
 struct gbaheader_t gbaheader;
 
 // returns unary(decimal) ammount of bits using the Hamming Weight approach 
@@ -599,111 +600,6 @@ void initemu(){
 	
 }
 
-
-int utilload(const char *file,u8 *data,int size,bool extram){ //*file is filename (.gba)
-																//*data is pointer to store rom  / always ~256KB &size at load
-	//printf("ewram top: %x ", (unsigned int)(((int)&__ewram_end) - 0x1));
-	//while(1);
-	#ifndef NOBIOS
-	//bios copy to biosram
-	FILE *f = fopen("0:/bios.bin", "r");
-	if(!f){ 
-		printf("there is no bios.bin in SD root!"); while(1);
-	}
-
-	int fileSize=fread((void*)(u8*)bios, 1, 0x4000,f);
-
-	fclose(f);
-	if(fileSize!=0x4000){
-		printf("failed bios.bin copy @ %x! so far:%d bytes",(unsigned int)bios,fileSize);
-		while(1);
-	}
-	
-	printf("bios OK!");
-	/*
-		printf(" /// GBABIOS @ %x //",(unsigned int)(u8*)bios);
-			
-		for(i=0;i<16;i++){
-			printf(" %x:[%d] ",i,(unsigned int)*((u32*)gbabios+i));
-			
-			if (i==15) printf("");
-			
-		}
-		while(1);
-	*/
-	#else
-	int fileSize=0;
-	FILE *f;
-	#endif
-
-	//gbarom setup
-	f = fopen(file, "rb");
-	if(!f) {
-		printf("Error opening image %s",file);
-		return 0;
-	}
-
-	fseek(f,0,SEEK_END);
-	fileSize = ftell(f);
-	fseek(f,0,SEEK_SET);
-
-	/* //header part that is not required anymore
-	fread((char*)&gbaheader, 1, sizeof(gbaheader),f);
-
-	//size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
-	int temp = fread((void*)gbaheaderbuf,sizeof(gbaheaderbuf[0]),0x200,f);
-	if (temp != 0x200){
-		printf(" error ret. gbaheader (size rd: %d)",temp);
-		while(1);
-	}
-
-	//printf(" util.c filesize: %d ",fileSize);
-	//printf(" util.c entrypoint: %x ",(unsigned int)0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
-	*/
-	
-	generatefilemap(f,fileSize);
-	if(data == 0){ //null rom destination pointer? allocate space for it	
-		/*8K for futur alloc 0x2000 unused*/
-		//romSize = (((int)&__ewram_end) - 0x1) - ((int)sbrk(0) + 0x5000 + 0x2000); // availablesize = NDSRAMuncSZ - c_progbrk + (20480 +  8192) : 20480 romsize
-		
-		//filesize
-		romsize=fileSize;	//size readjusted for final alloc'd rom
-		romsize=fileSize;
-		
-		//rom entrypoint
-		rom_entrypoint=(u32*)(0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
-		
-		//set rom address
-		exRegs[0xf]=(u32)0x08000000;	
-		
-		//printf("entrypoint @ %x! ",(unsigned int)(u32*)rom_entrypoint);
-	}
-	fclose(f);
-	printf("generated filemap! OK:");
-	return romsize; //rom buffer size
-}
-
-int loadrom(const char *filename, bool extram){	
-	//#ifdef ROMTEST
-	//rom = (u8*) &rom_pl_bin;
-	//romsize = (int) rom_pl_bin_size;
-	//#endif
-
-	romsize = 0x40000; //256KB partial romsize
-
-	u8 *whereToLoad;
-	whereToLoad=(u8*)0;
-
-	if(cpuIsMultiBoot) whereToLoad = workRAM;
-
-	romsize = utilload(filename,whereToLoad,romsize,extram);
-	if(romsize==0){ //set ups u8 * rom to point to allocated buffer and returns *partial* or full romSize
-		printf("error retrieving romSize ");
-		return 0;
-	}
-	return romsize;
-}
-
 void u32store(u32 address, u32 value){
 	*(u32*)(address)=value;
 }
@@ -903,26 +799,25 @@ int utilLoad(const char *file,u8 *data,int size,bool extram){ //*file is filenam
 																//*data is pointer to store rom  / always ~256KB &size at load
 
 #ifndef ROMTEST
+	#ifdef BIOSHANDLER
+		//bios copy to biosram
+		FILE *f = fopen("0:/bios.bin", "r");
+		if(!f){ 
+			printf("there is no bios.bin in root!"); while(1);
+		}
 
-#ifdef BIOSHANDLER
-    //bios copy to biosram
-    FILE *f = fopen("0:/bios.bin", "r");
-    if(!f){ 
-        printf("there is no bios.bin in root!"); while(1);
-    }
+		int fileSize=fread((void*)(u8*)bios, 1, 0x4000,f);
 
-    int fileSize=fread((void*)(u8*)bios, 1, 0x4000,f);
+		fclose(f);
+		if(fileSize!=0x4000){
+			printf("failed bios copy @ %x! so far:%d bytes",(unsigned int)bios,fileSize);
+			while(1);
+		}
 
-    fclose(f);
-    if(fileSize!=0x4000){
-        printf("failed bios copy @ %x! so far:%d bytes",(unsigned int)bios,fileSize);
-        while(1);
-    }
-
-#else
-    int fileSize=0;
-    FILE *f;
-#endif
+	#else
+		int fileSize=0;
+		FILE *f;
+	#endif
 
 	//gbarom setup
 	f = fopen(file, "rb");
@@ -934,37 +829,40 @@ int utilLoad(const char *file,u8 *data,int size,bool extram){ //*file is filenam
 	//copy first32krom/ because gba4ds's first 32k sector is bugged (returns 0 reads)
 	//fread(buffer, strlen(c)+1, 1, fp);
 	fread((u8*)&first32krom[0],sizeof(first32krom),1,f);
-
 	fseek(f,0,SEEK_END);
 	fileSize = ftell(f);
 	fseek(f,0,SEEK_SET);
-
 	generatefilemap(f,fileSize);
 
 	if(data == 0){ //null rom destination pointer? allocate space for it	
-		
-		//filesize
 		romSize=fileSize;	//size readjusted for final alloc'd rom
 		
-		//gba header rom entrypoint
-		//(u32*)(0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
-		
-		//printf("entrypoint @ %x! ",(unsigned int)(u32*)rom);
+		//gba rom entrypoint from header
+		memcpy((u8*)&gbaheader,(u8*)&first32krom[0], sizeof(gbaheader));
+		exRegs[0xf]=(u8*)(u32*)(0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
+		printf("FS:entrypoint @ %x! ",(unsigned int)(u32*)exRegs[0xf]);
 	}
 
 	ichflyfilestream = f; //pass the filestreampointer and make it global
 	ichflyfilestreamsize = fileSize;
-		
 	printf("generated filemap! OK:");
-
-	#else
-		romSize = puzzle_original_size;
-	#endif
-	
-	//set usual rom entrypoint
-	exRegs[0xf]=(u8*)(u32)0x08000000;	
-
 	return romSize; //rom buffer size
+
+#endif
+
+#ifdef ROMTEST
+	
+	//filesize
+	romsize=rom_pl_size;	//size readjusted for final alloc'd rom
+	
+	//gba rom entrypoint from header
+	memcpy((u8*)&gbaheader,(u8*)&rom_pl[0], sizeof(gbaheader));
+	exRegs[0xf]=(u8*)(u32*)(0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
+	printf("ROMTEST:entrypoint @ %x! ",(unsigned int)(u32*)exRegs[0xf]);
+	
+	return romsize;
+#endif
+	
 }
 
 
@@ -974,57 +872,13 @@ int CPULoadRom(const char *szFile,bool extram){
 	systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
 	exRegs[0xf] = 0;
 	romSize = 0x40000;
-	/*workRAM = (u8*)0x02000000;(u8 *)calloc(1, 0x40000);
-	if(workRAM == NULL) {
-		systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),
-					  "WRAM");
-		return 0;
-	}*/
-
+	
 	u8 *whereToLoad = exRegs[0xf];
 	if(cpuIsMultiBoot)whereToLoad = workRAM;
-	if(!utilLoad(szFile,whereToLoad,romSize,extram))
-	{
+	if(!utilLoad(szFile,whereToLoad,romSize,extram)){
 		return 0;
 	}
 
-	/*internalRAM = (u8 *)0x03000000;//calloc(1,0x8000);
-	if(internalRAM == NULL) {
-		systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),"IRAM");
-		//CPUCleanUp();
-		return 0;
-	}*/
-	/*paletteRAM = (u8 *)0x05000000;//calloc(1,0x400);
-	if(paletteRAM == NULL) {
-		systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),"PRAM");
-		//CPUCleanUp();
-		return 0;
-	}*/
-	/*vram = (u8 *)0x06000000;//calloc(1, 0x20000);
-	if(vram == NULL) {
-		systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),"VRAM");
-		//CPUCleanUp();
-		return 0;
-	}*/      
-	/*oam = (u8 *)0x07000000;calloc(1, 0x400); //ichfly test
-	if(oam == NULL) {
-		systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),"oam");
-		//CPUCleanUp();
-		return 0;
-	}   
-	pix = (u8 *)calloc(1, 4 * 241 * 162);
-	if(pix == NULL) {
-		systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),"PIX");
-		//CPUCleanUp();
-		return 0;
-	}  */
-	/*ioMem = (u8 *)calloc(1, 0x400);
-	if(ioMem == NULL) {
-		systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),"IO");
-		//CPUCleanUp();
-		return 0;
-	}*/      
-	
 	flashInit();
 	eepromInit();
 
@@ -1079,7 +933,7 @@ void printGBACPU(){
 	for(cntr=0;cntr<15;cntr=cntr+3){
 		printf(" r%d :[0x%x] r%d :[0x%x] r%d :[0x%x] ", 0 + cntr, (unsigned int)exRegs[0 + cntr], 1 + cntr, (unsigned int)exRegs[1 + cntr], 2 + cntr, (unsigned int)exRegs[2 + cntr]);
 	}
-	printf(" r%d :[0x%x] ", 0xf, (unsigned int)exRegs[0xf]);
+	printf(" r%d Addr[0x%x]: [0x%x] ", 0xf, (unsigned int)exRegs[0xf], cpuread_word(exRegs[0xf]));
 	
 	printf("CPSR[%x] / SPSR:[%x] ",(unsigned int)exRegs[0x10],(unsigned int)exRegs[0x11]);
 	if(armstate == true){

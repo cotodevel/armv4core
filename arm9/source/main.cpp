@@ -161,13 +161,17 @@ int main(int _argc, sint8 **_argv) {
 	savepath[0] = 0;
 	patchpath[0] = 0;
 	
-	// GBA EMU INIT//
-	//show gbadata printf("\x1b[21;1H
+	// GBA EMU INIT
+	
+	#ifndef ROMTEST
 	char startPath[MAX_TGDSFILENAME_LENGTH+1];
 	strcpy(startPath,"/");
 	while( ShowBrowser((char *)startPath, (char *)curChosenBrowseFile) == true ){	//as long you keep using directories ShowBrowser will be true
 		//navigating DIRs here...
 	}
+	#endif
+	
+	//show gbadata
 	//printgbainfo (curChosenBrowseFile);
 
 	//debugging is enabled at startup
