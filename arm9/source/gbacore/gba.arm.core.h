@@ -125,10 +125,6 @@ extern u32  exRegs_fiq[0x5];
 
 extern memoryMap map[256];
 extern bool ioReadable[0x400];
-extern bool N_FLAG ;
-extern bool C_FLAG ;
-extern bool Z_FLAG ;
-extern bool V_FLAG ;
 extern bool armState ;
 extern bool armIrqEnable ;
 extern u32 armNextPC ;

@@ -698,99 +698,147 @@ void CPUInit(const char *biosFileName, bool useBiosFile,bool extram)
 	initemu();
 	
 #ifdef WORDS_BIGENDIAN
-  if(!cpuBiosSwapped) {
-    for(unsigned int i = 0; i < sizeof(myROM)/4; i++) {
-      WRITE32LE((u8*)&myROM[i], myROM[i]);
-    }
-    cpuBiosSwapped = true;
-  }
+	if(!cpuBiosSwapped) {
+		for(unsigned int i = 0; i < sizeof(myROM)/4; i++) {
+			WRITE32LE((u8*)&myROM[i], myROM[i]);
+		}
+		cpuBiosSwapped = true;
+	}
 #endif
-  gbaSaveType = 0;
-  eepromInUse = 0;
-  saveType = 0;
-  useBios = false;
+	gbaSaveType = 0;
+	eepromInUse = 0;
+	saveType = 0;
+	useBios = false;
   
-  if(useBiosFile) {
-    int size = 0x4000;
-    if(utilLoad(biosFileName,
-                bios,
-                size,extram)) {
-      if(size == 0x4000)
-        useBios = true;
-      else
-        printf("Invalid BIOS file size");
-    }
-  }
+	if(useBiosFile) {
+		int size = 0x4000;
+		if(utilLoad(biosFileName, bios, size, extram)) {
+			if(size == 0x4000)
+				useBios = true;
+			else
+				printf("Invalid BIOS file size");
+		}
+	}
   
-  if(!useBios) {
-    memcpy(bios, myROM, sizeof(myROM));
-  }
+	if(!useBios){
+		memcpy(bios, myROM, sizeof(myROM));
+	}
 
-  int i = 0;
+	int i = 0;
+	biosProtected[0] = 0x00;
+	biosProtected[1] = 0xf0;
+	biosProtected[2] = 0x29;
+	biosProtected[3] = 0xe1;
 
-  biosProtected[0] = 0x00;
-  biosProtected[1] = 0xf0;
-  biosProtected[2] = 0x29;
-  biosProtected[3] = 0xe1;
-
-  for(i = 0; i < 256; i++) {
-    int count = 0;
-    int j;
-    for(j = 0; j < 8; j++)
-      if(i & (1 << j))
+	for(i = 0; i < 256; i++) {
+		int count = 0;
+		int j;
+		for(j = 0; j < 8; j++)
+			if(i & (1 << j))
         count++;
     
-    cpuBitsSet[i] = count;
+		cpuBitsSet[i] = count;
     
-    for(j = 0; j < 8; j++)
-      if(i & (1 << j))
-        break;
-    cpuLowestBitSet[i] = j;
-  }
+		for(j = 0; j < 8; j++)
+			if(i & (1 << j))
+				break;
+		cpuLowestBitSet[i] = j;
+	}
 
-  for(i = 0; i < 0x400; i++)
-    ioReadable[i] = true;
-  for(i = 0x10; i < 0x48; i++)
-    ioReadable[i] = false;
-  for(i = 0x4c; i < 0x50; i++)
-    ioReadable[i] = false;
-  for(i = 0x54; i < 0x60; i++)
-    ioReadable[i] = false;
-  for(i = 0x8c; i < 0x90; i++)
-    ioReadable[i] = false;
-  for(i = 0xa0; i < 0xb8; i++)
-    ioReadable[i] = false;
-  for(i = 0xbc; i < 0xc4; i++)
-    ioReadable[i] = false;
-  for(i = 0xc8; i < 0xd0; i++)
-    ioReadable[i] = false;
-  for(i = 0xd4; i < 0xdc; i++)
-    ioReadable[i] = false;
-  for(i = 0xe0; i < 0x100; i++)
-    ioReadable[i] = false;
-  for(i = 0x110; i < 0x120; i++)
-    ioReadable[i] = false;
-  for(i = 0x12c; i < 0x130; i++)
-    ioReadable[i] = false;
-  for(i = 0x138; i < 0x140; i++)
-    ioReadable[i] = false;
-  for(i = 0x144; i < 0x150; i++)
-    ioReadable[i] = false;
-  for(i = 0x15c; i < 0x200; i++)
-    ioReadable[i] = false;
-  for(i = 0x20c; i < 0x300; i++)
-    ioReadable[i] = false;
-  for(i = 0x304; i < 0x400; i++)
-    ioReadable[i] = false;
+	for(i = 0; i < 0x400; i++)
+		ioReadable[i] = true;
+	for(i = 0x10; i < 0x48; i++)
+		ioReadable[i] = false;
+	for(i = 0x4c; i < 0x50; i++)
+		ioReadable[i] = false;
+	for(i = 0x54; i < 0x60; i++)
+		ioReadable[i] = false;
+	for(i = 0x8c; i < 0x90; i++)
+		ioReadable[i] = false;
+	for(i = 0xa0; i < 0xb8; i++)
+		ioReadable[i] = false;
+	for(i = 0xbc; i < 0xc4; i++)
+		ioReadable[i] = false;
+	for(i = 0xc8; i < 0xd0; i++)
+		ioReadable[i] = false;
+	for(i = 0xd4; i < 0xdc; i++)
+		ioReadable[i] = false;
+	for(i = 0xe0; i < 0x100; i++)
+		ioReadable[i] = false;
+	for(i = 0x110; i < 0x120; i++)
+		ioReadable[i] = false;
+	for(i = 0x12c; i < 0x130; i++)
+		ioReadable[i] = false;
+	for(i = 0x138; i < 0x140; i++)
+		ioReadable[i] = false;
+	for(i = 0x144; i < 0x150; i++)
+		ioReadable[i] = false;
+	for(i = 0x15c; i < 0x200; i++)
+		ioReadable[i] = false;
+	for(i = 0x20c; i < 0x300; i++)
+		ioReadable[i] = false;
+	for(i = 0x304; i < 0x400; i++)
+		ioReadable[i] = false;
+	
+	//if(romSize < 0x1fe2000) {
+	//  *((u16 *)&rom[0x1fe209c]) = 0xdffa; // SWI 0xFA
+	//  *((u16 *)&rom[0x1fe209e]) = 0x4770; // BX LR
+	//} 
+	//else {
+		//agbPrintEnable(false);
+	//}
+	
+	
+	//misc
+	i = 0;
+	for(i = 0; i < sizeof(exRegs); i++){
+		exRegs[i] = 0;
+	}
 
-  
-  //if(romSize < 0x1fe2000) {
-  //  *((u16 *)&rom[0x1fe209c]) = 0xdffa; // SWI 0xFA
-  //  *((u16 *)&rom[0x1fe209e]) = 0x4770; // BX LR
-  //} 
-  //else {
-    //agbPrintEnable(false);
-  //}
+	exRegs_r13usr[0x1] = 0;
+	exRegs_r14usr[0x1] = 0;
+	exRegs_r13fiq[0x1] = 0;
+	exRegs_r14fiq[0x1] = 0;
+	exRegs_r13irq[0x1] = 0;
+	exRegs_r14irq[0x1] = 0;
+	exRegs_r13svc[0x1] = 0;
+	exRegs_r14svc[0x1] = 0;
+	exRegs_r13abt[0x1] = 0;
+	exRegs_r14abt[0x1] = 0;
+	exRegs_r13und[0x1] = 0;
+	exRegs_r14und[0x1] = 0;
+	//exRegs_r14sys[0x1] = 0; //usr/sys uses same stacks
+	//exRegs_r14sys[0x1] = 0;
+
+	//original registers used by any PSR_MODE that do belong to FIQ r8-r12
+	exRegs_fiq[0x5] = 0;
+
+	//Set CPSR virtualized bits & perform USR/SYS CPU mode change and set stacks
+	z_flag = 0;
+	n_flag = 0;
+	v_flag = 0;
+	c_flag = 0;
+	
+	//Host  sp_svc    sp_irq    sp_sys    zerofilled area       return address
+	//GBA   3007FE0h  3007FA0h  3007F00h  [3007E00h..3007FFFh]  Flag[3007FFAh]
+	
+	u32 startCPSR = (u32)((n_flag << 31) | (z_flag << 30) | (c_flag << 29) | (v_flag << 28) | (0 << 5) | (0x10));	//ARM Mode default + USR mode
+	updatecpuflags(1, startCPSR, 0x10);
+	exRegs[0x11] = exRegs[0x10];	//SPSR=CPSR
+	
+	//IRQ
+	exRegs[13] = 0x03007FA0;
+	updatecpuflags(1, exRegs[0x10], 0x12);
+	
+	//SVC
+	exRegs[13] = 0x03007FE0;
+	updatecpuflags(1, exRegs[0x10], 0x13);
+	
+	//USR/SYS (where CPU defaults to sys mode)
+	exRegs[13] = 0x03007F00;
+	updatecpuflags(1, exRegs[0x10], 0x10);
+	exRegs[13] = 0x03007F00;
+	updatecpuflags(1, exRegs[0x10], 0x1F);
 }
 
 

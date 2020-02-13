@@ -121,10 +121,6 @@ patch_t patchheader;
 int   sound_clock_ticks = 0;
 memoryMap map[256];
 bool ioReadable[0x400];
-bool N_FLAG = 0;
-bool C_FLAG = 0;
-bool Z_FLAG = 0;
-bool V_FLAG = 0;
 bool cpuStart = false;	//1 virtualizing / 0 halt
 bool armState = true;               //true = ARM / false = thumb
 bool armIrqEnable = true;

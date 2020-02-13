@@ -199,12 +199,6 @@ int main(int _argc, sint8 **_argv) {
 
 	//IEBACKUP = 0;
 
-	//bios calls (flush) destroyed sp13 for usr mode
-	exRegs[0xd]=exRegs_r13usr[0];
-	  
-	//Set CPSR virtualized bits & perform USR/SYS CPU mode change. & set stacks
-	updatecpuflags(1,exRegs[0x10],0x10);
-
 	//old entrypoint: gba map cant reach this ... so
 	//exRegs[0xf] = (u32)&gba_setup;
 	
