@@ -724,15 +724,6 @@ gbastackarm:
 @--------------------------------------------------------------------------------
 @.section	.dtcm,"ax",%progbits
 @--------------------------------------------------------------------------------
-	
-.global romsize					@no need to allocate to dtcm , its already on dtcm
-romsize:
-	.word 0x00000000
-
-.global rom_entrypoint
-rom_entrypoint:
-	.word 0x00000000
-
 
 @useful macro to retrieve DTCMs top reserved area
 .global dtcm_end_alloced

@@ -33,7 +33,6 @@
 #endif
 
 int i=0;
-u32 gba_entrypoint = 0;
 struct gbaheader_t gbaheader;
 
 // returns unary(decimal) ammount of bits using the Hamming Weight approach 
@@ -805,20 +804,16 @@ int utilLoad(const char *file,u8 *data,int size,bool extram){ //*file is filenam
 		if(!f){ 
 			printf("there is no bios.bin in root!"); while(1);
 		}
-
 		int fileSize=fread((void*)(u8*)bios, 1, 0x4000,f);
-
 		fclose(f);
 		if(fileSize!=0x4000){
 			printf("failed bios copy @ %x! so far:%d bytes",(unsigned int)bios,fileSize);
 			while(1);
 		}
-
 	#else
 		int fileSize=0;
 		FILE *f;
 	#endif
-
 	//gbarom setup
 	f = fopen(file, "rb");
 	if(!f) {
@@ -827,7 +822,6 @@ int utilLoad(const char *file,u8 *data,int size,bool extram){ //*file is filenam
 	}
 
 	//copy first32krom/ because gba4ds's first 32k sector is bugged (returns 0 reads)
-	//fread(buffer, strlen(c)+1, 1, fp);
 	fread((u8*)&first32krom[0],sizeof(first32krom),1,f);
 	fseek(f,0,SEEK_END);
 	fileSize = ftell(f);
@@ -835,38 +829,36 @@ int utilLoad(const char *file,u8 *data,int size,bool extram){ //*file is filenam
 	generatefilemap(f,fileSize);
 
 	if(data == 0){ //null rom destination pointer? allocate space for it	
-		romSize=fileSize;	//size readjusted for final alloc'd rom
-		
+		romSize=fileSize;	//size readjusted for final alloc'd rom	
 		//gba rom entrypoint from header
 		memcpy((u8*)&gbaheader,(u8*)&first32krom[0], sizeof(gbaheader));
-		exRegs[0xf]=(u8*)(u32*)(0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
+		exRegs[0xe]=exRegs[0xf]=(u8*)(u32*)(0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
 		printf("FS:entrypoint @ %x! ",(unsigned int)(u32*)exRegs[0xf]);
 	}
 
 	ichflyfilestream = f; //pass the filestreampointer and make it global
 	ichflyfilestreamsize = fileSize;
 	printf("generated filemap! OK:");
-	return romSize; //rom buffer size
-
 #endif
 
 #ifdef ROMTEST
-	
 	//filesize
-	romsize=rom_pl_size;	//size readjusted for final alloc'd rom
-	
+	romSize=rom_pl_size;	//size readjusted for final alloc'd rom
 	//gba rom entrypoint from header
 	memcpy((u8*)&gbaheader,(u8*)&rom_pl[0], sizeof(gbaheader));
-	exRegs[0xf]=(u8*)(u32*)(0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
+	exRegs[0xe]=exRegs[0xf]=(u8*)(u32*)(0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
 	printf("ROMTEST:entrypoint @ %x! ",(unsigned int)(u32*)exRegs[0xf]);
-	
-	return romsize;
 #endif
 	
+	printf("Press (A) to continue.");
+	scanKeys();
+	while(!(keysPressed() & KEY_A)){
+		scanKeys();
+		IRQVBlankWait();
+	}
+	
+	return romSize;
 }
-
-
-
 
 int CPULoadRom(const char *szFile,bool extram){
 	systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;

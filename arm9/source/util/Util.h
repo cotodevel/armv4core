@@ -188,7 +188,6 @@ extern u16 READ16LE(u8 * addr);
 extern void WRITE32LE(u8 * x,u32 v);
 extern void WRITE16LE(u8 * x,u16 v);
 extern u8	clzero(u32);
-extern u32 gba_entrypoint;
 extern void isdebugemu_defined();
 extern int executeuntil_pc(u32 target_pc);
 extern int ram2file_nds(char * fname,u8 * buffer,int size);

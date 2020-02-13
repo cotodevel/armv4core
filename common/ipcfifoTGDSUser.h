@@ -68,7 +68,7 @@ struct sIPCSharedTGDSSpecific{
 						//Disabled:
 							//arm7tdmi payload support + FS calls redirect to opened file handle, which is set to 0x08000000 (GBA Rom entrypoint)
 						
-//#define DEBUGEMU	//Enables LR tracing / debugging by printf
+#define DEBUGEMU	//Enables LR tracing / debugging by printf
 
 //#define BIOSHANDLER		//Activate this to jump to BIOS and do handling there (can cause problems if bad bios or corrupted) / require a bios at root
 							//Deactivating this will BX LR as soon as swi code is executed

@@ -8,6 +8,7 @@
 .type gba_setup STT_FUNC
 gba_setup:
 
+/*
 @Write arm7tdmi code here so when you disable ROMTEST define in settings.h, it will cause to armv4core to execute this code before
 @executing GBA Code
 
@@ -128,6 +129,7 @@ mov r11,#0
 mov r12,#0
 
 ldr pc,=(0x08000000-4)             @entrypoint - 4 because prefetch
+*/
 
 .pool       @we need the #imm fetches close
 @@@@@@@@@@@@@@@@@@@@@@@payload to setup stacks in gba mode end@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@

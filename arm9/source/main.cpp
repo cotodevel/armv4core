@@ -83,7 +83,7 @@ static inline void menuShow(){
 	
 	printf("ARMV4Core: ARM7TDMI Emulator ");
 	printf("(Select): Run CPU ");
-	printf("(Start): This menu. ");
+	printf("(Start): Clear screen. ");
 	printf("(A): CPU Info. ");
 	printf("Available heap memory: %d", getMaxRam());
 }
@@ -162,6 +162,7 @@ int main(int _argc, sint8 **_argv) {
 	patchpath[0] = 0;
 	
 	// GBA EMU INIT
+	DisableIrq(IRQ_TIMER3);
 	
 	#ifndef ROMTEST
 	char startPath[MAX_TGDSFILENAME_LENGTH+1];
@@ -207,9 +208,6 @@ int main(int _argc, sint8 **_argv) {
 	//old entrypoint: gba map cant reach this ... so
 	//exRegs[0xf] = (u32)&gba_setup;
 	
-	//new entrypoint: execute ROP only if we use real GBA ROM
-	gba_entrypoint = (u32)0x08000000;
-
 	//re enable when opcodes are implemented
 	#ifndef ROMTEST
 	u8* gba_stack_src =(u8*)0x03000000;
@@ -227,10 +225,7 @@ int main(int _argc, sint8 **_argv) {
 
 	//printf("gba read @ %x:%x ",(u32)(u8*)gba_src,CPUReadMemory((u32)(u8*)gba_src));
 	printf("nds payload set correctly! payload size: %d",(int)PATCH_BOOTCODE_SIZE*4);
-
-	exRegs[0xe]=(u32)gba_entrypoint;
-	exRegs[0xf]=(u32)(u8*)gba_stack_src;
-
+	
 	//int size_dumped = ram2file_nds((const char*)"fat:/armv4dump.bin",(u8*)&puzzle_original[0],puzzle_original_size);
 
 	//re enable when opcodes are implemented
@@ -242,8 +237,7 @@ int main(int _argc, sint8 **_argv) {
 		
 		//nds_2_gba_copy(rom,gba_src,puzzle_original_size);
 		//printf("nds gba homebrew set correctly @ %x! payload size: %d",gba_src,puzzle_original_size);
-		exRegs[0xe]=(u32)gba_entrypoint;
-		exRegs[0xf]=(u32)gba_entrypoint;
+		
 	//re enable when opcodes are implemented
 	#endif
 
@@ -276,11 +270,8 @@ int main(int _argc, sint8 **_argv) {
 		}
 		
 		if (keysPressed() & KEY_START){
-			menuShow();
-			scanKeys();
-			while(keysPressed() & KEY_START){
-				scanKeys();
-			}
+			clrscr();
+			printf("     ");
 		}
 			
 		if(keysPressed() & KEY_SELECT){

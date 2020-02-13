@@ -30,9 +30,6 @@
 #include <errno.h>
 #include <ctype.h>
 
-extern u32  romsize;		//gba romsize loaded 
-extern u32  rom_entrypoint; //entrypoint
-
 //GBA stacks
 extern u8 gbastck_usr[0x200];
 extern u8 gbastck_fiq[0x200];

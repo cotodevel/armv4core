@@ -417,7 +417,7 @@ switch(thumbinstr>>11){
 		//store RD into [RB,#Imm]
 		cpuwrite_word(destroyableRegister, exRegs[(thumbinstr&0x7)]);
 		#ifdef DEBUGEMU
-		printf("content @%x:[%x]",(unsigned int)destroyableRegister,(unsigned int)cpuload_word(destroyableRegister));
+		printf("content @%x:[%x]",(unsigned int)destroyableRegister,(unsigned int)cpuread_word(destroyableRegister));
 		#endif
 		return 0;
 	}
