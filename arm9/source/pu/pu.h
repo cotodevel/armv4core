@@ -148,7 +148,7 @@ extern u32 exceptswi(u32); 		//swi vector
 extern u32 exceptundef(u32 undef);	//undefined vector
 extern u32 exceptirq(u32 nds_iemask,u32 nds_ifmask,u32 sp_ptr);
 extern u32 swicaller(u32 arg);
-extern void exception_dump();
+extern void exception_dump(char * cause);
 
 #ifdef __cplusplus
 }

@@ -93,8 +93,8 @@ u32 bios_cpureset(){
 	biosProtected[3] = 0xe1;
 	
 	//set CPU-stack to usermode
-	cpsrvirt=0x0;
-	updatecpuflags(1,cpsrvirt,0x10);
+	exRegs[0x10]=0x0;
+	updatecpuflags(1,exRegs[0x10],0x10);
 	
 	//flush working CPU registers
 	for(i=0;i<0x10;i++){

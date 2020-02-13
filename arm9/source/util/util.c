@@ -69,7 +69,6 @@ const bool isInRom [16]=
 
 
 u32 dummycall(u32 arg){
-	//printf ("hi i am a dummy call whose arg is: [%x] ",(unsigned int)arg);
 	return arg;
 }
 
@@ -83,207 +82,6 @@ u32 UPDATE_REG(u32 address, u32 value){
 	WRITE16LE(iomem[address],(u16)value);
 return 0;
 }
-
-
-//get physical stack sz (curr stack *) //value: gbastack address base u32 *
-int getphystacksz(u32 * curr_stack){
-
-if((u32)(u32*)curr_stack == (u32)&gbastck_usr[0])
-	return gba_stack_usr_size; //printf("stack usr! "); 
-	
-else if ((u32)(u32*)curr_stack == (u32)&gbastck_fiq[0])
-	return gba_stack_fiq_size; //printf("stack fiq! ");
- 
-else if ((u32)(u32*)curr_stack == (u32)&gbastck_irq[0])
-	return gba_stack_irq_size; //printf("stack irq! "); 
-
-else if ((u32)(u32*)curr_stack == (u32)&gbastck_svc[0])
-	return gba_stack_svc_size; //printf("stack svc! "); 
-
-else if ((u32)(u32*)curr_stack == (u32)&gbastck_abt[0])
-	return gba_stack_abt_size; //printf("stack abt! "); 
-
-else if ((u32)(u32*)curr_stack == (u32)&gbastck_und[0])
-	return gba_stack_und_size; //printf("stack und! "); 
-
-//else if ((u32)(u32*)curr_stack == (u32)&gbastck_sys[0])
-	//return gba_stack_sys_size; //printf("stack sys! "); 
-
-else if ((u32)(u32*)curr_stack == (u32)&branch_stack[0])
-	return gba_branch_table_size; //branch table size 
-	
-else
-	return 0xdeaddead; //printf("ERROR STACK NOT DETECTED  ");
-	
-}
-
-//new stack test , includes branch stack test (do not use GBA CPU addressing) and hardware stack test (that use GBA CPU addressing) 
-//returns: framepointer of initial stack (if success)
-u32 * stack_test(u32 * stackfp,int size, u8 testmode){
-int j=0;		//regs 0-15 offset / 16 bytestep
-int ctr=0;
-//branchstack opcode test
-u32 * stackfpbu=stackfp;
-
-//Gba model cpu addressing stack test
-if(testmode==0){
-	
-	// 1/2 writes
-	for(ctr=0;ctr<(size/4);ctr++){
-
-		//fill! (+1 because we want the real integer modulus) 
-		if( ((ctr+1) % 0x10) == 0){
-			//printf(" <r%d:[%x]>",j,(unsigned int)*((u32*)branchfpbu+j));
-			j=0;
-		}
-
-		else {
-			//exRegs[j]=0xc070+(j<<8);
-			//printf("stack: @ %x for save data",(unsigned int)((u32)(u32*)stackfpbu+(ctr*4)));
-			cpuwrite_word((unsigned int)(((u32)stackfpbu)+(ctr*4)),0xc070+(j<<8));
-			//printf("(%x)[%x]",(unsigned int)((u32)(u32*)stackfpbu+(ctr*4)), (unsigned int) cpuread_word((u32)((u32)(u32*)stackfpbu+(ctr*4))));
-			j++;
-		}
-	
-		//debug
-		//if(ctr>15) { printf("halt"); while(1);}
-	}
-	j=0;
-	// 2/2 reads and check
-	for(ctr=0;ctr<(size/4);ctr++){
-
-		//fill! (+1 because we want the real integer modulus) 
-		if( ((ctr+1) % 0x10) == 0){
-			//printf(" <r%d:[%x]>",j,(unsigned int)*((u32*)branchfpbu+j));
-			j=0;
-		}
-
-		else {
-			
-			if(cpuread_word( ((u32)stackfpbu+(ctr*4))) == (0xc070+(j<<8)) ){
-				cpuwrite_word(((u32)(u32*)stackfpbu+(ctr*4)),0x0); //clr block
-				j++;
-			}
-			else{
-				printf(" [GBAStack] STUCK AT: base(%x)+(%x)",(unsigned int)(u32*)stackfpbu,(unsigned int)(ctr*4));
-				printf(" [GBAStack] value: [%x]",(unsigned int)cpuread_word((((u32)stackfpbu+(ctr*4)))));
-				
-				while (1);
-			}
-		}
-	
-		//debug
-		//if(ctr>15) { printf("halt"); while(1);}
-	}
-	
-	
-	return (u32*)size;
-}
-else if(testmode==1){
-
-	for(ctr=0;ctr<((int)(size) - (0x4*17) );ctr++){
-
-		//fill!
-		if( (ctr % 0x10) == 0){
-			//printf(" <r%d:[%x]>",j,(unsigned int)*((u32*)branchfpbu+j));
-			j=0;
-		}
-
-		else {
-			exRegs[j]=0xc070+(j<<8);
-			j++;
-		}
-
-		if ( ((ctr % (gba_branch_block_size)) == 0) && (ctr != 0)) {
-			stackfpbu=cpubackupmode((u32*)(stackfpbu),exRegs,cpsrvirt); //already increases fp
-			//printf("b.ofset:%x ",(unsigned int)branchfpbu);
-			//ofset+=0x1;
-		}
-	}
-
-	//printf("1/2 stack test fp set to: %x ",(unsigned int)(u32*)branchfpbu);
-	//flush workreg
-	for(j=0;j<0x10;j++){
-		*((u32*)(u32)&exRegs+j)=0x0;
-	}
-
-	//debug
-	//branchfpbu=cpurestoremode((u32*)(u32)branchfpbu, &gbavirtreg[0]);
-	//ldmiavirt((u8*)gbavirtreg[0]+(0x0), (u32)(u32*)(branchfpbu), 0xffff, 32, 0);
-
-	//debug check if 16 regs address are recv OK
-	//for(i=0;i<16;i++){
-	//	printf(" REG%d [%x]",i,(unsigned int)*((u32*)gbavirtreg[0]+i));
-	//}
-
-	for(ctr=0;ctr<((int)(size) - (0x4*17));ctr++){
-
-		if ( ((ctr % (gba_branch_block_size)) == 0)) {
-			stackfpbu=cpurestoremode((u32*)(stackfpbu),exRegs);
-			//printf("b.ofset->restore :%x ",(unsigned int)(u32*)branchfpbu);
-			//ofset+=0x4;
-		}
-
-		//reset cnt!
-		if( (ctr % 0x10) == 0){
-			//printf(" <r%d:[%x]>",j,(unsigned int)exRegs[j]);
-			j=0;
-		}
-
-		else {
-			if ( exRegs[j] == (u32)(0xc070+(j<<8)))
-				j++;
-			else {
-				//check why if 16 regs address are recv OK
-				for(i=0;i<16;i++){
-					//printf(" REG%d[%x]",i,(unsigned int)exRegs[i]);
-				}
-				printf(" [branchstack] STUCK AT: %x:%x",(unsigned int)(u32*)(stackfpbu+1),(unsigned int)exRegs[j]);
-				while(1);
-			}
-		}
-	}
-	//printf("2/2 stack test fp set to: %x- stack tests OK ;) ",(u32)(u32*)branchfpbu);
-	return stackfpbu;
-}
-
-else return (u32*)0x1;
-
-}
-
-
-u32 * updatestackfp(u32 * currstack_fp, u32 * stackbase){
-	int stacksz=0;
-	stacksz=getphystacksz(stackbase);
-	
-	//debug
-	//printf(" stkfp_curr:%x->offset%x",(unsigned int)(u32*)currstack_fp,(int)((unsigned int)(u32*)currstack_fp-(u32)(u32*)stackbase));
-	
-	//if framepointer is OK
-	if ( 	((int)((u32)(u32*)currstack_fp-(u32)(u32*)stackbase) >= 0) //MUST start from zero as ptr starts from zero
-			&&
-			((int)((u32)(u32*)currstack_fp-(u32)(u32*)stackbase) < stacksz)
-	){
-		//debug
-		//printf("stack top: %x / stack_offset:%x ",stacksz , (int)((unsigned int)(u32*)currstack_fp-(unsigned int)(u32*)stackbase));
-		return currstack_fp;
-	}
-	//if overflow stack, fix pointer and make it try again
-	else if( ((int)(((u32)(u32*)currstack_fp-(u32)(u32*)stackbase))+0x4) >= stacksz) {
-		//printf("stacktop!");			//debug
-		gbastckfpadr_curr=currstack_fp-1; 
-		return 0;
-	}
-	//else if underflow stack, fix pointer and make it try again
-	else if (  (int)((u32*)currstack_fp-(u32)(u32*)stackbase) < (int)0){
-		//printf("stack underflow!");	//debug
-		gbastckfpadr_curr=currstack_fp+1;
-		return 0;
-	}
-	else
-		return (u32*)0;
-}
-
 
 int utilReadInt2(FILE *f){
   int res = 0;
@@ -535,7 +333,6 @@ void initmemory(){
 }
 
 void initemu(){
-
 	sound_clock_ticks = 167772; // 1/100 second
 	
 	//refresh jump opcode in biosProtected vector
@@ -543,8 +340,7 @@ void initemu(){
 	biosProtected[1] = 0xf0;
 	biosProtected[2] = 0x29;
 	biosProtected[3] = 0xe1;
-	  
-
+	
 	/*				 allocate segments
 	 GBA Memory Map
 
@@ -798,75 +594,9 @@ void initemu(){
 	//reg[R13_IRQ].I = 0x03007FA0;
 	//reg[R13_SVC].I = 0x03007FE0;
 	//armIrqEnable = true;
-
-	//new stack setup
-	//1) set stack base 2) to detect stack top just sizeof(gbastck_mode), framepointer has the current pos (from 0 to n) used so far
-	gbastckadr_usr=(u32*)0x03007F00; //0x100 size & 0x10 as CPU <mode> start (usr/sys shared stack)
-	exRegs[0xd]=exRegs_r13usr[0]=(u32)(u32*)gbastckadr_usr;
-
-	gbastckfp_usr=(u32*)0x03007F00;
-	#ifdef STACKTEST
-		if((int)stack_test(gbastckadr_usr,0xff,0x0)==(int)0xff)
-			printf("USR stack OK!");
-		else
-			printf("USR stack WRONG!");
-	#endif
-
-	gbastckadr_fiq=(u32*)(gbastckadr_usr-GBASTACKSIZE); //custom fiq stack
-	exRegs_r13fiq[0]=(u32)(u32*)gbastckadr_fiq;
-
-	gbastckfp_fiq=(u32*)(gbastckadr_usr-GBASTACKSIZE); //#GBASTACKSIZE size
-	#ifdef STACKTEST
-		if((int)stack_test(gbastckadr_fiq,(int)GBASTACKSIZE,0x0)==(int)GBASTACKSIZE)
-			printf("FIQ stack OK!");
-		else
-			printf("FIQ stack WRONG!");
-	#endif
-
-	gbastckadr_irq=(u32*)0x03007FA0;
-	exRegs_r13irq[0]=(u32)(u32*)gbastckadr_irq;
-
-	gbastckfp_irq=(u32*)0x03007FA0;
-	#ifdef STACKTEST
-		if((int)stack_test(gbastckadr_irq,0xff,0x0)==(int)0xff)
-			printf("IRQ stack OK!");
-		else
-			printf("IRQ stack WRONG!");
-	#endif
-
-	gbastckadr_svc=(u32*)0x03007FE0;
-	exRegs_r13svc[0]=(u32)(u32*)gbastckadr_svc;
-
-	gbastckfp_svc=(u32*)0x03007FE0;
-	#ifdef STACKTEST
-		if((int)stack_test(gbastckadr_svc,0xff,0x0)==(int)0xff)
-			printf("SVC stack OK!");
-		else
-			printf("SVC stack WRONG!");
-	#endif
-
-	gbastckadr_abt=(u32*)(gbastckadr_fiq-GBASTACKSIZE); //custom abt stack
-	exRegs_r13abt[0]=(u32)(u32*)gbastckadr_abt;
-
-	gbastckfp_abt=(u32*)(gbastckadr_fiq-GBASTACKSIZE);
-	#ifdef STACKTEST
-		if((int)stack_test(gbastckadr_abt,(int)GBASTACKSIZE,0x0)==(int)GBASTACKSIZE)
-			printf("ABT stack OK!");
-		else
-			printf("ABT stack WRONG!");
-	#endif
-
-	gbastckadr_und=(u32*)(gbastckadr_abt-GBASTACKSIZE); //custom und stack
-	exRegs_r13und[0]=(u32)(u32*)gbastckadr_und;
-
-	gbastckfp_und=(u32*)(gbastckadr_abt-GBASTACKSIZE);
-	#ifdef STACKTEST
-		if((int)stack_test(gbastckadr_und,(int)GBASTACKSIZE,0x0)==(int)GBASTACKSIZE)
-			printf("UND stack OK!");
-		else
-			printf("UND stack WRONG!");
-	#endif
-
+	
+	//todo stack setup
+	
 }
 
 
@@ -1033,21 +763,6 @@ u8 clzero(u32 var){
             }
     }
 	return cnt;
-}
-
-//debugging:
-
-//0:ARM | 1:THUMB
-bool setarmstate(u32 psr){
-	//->switch to arm/thumb mode depending on cpsr for virtual env
-	if( ((psr>>5)&1) )
-		armState=false;
-	else
-		armState=true;
-	
-    cpsrvirt &= ~(1<<5);
-    cpsrvirt |= (psr&(1<<5));
-	return armState;
 }
 
 //0: no, it wasn't enabled when compiled.
@@ -1337,4 +1052,41 @@ int ram2file_nds(char * fname,u8 * buffer,int size){
         printf("file was not created: %s",fname);
     }
     return 1;
+}
+
+void printGBACPU(){
+	int cntr=0;
+	printf("Hardware Registers: ");
+	
+	//Base sp cpu <mode>
+	if ((exRegs[0x10]&0x1f) == (0x10) || (exRegs[0x10]&0x1f) == (0x1f))
+		printf(" USR/SYS STACK ");
+	else if ((exRegs[0x10]&0x1f)==(0x11))
+		printf(" FIQ STACK");
+	else if ((exRegs[0x10]&0x1f)==(0x12))
+		printf(" IRQ STACK");
+	else if ((exRegs[0x10]&0x1f)==(0x13))
+		printf(" SVC STACK");
+	else if ((exRegs[0x10]&0x1f)==(0x17))
+		printf(" ABT STACK");
+	else if ((exRegs[0x10]&0x1f)==(0x1b))
+		printf(" UND STACK");
+	else
+		printf(" STACK LOAD ERROR CPSR: %x",(unsigned int)exRegs[0x10]);
+		
+	printf(" ////////////CPU Registers////////////: ");
+	
+	for(cntr=0;cntr<15;cntr=cntr+3){
+		printf(" r%d :[0x%x] r%d :[0x%x] r%d :[0x%x] ", 0 + cntr, (unsigned int)exRegs[0 + cntr], 1 + cntr, (unsigned int)exRegs[1 + cntr], 2 + cntr, (unsigned int)exRegs[2 + cntr]);
+	}
+	printf(" r%d :[0x%x] ", 0xf, (unsigned int)exRegs[0xf]);
+	
+	printf("CPSR[%x] / SPSR:[%x] ",(unsigned int)exRegs[0x10],(unsigned int)exRegs[0x11]);
+	if(armstate == true){
+		printf("CPU Model: %s - Running: %d - CPUMode: %s", ARMModel, cpuStart, "ARM");
+	}
+	else{
+		printf("CPU Model: %s - Running: %d - CPUMode: %s", ARMModel, cpuStart, "THUMB");
+	}
+	printf("CpuTotalTicks:(%d) / lcdTicks:(%d) / vcount: (%d)",(int)cpuTotalTicks,(int)lcdTicks,(int)GBAVCOUNT);
 }

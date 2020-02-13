@@ -46,102 +46,10 @@ External Memory (Game Pak)
   0E010000-0FFFFFFF   Not used
 */
 
-u32 * cpubackupmode(u32 * branch_stackfp, u32 cpuregvector[0x16], u32 cpsr){
-
-	//if frame pointer reaches TOP don't increase SP anymore
-	// (ptrpos - ptrsrc) * int depth < = ptr + size struct (minus last element bc offset 0 uses an element)
-	if( (int)( ( ((u32*)branch_stackfp-(u32*)&branch_stack[0])) *4) <  (int)(gba_branch_table_size - gba_branch_elemnt_size)){ 
-	
-	//printf("gba_branch_offst[%x] +",( ( ((u32*)branch_stackfp-(u32*)&branch_stack[0])) *4)); //debug
-	
-		stmiavirt((u8*)(&cpuregvector[0]), (u32)(u32*)branch_stackfp, 0xffff, 32, 0, 0);
-		
-		//for(i=0;i<16;i++){
-		//	printf(">>%d:[%x]",i,cpuregvector[i]);
-		//}
-		//while(1);
-		
-		//printf("    	--	");
-		//move 16 bytes ahead fp and store cpsr
-		//debug: stmiavirt((u8*)cpsr, (u32)(u32*)(branch_stackfp+0x10), 0x1 , 32, 0);
-		
-		//printf("curr_used fp:%x / top: %x / block size: %x ",(int)((((u32*)branch_stackfp-(u32*)&branch_stack[0])*4)),gba_branch_table_size,gba_branch_block_size);
-		branch_stackfp=(u32*)addasm((u32)(u32*)branch_stackfp,(u32)0x10*4);
-		
-		//save cpsr int SPSR_mode slot
-		switch(cpsr&0x1f){
-			
-			case(0x10): //user
-				spsr_usr=cpsr;
-			break;
-			case(0x11): //fiq
-				spsr_fiq=cpsr;
-			break;
-			case(0x12): //irq
-				spsr_irq=cpsr;
-			break;
-			case(0x13): //svc
-				spsr_svc=cpsr;
-			break;
-			case(0x17): //abt
-				spsr_abt=cpsr;
-			break;
-			case(0x1b): //und
-				spsr_und=cpsr;
-			break;
-			case(0x1f): //sys
-				spsr_sys=cpsr;
-			break;
-		}
-		//and save spsr this way for fast spsr -> cpsr restore (only for cpusave/restore modes), otherwise save CPSR manually
-		gbastckfpadr_spsr=cpsr;
-	}
-	
-	else{ 
-		//printf("branch stack OVERFLOW! "); //debug
-	}
-
-return branch_stackfp;
-
-}
-//this one restores cpsrvirt by itself (restores CPU mode)
-u32 * cpurestoremode(u32 * branch_stackfp, u32 cpuregvector[0x16]){
-
-	//if frame pointer reaches bottom don't decrease SP anymore:
-	//for near bottom case
-	if ( (u32*)branch_stackfp > (u32*)&branch_stack[0]) { 
-	
-	//printf("gba_branch_block_size[%x] -",gba_branch_block_size); //debug
-
-		//printf("curr_used fp:%x / top: %x / block size: %x ",(int)((((u32*)branch_stackfp-(u32*)&branch_stack[0])*4)),gba_branch_table_size,gba_branch_block_size);
-		branch_stackfp=(u32*)subasm((u32)(u32*)branch_stackfp,0x10*4);
-		
-		ldmiavirt((u8*)(&cpuregvector[0x0]), (u32)(u32*)(branch_stackfp), 0xffff, 32, 0, 0);
-		
-	}
-	
-	//if frame pointer reaches bottom don't decrease SP anymore:
-	//for bottom case
-	else if ( (u32*)branch_stackfp == (u32*)&branch_stack[0]) { 
-
-		//move 4 slots behinh fp (32 bit *) and restore cpsr
-		ldmiavirt((u8*)(&cpuregvector[0]), (u32)(u32*)(branch_stackfp), 0xffff, 32, 0, 0);
-		
-		//don't decrease frame pointer anymore.
-		
-	}
-	
-	else{ 
-		//printf("branch stack has reached bottom! ");
-	}
-	
-return branch_stackfp;
-}
-
 //Update CPU status flags (Z,N,C,V, THUMB BIT)
-//mode: 0 = hardware asm cpsr update (cpsrvirt & cpu cond flags) / 1 = virtual CPU mode change,  CPSR , change to CPU mode
+//mode: 0 = hardware asm cpsr update (exRegs[0x10] & cpu cond flags) / 1 = virtual CPU mode change,  CPSR , change to CPU mode
 // / 2 = Writes to IO MAP for GBA environment variable updates
-u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
+u32 updatecpuflags(u8 mode ,u32 cpsr, u32 cpumode){
 	switch(mode){
 		case (0):
 			//1) if invoked from hardware asm function, update flags to virtual environment
@@ -149,52 +57,27 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 			n_flag=(lsrasm(cpsr,0x1f))&0x1;
 			c_flag=(lsrasm(cpsr,0x1d))&0x1;
 			v_flag=(lsrasm(cpsr,0x1c))&0x1;
-			cpsrvirt&=~0xF0000000;
-			cpsrvirt|=(n_flag<<31|z_flag<<30|c_flag<<29|v_flag<<28);
+			exRegs[0x10]&=~0xF0000000;
+			exRegs[0x10]|=(n_flag<<31|z_flag<<30|c_flag<<29|v_flag<<28);
 			//cpsr = latest cpsrasm from virtual asm opcode
 			//printf("(0)CPSR output: %x ",cpsr);
 			//printf("(0)cpu flags: Z[%x] N[%x] C[%x] V[%x] ",z_flag,n_flag,c_flag,v_flag);
-		
 		break;
 		
 		case (1):{
 			//1)check if cpu<mode> swap does not come from the same mode
 			if((cpsr&0x1f)!=cpumode){
-		
-			//2a)save stack frame pointer for current stack 
-			//and detect old cpu mode from current loaded stack, then store LR , PC into stack (mode)
-			//printf("cpsr:%x / spsr:%x",cpsr&0x1f,spsr_last&0x1f);
-			
-				if( ((cpsrvirt&0x1f) == (0x10)) || ((cpsrvirt&0x1f) == (0x1f)) ){ //detect usr/sys (0x10 || 0x1f)
-					spsr_last=spsr_usr=cpsrvirt;
-					
-					//gbastckadr_usr=gbastckmodeadr_curr=; //not required this is to know base stack usr/sys
-					gbastckfp_usr=gbastckfpadr_curr;
+				exRegs[0x11]=exRegs[0x10];	//save SPSR
+				//2a)save stack/frame pointer before loading new cpsr&0x1f mode while storing PC into LR (mode)
+				if( ((exRegs[0x10]&0x1f) == (0x10)) || ((exRegs[0x10]&0x1f) == (0x1f)) ){ //detect usr/sys (0x10 || 0x1f)
 					exRegs_r13usr[0x0]=exRegs[0xd]; //user/sys is the same stacks
 					exRegs_r14usr[0x0]=exRegs[0xe];
 					#ifdef DEBUGEMU
 						printf("stacks backup usr_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs_r13usr[0x0]);
 					#endif
-					//printf("before nuked SP usr:%x",(unsigned int)exRegs_r13usr[0x0]);
 					
-					/* //deprecated
-						//if framepointer does not reach the top:
-						if((u32)updatestackfp(gbastckfp_usr,gbastckadr_usr) != (u32)0){
-					
-						//store LR to actual (pre-SPSR'd) Stack
-						gbastckfp_usr[0]=exRegs[0xe];
-						
-						//store PC to actual (pre-SPSR'd stack)
-						gbastckfp_usr[1] = exRegs[0xf];
-						
-						//increase fp by the ammount of regs added
-						gbastckfp_usr=(u32*)addspvirt((u32)(u32*)gbastckfp_usr,2);
-					}
-					*/
 				}
-				else if((cpsrvirt&0x1f)==0x11){
-					spsr_last=spsr_fiq=cpsrvirt;
-					gbastckfp_fiq=gbastckfpadr_curr;
+				else if((exRegs[0x10]&0x1f)==0x11){
 					exRegs_r13fiq[0x0]=exRegs[0xd];
 					exRegs_r14fiq[0x0]=exRegs[0xe];
 					
@@ -216,9 +99,7 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 						printf("stacks backup fiq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs_r13fiq[0x0]);
 					#endif
 				}
-				else if((cpsrvirt&0x1f)==0x12){
-					spsr_last=spsr_irq=cpsrvirt;
-					gbastckfp_irq=gbastckfpadr_curr;
+				else if((exRegs[0x10]&0x1f)==0x12){
 					exRegs_r13irq[0x0]=exRegs[0xd];
 					exRegs_r14irq[0x0]=exRegs[0xe];
 					#ifdef DEBUGEMU
@@ -226,18 +107,14 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 					#endif
 				}
 				
-				else if((cpsrvirt&0x1f)==0x13){
-					spsr_last=spsr_svc=cpsrvirt;
-					gbastckfp_svc=gbastckfpadr_curr;
+				else if((exRegs[0x10]&0x1f)==0x13){
 					exRegs_r13svc[0x0]=exRegs[0xd];
 					exRegs_r14svc[0x0]=exRegs[0xe];
 					#ifdef DEBUGEMU
 						printf("stacks backup svc_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs_r13svc[0x0]);
 					#endif
 				}
-				else if((cpsrvirt&0x1f)==0x17){
-					spsr_last=spsr_abt=cpsrvirt;
-					gbastckfp_abt=gbastckfpadr_curr;
+				else if((exRegs[0x10]&0x1f)==0x17){
 					exRegs_r13abt[0x0]=exRegs[0xd];
 					exRegs_r14abt[0x0]=exRegs[0xe];
 					#ifdef DEBUGEMU
@@ -245,9 +122,7 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 					#endif
 				}
 				
-				else if((cpsrvirt&0x1f)==0x1b){
-					spsr_last=spsr_und=cpsrvirt;
-					gbastckfp_und=gbastckfpadr_curr;
+				else if((exRegs[0x10]&0x1f)==0x1b){
 					exRegs_r13und[0x0]=exRegs[0xd];
 					exRegs_r14und[0x0]=exRegs[0xe];
 					#ifdef DEBUGEMU
@@ -264,37 +139,21 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 					cpsr|=0x13;
 					
 					//#ifdef DEBUGEMU
-					//	printf("ERROR CHANGING CPU MODE/STACKS : CPSR: %x ",(unsigned int)cpsrvirt);
+					//	printf("ERROR CHANGING CPU MODE/STACKS : CPSR: %x ",(unsigned int)exRegs[0x10]);
 					//	while(1);
 					//#endif
 				}
 			
-			//update SPSR on CPU change <mode> (this is exactly where CPU change happens)
-			spsr_last=cpsr;
-			
-			//3)setup current CPU mode working set of registers and perform stack swap
-			//btw2: gbastckfp_usr can hold up to 0x1ff (511 bytes) of data so pointer must not exceed that value
-			
-			//case gbastckfp_mode  
-			//load LR & PC from regs then decrease #1 for each
-			
-			//unique cpu registers : exRegs[n];
-			
-			//user/sys
-			if ( ((cpumode&0x1f) == (0x10)) || ((cpumode&0x1f) == (0x1f)) ){	
-					
-					gbastckmodeadr_curr=gbastckadr_usr;
-					gbastckfpadr_curr=gbastckfp_usr;			//current framepointer address (setup in util.c) and updated here
+				//user/sys
+				if ( ((cpumode&0x1f) == (0x10)) || ((cpumode&0x1f) == (0x1f)) ){
 					exRegs[0xd]=exRegs_r13usr[0x0]; //user SP/LR registers for cpu<mode> (user/sys is the same stacks)
 					exRegs[0xe]=exRegs_r14usr[0x0];
 					#ifdef DEBUGEMU
 						printf("| stacks swap to usr_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
-			}
+				}
 			
-			else if((cpumode&0x1f)==0x11){
-					gbastckmodeadr_curr=gbastckadr_fiq;
-					gbastckfpadr_curr=gbastckfp_fiq;			//current framepointer address (setup in util.c) and updated here
+				else if((cpumode&0x1f)==0x11){
 					exRegs[0xd]=exRegs_r13fiq[0x0]; //fiq SP/LR registers for cpu<mode>
 					exRegs[0xe]=exRegs_r14fiq[0x0];
 					
@@ -314,87 +173,76 @@ u32 updatecpuflags(u8 mode ,u32 cpsr , u32 cpumode){
 					#ifdef DEBUGEMU
 						printf("| stacks swap to fiq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
-			}
-			//irq
-			else if((cpumode&0x1f)==0x12){
-					gbastckmodeadr_curr=gbastckadr_irq;
-					gbastckfpadr_curr=gbastckfp_irq;			//current framepointer address (setup in util.c) and updated here
+				}
+				//irq
+				else if((cpumode&0x1f)==0x12){
 					exRegs[0xd]=exRegs_r13irq[0x0]; //irq SP/LR registers for cpu<mode>
 					exRegs[0xe]=exRegs_r14irq[0x0];
 					#ifdef DEBUGEMU
 						printf("| stacks swap to irq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
-			}
-			//svc
-			else if((cpumode&0x1f)==0x13){
-					gbastckmodeadr_curr=gbastckadr_svc;
-					gbastckfpadr_curr=gbastckfp_svc;			//current framepointer address (setup in util.c) and updated here
+				}
+				//svc
+				else if((cpumode&0x1f)==0x13){
 					exRegs[0xd]=exRegs_r13svc[0x0]; //svc SP/LR registers for cpu<mode> (user/sys is the same stacks)
 					exRegs[0xe]=exRegs_r14svc[0x0];
 					#ifdef DEBUGEMU
 						printf("| stacks swap to svc_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
-			}
-			//abort
-			else if((cpumode&0x1f)==0x17){
-					gbastckmodeadr_curr=gbastckadr_abt;
-					gbastckfpadr_curr=gbastckfp_abt;			//current framepointer address (setup in util.c) and updated here
+				}
+				//abort
+				else if((cpumode&0x1f)==0x17){
 					exRegs[0xd]=exRegs_r13abt[0x0]; //abt SP/LR registers for cpu<mode>
 					exRegs[0xe]=exRegs_r14abt[0x0];
 					#ifdef DEBUGEMU
 						printf("| stacks swap to abt_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
-			}
-			//undef
-			else if((cpumode&0x1f)==0x1b){
-					gbastckmodeadr_curr=gbastckadr_und;
-					gbastckfpadr_curr=gbastckfp_und;			//current framepointer address (setup in util.c) and updated here
+				}
+				//undef
+				else if((cpumode&0x1f)==0x1b){
 					exRegs[0xd]=exRegs_r13und[0x0]; //und SP/LR registers for cpu<mode>
 					exRegs[0xe]=exRegs_r14und[0x0];
 					#ifdef DEBUGEMU
 						printf("| stacks swap to und_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
-			}
+				}
 			
-			//then update cpsr (mode) <-- cpsr & spsr case dependant
-			cpsr&=~0x1f;
-			cpsr|=(cpumode&0x1f);
-			
-			//->switch to arm/thumb mode depending on cpsr for virtual env
-			if( ((cpsr>>5)&1) == 0x1 )
-				armstate=0x1;
-			else
-				armstate=0x0;
-			
-			cpsr&=~(1<<0x5);
-			cpsr|=((armstate&1)<<0x5);
-			
-			//save changes to CPSR
-			cpsrvirt=cpsr;
-			
-		}	//end if current cpumode != new cpu mode
-		
-		else{
-			#ifdef DEBUGEMU
-				printf("cpsr(arg1)(%x) == cpsr(arg2)(%x)",(unsigned int)(cpsr&0x1f),(unsigned int)cpumode);
-			#endif
-			
-			//any kind of access case:
-			
-			//->can't rewrite SAME cpu<mode> slots!!
-			//->switch to arm/thumb mode depending on cpsr
-			if( ((cpsr>>5)&1) == 0x1 )
-				armstate=0x1;
-			else
-				armstate=0x0;
-			
-			cpsr&=~(1<<0x5);
-			cpsr|=((armstate&1)<<0x5);
-			
-			//save changes to CPSR
-			cpsrvirt=cpsr;
-		}
-		
+				//then update cpsr (mode) <-- cpsr & spsr case dependant
+				cpsr&=~0x1f;
+				cpsr|=(cpumode&0x1f);
+				
+				//->switch to arm/thumb mode depending on cpsr for virtual env
+				if( ((cpsr>>5)&1) == 0x1 )
+					armstate=0x1;
+				else
+					armstate=0x0;
+				
+				cpsr&=~(1<<0x5);
+				cpsr|=((armstate&1)<<0x5);
+				
+				//save changes to CPSR
+				exRegs[0x10]=cpsr;
+			}	//end if current cpumode != new cpu mode
+			else{
+				#ifdef DEBUGEMU
+					printf("cpsr(arg1)(%x) == cpsr(arg2)(%x)",(unsigned int)(cpsr&0x1f),(unsigned int)cpumode);
+				#endif
+				
+				//any kind of access case:
+				
+				//->can't rewrite SAME cpu<mode> slots!!
+				//->switch to arm/thumb mode depending on cpsr
+				if( ((cpsr>>5)&1) == 0x1 )
+					armstate=0x1;
+				else
+					armstate=0x0;
+				
+				cpsr&=~(1<<0x5);
+				cpsr|=((armstate&1)<<0x5);
+				
+				//save changes to CPSR
+				exRegs[0x10]=cpsr;
+			}		
 		}
 		break;
 		
@@ -877,7 +725,7 @@ switch(thumbinstr>>11){
 			
 			exRegs[0xf]=(cpuread_word((thumbinstr&0x3ff)<<1)+0x4&0xfffffffe); //bit[11] but word-aligned so assembler puts 0>>1
 			#ifdef DEBUGEMU
-			printf("[BAL] label[%x] THUMB mode / CPSR:%x (5.18) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
+			printf("[BAL] label[%x] THUMB mode / CPSR:%x (5.18) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
 			#endif
 	return 0;	
 	}
@@ -1435,7 +1283,7 @@ switch(thumbinstr>>8){
 			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BEQ] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
+			printf("[BEQ] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
 			#endif
 		}
 		else {
@@ -1481,7 +1329,7 @@ switch(thumbinstr>>8){
 			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BCS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
+			printf("[BCS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
 			#endif
 			
 		}
@@ -1504,7 +1352,7 @@ switch(thumbinstr>>8){
 			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BCC] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
+			printf("[BCC] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
 			#endif
 		
 		}
@@ -1527,7 +1375,7 @@ switch(thumbinstr>>8){
 			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BMI] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
+			printf("[BMI] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
 			#endif
 	
 		}
@@ -1550,7 +1398,7 @@ switch(thumbinstr>>8){
 			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BPL] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
+			printf("[BPL] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
 			#endif
 			
 		}
@@ -1573,7 +1421,7 @@ switch(thumbinstr>>8){
 			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BVS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
+			printf("[BVS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
 			#endif
 			
 		}
@@ -1596,7 +1444,7 @@ switch(thumbinstr>>8){
 			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BVC] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
+			printf("[BVC] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
 			#endif
 			
 		}
@@ -1619,7 +1467,7 @@ switch(thumbinstr>>8){
 			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BHI] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
+			printf("[BHI] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
 			#endif
 			
 		}
@@ -1642,7 +1490,7 @@ switch(thumbinstr>>8){
 			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);	
 			
 			#ifdef DEBUGEMU
-			printf("[BLS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
+			printf("[BLS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
 			#endif
 			
 		}
@@ -1665,7 +1513,7 @@ switch(thumbinstr>>8){
 			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BGE] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
+			printf("[BGE] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
 			#endif
 		
 		}
@@ -1688,7 +1536,7 @@ switch(thumbinstr>>8){
 			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BLT] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
+			printf("[BLT] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
 			#endif
 		}
 		else {
@@ -1710,7 +1558,7 @@ switch(thumbinstr>>8){
 			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BGT] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
+			printf("[BGT] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
 			#endif
 		}
 		else {
@@ -1732,7 +1580,7 @@ switch(thumbinstr>>8){
 			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("[BLE] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)cpsrvirt); 
+			printf("[BLE] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
 			#endif
 		}
 		else {
@@ -1749,27 +1597,27 @@ switch(thumbinstr>>8){
 	//SWI #Value8 (5.17)
 	case(0xDF):{
 		
-		//printf("[thumb 1/2] SWI #(%x)",(unsigned int)cpsrvirt);
+		//printf("[thumb 1/2] SWI #(%x)",(unsigned int)exRegs[0x10]);
 		armIrqEnable=false;
 		
 		u32 stack2svc=exRegs[0xe];	//ARM has r13,r14 per CPU <mode> but this is shared on gba
 		
 		//ori: updatecpuflags(1,temp_arm_psr,0x13);
-		updatecpuflags(1,cpsrvirt,0x13);
+		updatecpuflags(1,exRegs[0x10],0x13);
 		
 		exRegs[0xe]=stack2svc;		//ARM has r13,r14 per CPU <mode> but this is shared on gba
 		
 		//we force ARM mode directly regardless cpsr
 		armstate=0x0; //1 thmb / 0 ARM
 		
-		//printf("[thumb] SWI #0x%x / CPSR: %x(5.17)",(thumbinstr&0xff),cpsrvirt);
+		//printf("[thumb] SWI #0x%x / CPSR: %x(5.17)",(thumbinstr&0xff),exRegs[0x10]);
 		swi_virt((thumbinstr&0xff));
 		
 		//if we don't use the BIOS handling, restore CPU mode inmediately
 		#ifndef BIOSHANDLER
-			//Restore CPU<mode> / SPSR (spsr_last) keeps SVC && restore SPSR T bit (THUMB/ARM mode)
-				//note cpsrvirt is required because we validate always if come from same PSR mode or a different. (so stack swaps make sense)
-			updatecpuflags(1,cpsrvirt | (((spsr_last>>5)&1)),spsr_last&0x1F);
+			//Restore CPU<mode> / SPSR (exRegs[0x11]) keeps SVC && restore SPSR T bit (THUMB/ARM mode)
+				//note exRegs[0x10] is required because we validate always if come from same PSR mode or a different. (so stack swaps make sense)
+			updatecpuflags(1,exRegs[0x10] | (((exRegs[0x11]>>5)&1)),exRegs[0x11]&0x1F);
 		#endif
 		
 		//-0x2 because PC THUMB (exRegs[0xf]&0xfffffffe) alignment / -0x2 because prefetch
@@ -1782,10 +1630,7 @@ switch(thumbinstr>>8){
 		
 		armIrqEnable=true;
 		
-		//restore correct SPSR (deprecated because we need the SPSR to remember SVC state)
-		//spsr_last=spsr_old;
-		
-		//printf("[thumb 2/2] SWI #(%x)",(unsigned int)cpsrvirt);
+		//printf("[thumb 2/2] SWI #(%x)",(unsigned int)exRegs[0x10]);
 		
 		//swi 0x13 (ARM docs)
 		
@@ -1855,7 +1700,7 @@ switch(thumbinstr>>6){
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		//printf("CPSR:%x ",cpsrvirt);
+		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}	
 	break;
@@ -1878,7 +1723,7 @@ switch(thumbinstr>>6){
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		//printf("CPSR:%x ",cpsrvirt);
+		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
 	break;
@@ -1902,7 +1747,7 @@ switch(thumbinstr>>6){
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		//printf("CPSR:%x ",cpsrvirt);
+		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
 	break;
@@ -1925,7 +1770,7 @@ switch(thumbinstr>>6){
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		//printf("CPSR:%x ",cpsrvirt);
+		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
 	break;
@@ -1948,7 +1793,7 @@ switch(thumbinstr>>6){
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		//printf("CPSR:%x ",cpsrvirt);
+		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
 	break;
@@ -1971,7 +1816,7 @@ switch(thumbinstr>>6){
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		//printf("CPSR:%x ",cpsrvirt);
+		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
 	break;
@@ -1994,7 +1839,7 @@ switch(thumbinstr>>6){
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		//printf("CPSR:%x ",cpsrvirt);
+		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
 	break;
@@ -2017,7 +1862,7 @@ switch(thumbinstr>>6){
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		//printf("CPSR:%x ",cpsrvirt);
+		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
 	break;
@@ -2037,7 +1882,7 @@ switch(thumbinstr>>6){
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		//printf("CPSR:%x ",cpsrvirt);
+		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}	
 	break;
@@ -2060,7 +1905,7 @@ switch(thumbinstr>>6){
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		//printf("CPSR:%x ",cpsrvirt);
+		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
 	break;
@@ -2080,7 +1925,7 @@ switch(thumbinstr>>6){
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		//printf("CPSR:%x ",cpsrvirt);
+		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
 	break;
@@ -2100,7 +1945,7 @@ switch(thumbinstr>>6){
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		//printf("CPSR:%x ",cpsrvirt);
+		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
 	break;
@@ -2121,7 +1966,7 @@ switch(thumbinstr>>6){
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		//printf("CPSR:%x ",cpsrvirt);
+		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
 	break;
@@ -2142,7 +1987,7 @@ switch(thumbinstr>>6){
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		//printf("CPSR:%x ",cpsrvirt);
+		//printf("CPSR:%x ",exRegs[0x10]);
 		
 		//done? update desired reg content
 		exRegs[(thumbinstr&0x7)] = destroyableRegister;
@@ -2167,7 +2012,7 @@ switch(thumbinstr>>6){
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		//printf("CPSR:%x ",cpsrvirt);
+		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
 	break;
@@ -2191,7 +2036,7 @@ switch(thumbinstr>>6){
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		//printf("CPSR:%x ",cpsrvirt);
+		//printf("CPSR:%x ",exRegs[0x10]);
 		
 		return 0;
 	}
@@ -2279,7 +2124,7 @@ switch(thumbinstr>>6){
 		
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
-		//printf("CPSR:%x ",cpsrvirt);	
+		//printf("CPSR:%x ",exRegs[0x10]);	
 		return 0;
 	}
 	break;
@@ -2300,7 +2145,7 @@ switch(thumbinstr>>6){
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x ",cpsrvirt);
+		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
 	break;
@@ -2321,7 +2166,7 @@ switch(thumbinstr>>6){
 		//update processor flags
 		updatecpuflags(0,cpsrasm,0x0);
 		
-		//printf("CPSR:%x ",cpsrvirt);
+		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
 	break;
@@ -2401,7 +2246,7 @@ switch(thumbinstr>>6){
 			while(1);
 		}
 		
-		u32 temppsr = cpsrvirt & ~(1<<5);	 	//unset bit[5] //align to log2(n) (ARM mode)
+		u32 temppsr = exRegs[0x10] & ~(1<<5);	 	//unset bit[5] //align to log2(n) (ARM mode)
 		temppsr|=((exRegs[((thumbinstr>>0x3)&0x7)]&0x1)<<5);		//set bit[0] from rn
 		
 		//set CPU <mode> (included bit[5])
@@ -2427,7 +2272,7 @@ switch(thumbinstr>>6){
 			exRegs[((thumbinstr>>0x3)&0x7)+0x8]+=0x2; //+2 now because thumb prefetch will later add 2 more
 		}
 		
-		u32 temppsr = cpsrvirt & ~(1<<5);	 	//unset bit[5] //align to log2(n) (ARM mode)
+		u32 temppsr = exRegs[0x10] & ~(1<<5);	 	//unset bit[5] //align to log2(n) (ARM mode)
 		temppsr|=((exRegs[((thumbinstr>>0x3)&0x7)+0x8]&0x1)<<5);		//set bit[0] from rn
 		
 		//set CPU <mode> (included bit[5])
@@ -3053,12 +2898,12 @@ switch(((arminstr) & 0x012fff10)){
 	//(BX ARM-> THUMB value will always add +4)
 	if((exRegs[((arminstr)&0xf)]&0x1)==1){
 		//bit[0] RAM -> bit[5] PSR
-		temppsr=((exRegs[((arminstr)&0xf)]&0x1)<<5)	| cpsrvirt;		//set bit[0] rn -> PSR bit[5]
+		temppsr=((exRegs[((arminstr)&0xf)]&0x1)<<5)	| exRegs[0x10];		//set bit[0] rn -> PSR bit[5]
 		exRegs[0xf] = (((uint32)(exRegs[0xf]&0xfffffffe)) & ~(1<<0))&0xfffffffe; //align to log2 (because memory access/struct are always 4 byte)
 		exRegs[0xf]+=0x2;   //align for next THUMB opcode
 	}
 	else{
-		temppsr= cpsrvirt & ~(1<<5);	 	//unset bit[5]
+		temppsr= exRegs[0x10] & ~(1<<5);	 	//unset bit[5]
 		//alignment for ARM case is done below
 	}
 	
@@ -3155,7 +3000,7 @@ if(isalu==1){
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
 				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)),(unsigned int)DestroyableRegister2,
-				(unsigned int)cpsrvirt);
+				(unsigned int)exRegs[0x10]);
 				#endif
 			}
 			else{	//for Register (operand 2) operator / shift included
@@ -3297,7 +3142,7 @@ if(isalu==1){
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
 				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)),(unsigned int)DestroyableRegister2,
-				(unsigned int)cpsrvirt);
+				(unsigned int)exRegs[0x10]);
 				#endif
 			}
 			else{	//for Register (operand 2) operator / shift included
@@ -3437,7 +3282,7 @@ if(isalu==1){
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
 				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)), (unsigned int)DestroyableRegister1,
-				(unsigned int)cpsrvirt);
+				(unsigned int)exRegs[0x10]);
 				#endif
 			}
 			else{	//for Register (operand 2) operator / shift included
@@ -3578,7 +3423,7 @@ if(isalu==1){
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
 				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)), (unsigned int)DestroyableRegister1,
-				(unsigned int)cpsrvirt);
+				(unsigned int)exRegs[0x10]);
 				#endif
 			}
 			else{	//for Register (operand 2) operator / shift included
@@ -3996,7 +3841,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",exRegs[0x10]);
 			return 0;
 		}
 		break;
@@ -4139,7 +3984,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",exRegs[0x10]);
 			return 0;
 		}
 		break;
@@ -4283,7 +4128,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",exRegs[0x10]);
 			return 0;
 		}
 		break;
@@ -4424,7 +4269,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",exRegs[0x10]);
 			return 0;
 		}
 		break;
@@ -4562,7 +4407,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",exRegs[0x10]);
 			return 0;
 		}
 		break;
@@ -4699,7 +4544,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",exRegs[0x10]);
 			return 0;
 		}
 		break;
@@ -4838,7 +4683,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",exRegs[0x10]);
 			return 0;
 		}
 		break;
@@ -4982,7 +4827,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",exRegs[0x10]);
 			return 0;
 		}
 		break;
@@ -5125,7 +4970,7 @@ if(isalu==1){
 				//check for S bit here and update (virt<-asm) processor flags
 				if(setcond_arm==1)
 					updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",exRegs[0x10]);
 			}
 			return 0;
 		}
@@ -5270,7 +5115,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",exRegs[0x10]);
 			return 0;
 		}
 		break;
@@ -5411,7 +5256,7 @@ if(isalu==1){
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1)
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",cpsrvirt);
+				//printf(" CPSR:%x",exRegs[0x10]);
 			return 0;
 		}
 		break;
@@ -5437,14 +5282,14 @@ switch((arminstr>>16)&0x3f){
 		//source PSR is: CPSR & save cond flags
 		if( ((((arminstr>>22)&0x3ff)) &0x1) == 0){
 			#ifdef DEBUGEMU
-			printf("CPSR save!:%x",(unsigned int)cpsrvirt);
+			printf("CPSR save!:%x",(unsigned int)exRegs[0x10]);
 			#endif
-			exRegs[((arminstr>>12)&0xf)] = cpsrvirt;
+			exRegs[((arminstr>>12)&0xf)] = exRegs[0x10];
 		}
 		//source PSR is: SPSR<mode> & save cond flags
 		else{
-			//printf("SPSR save!:%x",spsr_last);
-			exRegs[((arminstr>>12)&0xf)]=spsr_last;
+			//printf("SPSR save!:%x",exRegs[0x11]);
+			exRegs[((arminstr>>12)&0xf)]=exRegs[0x11];
 		}
 		return 0;
 	}
@@ -5459,10 +5304,10 @@ switch((arminstr>>16)&0x3f){
 			#ifdef DEBUGEMU
 			printf("CPSR restore!:%x",(unsigned int)DestroyableRegister2);
 			#endif
-			//cpsrvirt=DestroyableRegister2;
+			//exRegs[0x10]=DestroyableRegister2;
 			
 			//modified (cpu state id updated)
-			updatecpuflags(1,cpsrvirt,DestroyableRegister2&0x1f);
+			updatecpuflags(1,exRegs[0x10],DestroyableRegister2&0x1f);
 		}
 		//SPSR
 		else{
@@ -5471,7 +5316,7 @@ switch((arminstr>>16)&0x3f){
 			#ifdef DEBUGEMU
 			printf("SPSR restore!:%x",(unsigned int)DestroyableRegister2);
 			#endif
-			spsr_last=DestroyableRegister2;
+			exRegs[0x11]=DestroyableRegister2;
 		}
 		return 0;
 	}
@@ -5491,7 +5336,7 @@ switch((arminstr>>16)&0x3f){
 				#ifdef DEBUGEMU
 				printf("CPSR restore from rd(%d)!:%x ",(int)(arminstr&0xf),(unsigned int)DestroyableRegister2);
 				#endif
-				cpsrvirt=DestroyableRegister2;
+				exRegs[0x10]=DestroyableRegister2;
 			}
 			//#imm
 			else{
@@ -5501,7 +5346,7 @@ switch((arminstr>>16)&0x3f){
 				//to rotate right by twice the value in rotate field:
 				DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
 				//printf("CPSR restore from #imm!:%x ", DestroyableRegister1);
-				cpsrvirt=DestroyableRegister1;
+				exRegs[0x10]=DestroyableRegister1;
 			}
 		
 		}
@@ -5515,7 +5360,7 @@ switch((arminstr>>16)&0x3f){
 				#ifdef DEBUGEMU
 				printf("SPSR restore from rd(%d)!:%x  ",(int)(arminstr&0xf),(unsigned int)DestroyableRegister2);
 				#endif
-				spsr_last=DestroyableRegister2;
+				exRegs[0x11]=DestroyableRegister2;
 			}
 			//#imm
 			else{
@@ -5527,7 +5372,7 @@ switch((arminstr>>16)&0x3f){
 				#ifdef DEBUGEMU
 				printf("SPSR restore from #imm!:%x ",(unsigned int)DestroyableRegister1);
 				#endif
-				spsr_last=DestroyableRegister1;
+				exRegs[0x11]=DestroyableRegister1;
 			}
 		}
 	return 0;
@@ -5988,11 +5833,11 @@ switch( ( (DestroyableRegister6=((arminstr>>20)&0xff)) & 0x80)  ){
 		//exRegs[((arminstr>>16)&0xf)]
 		
 		//1a)force 0x10 usr mode
-		if( ((DestroyableRegister6&0x4)==0x4) && ((cpsrvirt&0x1f)!=0x10)){
-			savedcpsr=cpsrvirt;
-			updatecpuflags(1,cpsrvirt,0x10);
+		if( ((DestroyableRegister6&0x4)==0x4) && ((exRegs[0x10]&0x1f)!=0x10)){
+			savedcpsr=exRegs[0x10];
+			updatecpuflags(1,exRegs[0x10],0x10);
 			#ifdef DEBUGEMU
-			printf("FORCED TO USERMODE!CPSR: %x",(unsigned int)cpsrvirt);
+			printf("FORCED TO USERMODE!CPSR: %x",(unsigned int)exRegs[0x10]);
 			#endif
 			writeback=1;
 		}
@@ -6172,7 +6017,7 @@ switch( ( (DestroyableRegister6=((arminstr>>20)&0xff)) & 0x80)  ){
 			#ifdef DEBUGEMU
 			printf("RESTORED MODE:CPSR %x",(unsigned int)savedcpsr);
 			#endif
-			updatecpuflags(1,cpsrvirt,savedcpsr&0x1f);
+			updatecpuflags(1,exRegs[0x10],savedcpsr&0x1f);
 			writeback=0;
 		}
 		
@@ -6226,28 +6071,6 @@ switch( ( (DestroyableRegister6=(arminstr)) & 0x1000090)  ){
 //5.10 software interrupt
 switch( (arminstr) & 0xf000000 ){
 	case(0xf000000):{
-		/*
-		//required because SPSR saved is not SVC neccesarily
-		//u32 spsr_old=spsr_last;
-		
-		//Enter SVC<mode>
-		//updatecpuflags(1,cpsrvirt,0x13);
-		
-		//printf("CPSR(entrymode):%x ",cpsrvirt&0x1f);
-		//#ifdef DEBUGEMU
-		//printf("[ARM] swi call #0x%x! (5.10)",arminstr&0xffffff);
-		//#endif
-		//swi_virt(arminstr&0xffffff);
-		
-		//Restore CPU<mode>
-		//updatecpuflags(1,cpsrvirt,spsr_last&0x1F);
-		
-		//printf("CPSR(restoremode):%x ",cpsrvirt&0x1f);
-		
-		//restore correct SPSR
-		//spsr_last=spsr_old;
-		*/
-		
 		#ifdef DEBUGEMU
 		printf("[ARM] swi call #0x%x! (5.10)",(unsigned int)(arminstr&0xffffff));
 		#endif
@@ -6255,16 +6078,11 @@ switch( (arminstr) & 0xf000000 ){
 		armstate = 0;
 		armIrqEnable=false;
 		
-		/* //deprecated (because we need the SPSR to remember SVC state)
-		//required because SPSR saved is not SVC neccesarily
-		u32 spsr_old=spsr_last; //(see below SWI bios case)
-		*/
+		updatecpuflags(1,exRegs[0x10],0x13);
 		
-		updatecpuflags(1,cpsrvirt,0x13);
+		//printf("CPSR(entrymode):%x ",exRegs[0x10]&0x1f);
 		
-		//printf("CPSR(entrymode):%x ",cpsrvirt&0x1f);
-		
-		//printf("SWI #0x%x / CPSR: %x(5.17)",(thumbinstr&0xff),cpsrvirt);
+		//printf("SWI #0x%x / CPSR: %x(5.17)",(thumbinstr&0xff),exRegs[0x10]);
 		swi_virt(arminstr&0xffffff);
 		
 		exRegs[0xe] = (exRegs[0xf]&0xfffffffe) - (armstate ? 4 : 2);
@@ -6280,12 +6098,8 @@ switch( (arminstr) & 0xf000000 ){
 		
 		//we let SWI bios decide when to go back from SWI mode
 		//Restore CPU<mode>
-		updatecpuflags(1,cpsrvirt,spsr_last&0x1F);
+		updatecpuflags(1,exRegs[0x10],exRegs[0x11]&0x1F);
 		
-		/* //deprecated	(because we need the SPSR to remember SVC state)
-		//restore correct SPSR
-		spsr_last=spsr_old;
-		*/
 	}
 }
 

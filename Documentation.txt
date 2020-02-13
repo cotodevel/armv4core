@@ -278,12 +278,12 @@ ALU Opcodes (The ones that use the hardware barrel shifter): 75%
 
 //cpsr test
 //disarmcode(0xe10f0000); //mrs r0,CPSR
-//cpsrvirt=0;
+//exRegs[0x10]=0;
 //disarmcode(0xe129f000); //msr CPSR_fc, r0
 
 //spsr test
 //disarmcode(0xe14f0000); //mrs r0,spsr
-//spsr_last=0;
+//exRegs[0x11]=0;
 //disarmcode(0xe169f000); //msr spsr,r0
 
 //5.5

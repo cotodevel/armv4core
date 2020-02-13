@@ -33,81 +33,22 @@
 extern u32  romsize;		//gba romsize loaded 
 extern u32  rom_entrypoint; //entrypoint
 
-//GBA stack (on dtcm because fast)
+//GBA stacks
 extern u8 gbastck_usr[0x200];
 extern u8 gbastck_fiq[0x200];
 extern u8 gbastck_irq[0x200];
 extern u8 gbastck_svc[0x200];
 extern u8 gbastck_abt[0x200];
 extern u8 gbastck_und[0x200];
-//extern u8 gbastck_sys[0x200]; //stack shared with usr
+//extern u8 gbastck_sys[0x200]; //shared with usr
 
-//GBA stack base addresses
-extern u32 * gbastckadr_usr;
-extern u32 * gbastckadr_fiq;
-extern u32 * gbastckadr_irq;
-extern u32 * gbastckadr_svc;
-extern u32 * gbastckadr_abt;
-extern u32 * gbastckadr_und;
-//extern u32 * gbastckadr_sys;	//stack shared with usr
-
-//GBA stack address frame pointer (or offset pointer)
-extern u32 * gbastckfp_usr;
-extern u32 * gbastckfp_fiq;
-extern u32 * gbastckfp_irq;
-extern u32 * gbastckfp_svc;
-extern u32 * gbastckfp_abt;
-extern u32 * gbastckfp_und;
-//extern u32 * gbastckfp_sys; //shared with usr
-
-//SPSR slot for GBA stack frame pointer (single cpu<mode> to framepointer operations)
-extern u32 gbastckfpadr_spsr;
-
-//current slot for GBA stack <mode> base pointer
-extern u32 * gbastckmodeadr_curr;
-
-//current slot for GBA stack frame pointer
-extern u32 * gbastckfpadr_curr;
-
-//gba virtualized r0-r14 registers
-
-
-//each sp,lr for cpu<mode>
+//GBA stack notes: sys is shared with usr
 
 //and cpu<mode> all the other backup registers when restoring from FIQ r8-r12
 extern u32  exRegs_cpubup[0x5];
 
 
-//branchslot calls (up to 32 groups of * 17 elements * 4 depth size (u32) addresses)
-//for cpu save working registers when branch mode enters
 //////////////////////////////////////////////////////////////////////////////////////
-//this is for storing current CPU mode fully when branching calls from the virtualizer
-extern u32  branch_stack[17*32]; //32 slots
-
-//branch framepointer
-extern u32 * branch_stackfp;
-//////////////////////////////////////////////////////////////////////////////////////
-
-
-////////branch address returning values for when entering//////////
-//branch address stack for LR (PC+ (opcodes to be executed * 4)) addresses
-extern u32  branch_adrstack[0x10];
-
-//branch address stack framepointer
-extern u32 *branch_adrstack_fp;
-///////////////////////////////////////////////////////////////////////////////////////
-
-
-//extern'd addresses for virtualizer calls
-// [(u32)&disthumbcode	] 
-// [(u32)&disasmcode	]
-// [					]
-// [					]
-// [					]
-// [					]
-// [					]
-// [					]
-extern u32  call_adrstack[0x10];
 
 //GBA Interrupts
 //4000200h - GBAIE - Interrupt Enable Register (R/W)
@@ -149,9 +90,6 @@ extern u32 armcode(u32); //jump to thumbmode gba
 //virtual stack management
 extern u32 ldmiavirt(u8 * output_buf, u32 stackptr, u16 regs, u8 access, u8 byteswapped, u8 order);
 extern u32 stmiavirt(u8 * input_buf, u32 stackptr, u16 regs, u8 access, u8 byteswapped, u8 order);
-
-extern u32 addspvirt(u32 stackptr,int ammount);
-extern u32 subspvirt(u32 stackptr,int ammount);
 
 //IO GBA (virtual < -- > hardware) handlers
 extern u32 gbacpu_refreshvcount();	//CPUCompareVCOUNT(gba);

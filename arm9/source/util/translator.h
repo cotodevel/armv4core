@@ -75,7 +75,6 @@ extern u32  addrfixes[0x10];
 
 //CPU flags will live on the DTCM , so they're accessible
 extern u32 cpsrasm;	//gba hardware cpsr from asm opcodes
-extern u32 cpsrvirt;	//gba virtualized cpsr for environment
 extern u8 z_flag;
 extern u8 n_flag;
 extern u8 c_flag;
@@ -88,18 +87,8 @@ extern u8 immop_arm;
 	
 //set/alter condition codes for ARM opcode (5.4 ARM)
 extern u8 setcond_arm;
-
 	
 //SPSR == the last mode Interrupt, Fast interrupt, the old CPU flags (old stack [mode] && old CPU [mode]) 
-extern u32 spsr_svc;
-extern u32 spsr_irq;
-extern u32 spsr_abt;
-extern u32 spsr_und;
-extern u32 spsr_fiq;
-extern u32 spsr_usr;	//well, there's no spsr for user but for compatibility
-extern u32 spsr_sys;
-extern u32 spsr_last; //this one for any cpu<mode> SPSR handle
-
 
 extern u8 armstate;	//0 arm / 1 thumb
 extern u8 armirqstate;//0 disabled / 1 enabled
@@ -111,10 +100,6 @@ extern u32 updatecpuflags(u8 mode, u32 cpsr, u32 cpumode); //updatecpuflags(mode
 //disassemblers
 extern u32 disthumbcode(u32 thumbinstr);
 extern u32 disarmcode(u32 arminstr);
-
-//CPU virtualize opcodes
-extern u32 * cpubackupmode(u32 * branch_stackfp, u32 cpuregvector[], u32 cpsr);
-extern u32 * cpurestoremode(u32 * branch_stackfp, u32 cpuregvector[]);
 
 //thumb opcodes that require hardware CPSR bits
 //5.1

@@ -121,11 +121,11 @@ extern u32  __attribute__((section(".vectors"))) (*exceptdatabtC)(u32);
 extern u32  __attribute__((section(".vectors"))) (*exceptreservC)();
 extern u32  __attribute__((section(".vectors"))) (*exceptirqC)();
 
-void exception_dump(){
-	printf("exception_dump() .");
-	while(1==1){
-		IRQVBlankWait();
-	}
+void exception_dump(char * cause){
+	clrscr();
+	printf("     ");
+	printf("exception_dump(): %s", cause);
+	printGBACPU();
 }
 
 void gbamode(){
@@ -254,9 +254,12 @@ u32 exceptundef(u32 undefopcode){
 	else printf("ARM mode ");
 	*/
 	
-	exception_dump();
-	printf(" PU exception type: UNDEFINED ");
-	while(1);
+	char buf[MAX_TGDSFILENAME_LENGTH+1];
+	sprintf(buf, "Exception[UNDEFINED]");
+	exception_dump(buf);
+	while(1==1){
+		IRQVBlankWait();
+	}
 
 	//pu_Enable();
 	return 0;
@@ -323,18 +326,23 @@ u32 exceptswi (u32 swiaddress){
 		//pu_Enable();
 		*/
 	}
-
-	exception_dump();
-	printf("swi exception within range 0..1Fh.");
-	printf(" PU exception type: SWI ");
-	while(1);		
+	
+	char buf[MAX_TGDSFILENAME_LENGTH+1];
+	sprintf(buf, "Exception[SWI]: range 0..1Fh: Current: %x", swiaddress);
+	exception_dump(buf);
+	while(1==1){
+		IRQVBlankWait();
+	}		
 	return 0;
 }
 
 u32 exceptprefabt(){
-	exception_dump();
-	printf(" PU exception type: PREFETCH ABORT ");
-	while(1);
+	char buf[MAX_TGDSFILENAME_LENGTH+1];
+	sprintf(buf, "Exception[PREFETCH ABORT]");
+	exception_dump(buf);
+	while(1==1){
+		IRQVBlankWait();
+	}
 	return 0;
 }
 
@@ -342,7 +350,7 @@ u32 exceptprefabt(){
 u32 exceptdataabt(u32 dabtaddress){
 	/*
 	//16 bit reads
-	if( ((cpsrvirt>>5)&1) == 0x1 ){
+	if( ((exRegs[0x10]>>5)&1) == 0x1 ){
 	
 		if((dabtaddress >= 0x08000000) && (dabtaddress < 0x08000200)  ){
 			//printf(" => data abt! (%x):%x ",dabtaddress,gbaheaderbuf[(dabtaddress ^ 0x08000000)/4]);
@@ -369,9 +377,12 @@ u32 exceptdataabt(u32 dabtaddress){
 	}
 	*/
 
-	printf("data abort exception!");
-	exception_dump();
-	while(1);	
+	char buf[MAX_TGDSFILENAME_LENGTH+1];
+	sprintf(buf, "Exception[DATAABORT]: GBAPC: %x", exRegs[0xf] + 12);	//prefetch is +8 +4
+	exception_dump(buf);
+	while(1==1){
+		IRQVBlankWait();
+	}
 	return 0;
 }
 

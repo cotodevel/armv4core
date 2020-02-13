@@ -198,7 +198,7 @@ int main(int _argc, sint8 **_argv) {
 	exRegs[0xd]=exRegs_r13usr[0];
 	  
 	//Set CPSR virtualized bits & perform USR/SYS CPU mode change. & set stacks
-	updatecpuflags(1,cpsrvirt,0x10);
+	updatecpuflags(1,exRegs[0x10],0x10);
 
 	//old entrypoint: gba map cant reach this ... so
 	//exRegs[0xf] = (u32)&gba_setup;
@@ -264,36 +264,7 @@ int main(int _argc, sint8 **_argv) {
 		if(keysPressed() & KEY_A){
 			clrscr();
 			printf("     ");
-			int cntr=0;
-			printf("Hardware r0-r15 stack (GBA) [MODE]");
-			
-			//Base sp cpu <mode>
-			if ((cpsrvirt&0x1f) == (0x10) || (cpsrvirt&0x1f) == (0x1f))
-				printf(" USR/SYS STACK @ %x", (unsigned int)gbastckmodeadr_curr);
-			else if ((cpsrvirt&0x1f)==(0x11))
-				printf(" FIQ STACK @ %x", (unsigned int)gbastckmodeadr_curr);
-			else if ((cpsrvirt&0x1f)==(0x12))
-				printf(" IRQ STACK @ %x", (unsigned int)gbastckmodeadr_curr);
-			else if ((cpsrvirt&0x1f)==(0x13))
-				printf(" SVC STACK @ %x", (unsigned int)gbastckmodeadr_curr);
-			else if ((cpsrvirt&0x1f)==(0x17))
-				printf(" ABT STACK @ %x", (unsigned int)gbastckmodeadr_curr);
-			else if ((cpsrvirt&0x1f)==(0x1b))
-				printf(" UND STACK @ %x", (unsigned int)gbastckmodeadr_curr);
-			else
-				printf(" STACK LOAD ERROR CPSR: %x -> psr:%x",(unsigned int)cpsrvirt,(unsigned int)(cpsrvirt&0x1f));
-				
-			printf(" curr_fp:%x ",(unsigned int)gbastckfpadr_curr); //fp sp cpu <mode>
-			printf(" //////contents//////: ");
-			
-			for(cntr=0;cntr<16;cntr=cntr+3){
-				//printf(" r%d :[%x] ",cntr,(unsigned int)ldru32asm((u32)&exRegs,cntr*4)); //byteswap reads
-				printf(" r%d :[0x%x] r%d :[0x%x] r%d :[0x%x] ", 0 + cntr, (unsigned int)exRegs[0 + cntr], 1 + cntr, (unsigned int)exRegs[1 + cntr], 2 + cntr, (unsigned int)exRegs[2 + cntr]);
-			}
-			
-			printf("CPSR[%x] / SPSR:[%x] ",(unsigned int)cpsrvirt,(unsigned int)spsr_last);
-			printf("CPU Running: %d - CPUMode: %d", cpuStart, armstate);
-			printf("CpuTotalTicks:(%d) / lcdTicks:(%d) / vcount: (%d)",(int)cpuTotalTicks,(int)lcdTicks,(int)GBAVCOUNT);
+			printGBACPU();
 			scanKeys();
 			while(keysPressed() & KEY_A){
 				scanKeys();

@@ -70,8 +70,11 @@ extern u32 ndsvcounter();
 
 //GBACore
 
-//gba virtualized r0-r15 registers
-extern u32  exRegs[0x10]; //placeholder for actual CPU mode registers
+//GBA CPU mode registers:
+//r0 - r15 	-- 	0x0 - 0xf
+//CPSR 		--	0x10
+//SPSR 		--	0x11
+extern u32  exRegs[16 + 2];
 
 //each sp,lr for cpu<mode>
 extern u32  exRegs_r13usr[0x1];

@@ -684,44 +684,8 @@ immop_arm:
 setcond_arm:
 	.word 0x00000000
 	
-.global cpsrasm			@CPSR from hardware reads
+.global cpsrasm			@CPSR from hardware reads -> exRegs[0x10] CPSR
 cpsrasm:
-	.word 0x00000000
-
-.global cpsrvirt		@CPSR from virtualized environment
-cpsrvirt:
-	.word 0x00000000
-
-.global spsr_svc		@ saved, SVC(32) mode
-spsr_svc: 
-	.word 0x00000000
-
-.global spsr_irq		@ saved, IRQ(32) mode
-spsr_irq:
-	.word 0x00000000
-
-.global spsr_abt		@ saved, ABT(32) mode
-spsr_abt:
-	.word 0x00000000
-	
-.global spsr_und		@ saved, UND(32) mode
-spsr_und:
-	.word 0x00000000
-	
-.global spsr_fiq		@ saved, FIQ(32) mode
-spsr_fiq:
-	.word 0x00000000
-
-.global spsr_usr		@ saved, USR(32) mode
-spsr_usr:
-	.word 0x00000000
-
-.global spsr_sys		@ saved, SYS(32) mode
-spsr_sys:
-	.word 0x00000000
-	
-.global spsr_last		@ saved, latest SPSR cpu<mode>
-spsr_last:
 	.word 0x00000000
 	
 @---------------------------virtualizer variables------------------------------------------
@@ -737,77 +701,6 @@ armirqstate:
 .global armswistate 	@0 disabled / 1 enabled
 armswistate:
 	.word 00000000
-
-@--------------------------stack base address for different CPU modes-----------------------------
-.global gbastckadr_usr
-gbastckadr_usr:
-	.word 0x00000000
-	
-.global gbastckadr_fiq
-gbastckadr_fiq:
-	.word 0x00000000
-	
-.global gbastckadr_irq
-gbastckadr_irq:
-	.word 0x00000000
-	
-.global gbastckadr_svc
-gbastckadr_svc:
-	.word 0x00000000
-
-.global gbastckadr_abt
-gbastckadr_abt:
-	.word 0x00000000
-
-.global gbastckadr_und
-gbastckadr_und:
-	.word 0x00000000
-
-.global gbastckadr_sys
-gbastckadr_sys:
-	.word 0x00000000
-
-@--------------------------frame pointer address for each stack , different CPU modes-----------------------------
-.global gbastckfp_usr
-gbastckfp_usr:
-	.word 0x00000000
-
-.global gbastckfp_fiq
-gbastckfp_fiq:
-	.word 0x00000000
-
-.global gbastckfp_irq
-gbastckfp_irq:
-	.word 0x00000000
-
-.global gbastckfp_svc
-gbastckfp_svc:
-	.word 0x00000000
-
-.global gbastckfp_abt
-gbastckfp_abt:
-	.word 0x00000000
-
-.global gbastckfp_und
-gbastckfp_und:
-	.word 0x00000000
-
-.global gbastckfp_sys
-gbastckfp_sys:
-	.word 0x00000000
-
-.global gbastckfpadr_curr
-gbastckfpadr_curr:
-	.word 0x00000000
-@--------------------------------------------current slot for loaded stack ---------------------------------------
-.global gbastckmodeadr_curr
-gbastckmodeadr_curr:
-	.word 0x00000000
-
-@--------------------------------------------saved slot for framepointer SPSR ---------------------------------------
-.global gbastckfpadr_spsr
-gbastckfpadr_spsr:
-	.word 0x00000000
 
 @The ARM9 Exception Vectors are located at FFFF0000h. The IRQ handler redirects to [DTCM+3FFCh].
 @= ADDRESS of label (phys location), dereference address and you get offset content
@@ -825,53 +718,6 @@ gbastackarm:
 	.word 0x00000000
 	.word 0x00000000
 
-.global branch_stackfp			@stack cpu mode registers and CPSR when branching occurs 
-branch_stackfp:					@works in tandem with branch_stack[17*32]
-	.word 0x00000000
-@-----------------------------------------------------------------
-
-.global branch_adrstack
-branch_adrstack:			@stack returning addresses when re-calling disassemblers code
-
-	.word 0x00000000		@PC+4 values are here 	(ret. values)
-	.word 0x00000000		
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-
-.global branch_adrstack_fp		@current frame pointer for address branching stack. works in tandem with branch_adrstack[0x10]
-branch_adrstack_fp:
-	.word 0x00000000
-
-.global call_adrstack
-call_adrstack:
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
 
 @----------------------------------------------------------------------------------------------------------------------------
 @ DTCM variables / DTCM IS NOT MEANT TO STORE ASM opcodes because caches must be coherent for that! Otherwise CPU will crash

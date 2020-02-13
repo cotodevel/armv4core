@@ -30,29 +30,8 @@ USA
 #include <stdarg.h>
 
 #define BIT(n) (1 << (n))
-#define base_factor 24
-
-#define ramshuffle7(n,m) ( (n* (rand() % m)) &0xfffff0) //int , top
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))	
 #define alignw(n)(CHECK_BIT(n,0)==1?n+1:n)
-#define gba_stack_usr_size sizeof(gbastck_usr)
-#define gba_stack_usr_elemnt_size (sizeof(gbastck_usr[0]))
-#define gba_stack_fiq_size sizeof(gbastck_fiq)
-#define gba_stack_fiq_elemnt_size (sizeof(gbastck_fiq[0]))
-#define gba_stack_irq_size sizeof(gbastck_irq)
-#define gba_stack_irq_elemnt_size (sizeof(gbastck_irq[0]))
-#define gba_stack_svc_size sizeof(gbastck_svc)
-#define gba_stack_svc_elemnt_size (sizeof(gbastck_svc[0]))
-#define gba_stack_abt_size sizeof(gbastck_abt)
-#define gba_stack_abt_elemnt_size (sizeof(gbastck_abt[0]))
-#define gba_stack_und_size sizeof(gbastck_und)
-#define gba_stack_und_elemnt_size (sizeof(gbastck_und[0]))
-#define gba_stack_sys_size sizeof(gbastck_sys)
-#define gba_stack_sys_elemnt_size (sizeof(gbastck_sys[0]))
-#define gba_branch_table_size sizeof(branch_stack)
-#define gba_branch_block_size (int)((sizeof(branch_stack[0]))<<4)+(0x1*4) //17 elements 4 byte size each one
-#define gba_branch_elemnt_size (sizeof(branch_stack[0])) //element size
-#define GBASTACKSIZE 0x400 //1K for now
 
 /*
  GBA Memory Map
@@ -95,6 +74,8 @@ External Memory (Game Pak)
 
 #define SYSTEM_SAVE_UPDATED 30
 #define SYSTEM_SAVE_NOT_UPDATED 0
+
+#define ARMModel (char*)("ARMv4t")
 
 //struct: map[index].address[(u8*)address]
 typedef struct {
@@ -185,10 +166,7 @@ extern int unzip(char *, void *, uLong);
 extern int utilLoad(const char *file,u8 *data,int size,bool extram);
 extern int setregbasesize(u32, u8);
 extern u16 swap16(u16 value);
-extern int getphystacksz(u32 * curr_stack);
 extern void initmemory(); //test memory & init
-extern u32 * stack_test(u32 * branch_stackfp,int size, u8 testmode); //test GBA cpu stacks
-extern u32 * updatestackfp(u32 * currstack_fp, u32 * stackbase);
 extern u32 dummycall(u32 arg);
 extern void __libnds_mpu_setup();
 extern u8 lutu16bitcnt(u16 x);
@@ -217,7 +195,6 @@ extern void WRITE16LE(u8 * x,u16 v);
 extern u8	clzero(u32);
 extern u32 gba_entrypoint;
 extern void isdebugemu_defined();
-extern bool setarmstate(u32 psr);  //set arm state and cpsr bits from any psr / ret false:ARM | true:THUMB
 extern int executeuntil_pc(u32 target_pc);
 extern int ram2file_nds(char * fname,u8 * buffer,int size);
 extern void CPUInit(const char *biosFileName, bool useBiosFile,bool extram);
@@ -225,6 +202,7 @@ extern int utilLoad(const char *file,u8 *data,int size,bool extram);
 extern u32 gba_setup();
 extern u32 UPDATE_REG(u32 address, u32 value);
 extern struct gbaheader_t gbaheader;
+extern void printGBACPU();
 
 #ifdef __cplusplus
 }

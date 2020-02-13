@@ -37,25 +37,18 @@
 #include "gba.arm.core.h"
 
 //Stack for GBA
-u8 __attribute__((section(".dtcm"))) gbastck_usr[0x200];
-u8 __attribute__((section(".dtcm"))) gbastck_fiq[0x200];
-u8 __attribute__((section(".dtcm"))) gbastck_irq[0x200];
-u8 __attribute__((section(".dtcm"))) gbastck_svc[0x200];
-u8 __attribute__((section(".dtcm"))) gbastck_abt[0x200];
-u8 __attribute__((section(".dtcm"))) gbastck_und[0x200];
+__attribute__((section(".dtcm"))) u8 gbastck_usr[0x200];
+__attribute__((section(".dtcm"))) u8 gbastck_fiq[0x200];
+__attribute__((section(".dtcm"))) u8 gbastck_irq[0x200];
+__attribute__((section(".dtcm"))) u8 gbastck_svc[0x200];
+__attribute__((section(".dtcm"))) u8 gbastck_abt[0x200];
+__attribute__((section(".dtcm"))) u8 gbastck_und[0x200];
 //u8 __attribute__((section(".dtcm"))) gbastck_sys[0x200]; //stack shared with usr
 
-//Stack Pointer for GBA
-u32  __attribute__((section(".dtcm"))) * gbastackptr;
-
 //and cpu<mode> all the other backup registers when restoring from FIQ r8-r12
-u32  __attribute__((section(".dtcm"))) exRegs_cpubup[0x5];
+__attribute__((section(".dtcm"))) u32  exRegs_cpubup[0x5];
 
 //////////////////////////////////////////////opcodes that must be virtualized, go here.
-
-//bx and normal branches use a branching stack
-//40 u32 slots for branchcalls
-u32  __attribute__((section(".dtcm"))) branch_stack[17*32]; //32 slots for branch calls
 
 //NDS Interrupts
 //irq to be set
@@ -2374,33 +2367,6 @@ u32 __attribute__ ((hot)) stmiavirt(u8 * input_buf, u32 stackptr, u16 regs, u8 a
 	return 0;
 }
 
-//u32 stackframepointer / u32 #Imm to be added to stackframepointer
- 
-//3)create a call that add from SP address #Imm, so SP is updated /* detect CPSR so each stack has its stack pointer updated */
-u32 addspvirt(u32 stackptr,int ammount){
-	//sanitize stack top depending on gbastckmodeadr_curr (base stack ptr depending on CPSR mode)
-	stackptr=(u32)updatestackfp((u32*)stackptr, (u32*)gbastckmodeadr_curr);
-	
-	//update new stack fp size
-	stackptr=addsasm((int)stackptr,ammount);
-	
-	//printf("%x",stackptr);
-	return (u32)stackptr;
-}
-
-//4)create a call that sub from SP address #Imm, so SP is updated
-u32 subspvirt(u32 stackptr,int ammount){
-	//sanitize stack top depending on gbastckmodeadr_curr (base stack ptr depending on CPSR mode)
-	stackptr=(u32)updatestackfp((u32*)stackptr, (u32*)gbastckmodeadr_curr);
-
-	//update new stack fp size
-	stackptr=subsasm((int)stackptr,ammount);
-	
-	//printf("%x",stackptr);
-	return (u32)stackptr;
-}
-
-
 //GBA Interrupts
 //4000200h - GBAIE - Interrupt Enable Register (R/W)
 //  Bit   Expl.
@@ -2426,7 +2392,6 @@ void vblank_thread(){
 
 
 void hblank_thread(){
-	//emulatorgba(cpsrvirt); //not yet until it is stable (don't think so)
 	cpuTotalTicks++;
 }
 

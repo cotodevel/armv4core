@@ -719,7 +719,7 @@ return 0;
 //cpu interrupt
 u32 cpuirq(u32 cpumode){
 	//Enter cpu<mode>
-	updatecpuflags(1,cpsrvirt,cpumode);
+	updatecpuflags(1,exRegs[0x10],cpumode);
 	exRegs[0xe]=exRegs[0xf];
 	
 	if(!armState){	//thumb
@@ -738,7 +738,7 @@ u32 cpuirq(u32 cpumode){
 	exRegs[0xf]=(u32)0x18;
 	
 	//Restore CPU<mode>
-	updatecpuflags(1,cpsrvirt,spsr_last&0x1F);
+	updatecpuflags(1,exRegs[0x10],exRegs[0x11]&0x1F);
 
 	return 0;
 }
@@ -921,8 +921,11 @@ u32 __attribute__ ((hot)) swi_virt(u32 swinum){
 return 0;
 }
 
-//current CPU mode working set of registers
-u32	exRegs[0x10]; //placeholder for actual CPU mode registers
+//GBA CPU mode registers:
+//r0 - r15 	-- 	0x0 - 0xf
+//CPSR 		--	0x10
+//SPSR 		--	0x11
+u32	exRegs[16 + 2];
 
 //r13, r14 for each mode (sp and lr)
 u32 exRegs_r13usr[0x1];
