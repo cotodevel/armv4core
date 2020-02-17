@@ -192,7 +192,6 @@ extern void isdebugemu_defined();
 extern int executeuntil_pc(u32 target_pc);
 extern int ram2file_nds(char * fname,u8 * buffer,int size);
 extern void CPUInit(const char *biosFileName, bool useBiosFile,bool extram);
-extern int utilLoad(const char *file,u8 *data,int size,bool extram);
 extern u32 gba_setup();
 extern u32 UPDATE_REG(u32 address, u32 value);
 extern struct gbaheader_t gbaheader;

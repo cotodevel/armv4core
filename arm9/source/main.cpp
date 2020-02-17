@@ -250,7 +250,16 @@ int main(int _argc, sint8 **_argv) {
 	spinlock_createproc(8,1,(u32cback_ptr) 0);
 	spinlock_createproc(9,1,(u32cback_ptr) 0);
 	#endif
-
+	
+	clrscr();
+	printf(" - ");
+	printf(" - ");
+	printf(" - ");
+	printf(" - ");
+	
+	printf("R15: %x", exRegs[15]);
+	while(1==1){}
+	
 	while (1){
 		scanKeys();
 		if(keysPressed() & KEY_A){

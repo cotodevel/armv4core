@@ -710,16 +710,12 @@ void CPUInit(const char *biosFileName, bool useBiosFile,bool extram)
 	saveType = 0;
 	useBios = false;
   
+	/*
 	if(useBiosFile) {
-		int size = 0x4000;
-		if(utilLoad(biosFileName, bios, size, extram)) {
-			if(size == 0x4000)
-				useBios = true;
-			else
-				printf("Invalid BIOS file size");
-		}
+		//literally load the bios into u8* bios buffer
 	}
-  
+	*/
+	
 	if(!useBios){
 		memcpy(bios, myROM, sizeof(myROM));
 	}
@@ -842,10 +838,12 @@ void CPUInit(const char *biosFileName, bool useBiosFile,bool extram)
 }
 
 
-int utilLoad(const char *file,u8 *data,int size,bool extram){ //*file is filename (.gba)
-																//*data is pointer to store rom  / always ~256KB &size at load
-
-#ifndef ROMTEST
+int CPULoadRom(const char *szFile, bool extram){
+	systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
+	exRegs[0xf] = 0;
+	romSize = 0x40000;
+	
+	#ifndef ROMTEST
 	#ifdef BIOSHANDLER
 		//bios copy to biosram
 		FILE *f = fopen("0:/bios.bin", "r");
@@ -863,9 +861,9 @@ int utilLoad(const char *file,u8 *data,int size,bool extram){ //*file is filenam
 		FILE *f;
 	#endif
 	//gbarom setup
-	f = fopen(file, "rb");
+	f = fopen(szFile, "r");
 	if(!f) {
-		printf("Error opening image %s",file);
+		printf("Error opening image %s",szFile);
 		return 0;
 	}
 
@@ -875,15 +873,13 @@ int utilLoad(const char *file,u8 *data,int size,bool extram){ //*file is filenam
 	fileSize = ftell(f);
 	fseek(f,0,SEEK_SET);
 	generatefilemap(f,fileSize);
-
-	if(data == 0){ //null rom destination pointer? allocate space for it	
-		romSize=fileSize;	//size readjusted for final alloc'd rom	
-		//gba rom entrypoint from header
-		memcpy((u8*)&gbaheader,(u8*)&first32krom[0], sizeof(gbaheader));
-		exRegs[0xe]=exRegs[0xf]=(u8*)(u32*)(0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
-		printf("FS:entrypoint @ %x! ",(unsigned int)(u32*)exRegs[0xf]);
-	}
-
+	romSize=fileSize;	//size readjusted for final alloc'd rom	
+	
+	//gba rom entrypoint from header
+	memcpy((u8*)&gbaheader,(u8*)&first32krom[0], sizeof(gbaheader));
+	exRegs[0xe]=exRegs[0xf]=(u8*)(u32*)(0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
+	printf("FS:entrypoint @ %x! ",(unsigned int)(u32*)exRegs[0xf]);
+	
 	ichflyfilestream = f; //pass the filestreampointer and make it global
 	ichflyfilestreamsize = fileSize;
 	printf("generated filemap! OK:");
@@ -905,24 +901,8 @@ int utilLoad(const char *file,u8 *data,int size,bool extram){ //*file is filenam
 		IRQVBlankWait();
 	}
 	
-	return romSize;
-}
-
-int CPULoadRom(const char *szFile,bool extram){
-	systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
-	exRegs[0xf] = 0;
-	romSize = 0x40000;
-	
-	u8 *whereToLoad = exRegs[0xf];
-	if(cpuIsMultiBoot)whereToLoad = workRAM;
-	if(!utilLoad(szFile,whereToLoad,romSize,extram)){
-		return 0;
-	}
-
 	flashInit();
 	eepromInit();
-
-	//CPUUpdateRenderBuffers(true);
 	return romSize;
 }
 
