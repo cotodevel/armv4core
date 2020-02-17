@@ -731,7 +731,7 @@ u32 cpuirq(u32 cpumode){
 u32 __attribute__ ((hot)) swi_virt(u32 swinum){
     switch(swinum) {
         case 0x00:
-            //BIOS_SoftReset();
+            bios_cpureset();
 		break;
         case 0x01:
             bios_registerramreset(exRegs[0]);

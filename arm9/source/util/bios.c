@@ -92,6 +92,13 @@ u32 bios_cpureset(){
 	biosProtected[2] = 0x29;
 	biosProtected[3] = 0xe1;
 	
+	//flush working CPU registers except GBA PC 15 since the entrypoint was written by the GBA header
+	for(i=0;i<0x10;i++){
+		if(i != 0xf){
+			exRegs[i]=0x0;
+		}
+	}
+	
 	exRegs_r13usr[0x1] = 0;
 	exRegs_r14usr[0x1] = 0;
 	exRegs_r13fiq[0x1] = 0;
@@ -124,27 +131,20 @@ u32 bios_cpureset(){
 	exRegs[0x11] = exRegs[0x10];	//SPSR=CPSR
 	
 	//IRQ
-	updatecpuflags(1, exRegs[0x10], 0x12);
 	exRegs[13] = 0x03007FA0;
+	updatecpuflags(1, exRegs[0x10], 0x12);
 	
 	//SVC
-	updatecpuflags(1, exRegs[0x10], 0x13);
 	exRegs[13] = 0x03007FE0;
+	updatecpuflags(1, exRegs[0x10], 0x13);
 	
 	//USR/SYS (where CPU defaults to sys mode)
+	exRegs[13] = 0x03007F00;
 	updatecpuflags(1, exRegs[0x10], 0x10);
-	exRegs[13] = 0x03007F00;
 	
+	exRegs[13] = 0x03007F00;
 	updatecpuflags(1, exRegs[0x10], 0x1F);
-	exRegs[13] = 0x03007F00;
 	
-	//flush working CPU registers except GBA PC 15 since the entrypoint was written by the GBA header
-	for(i=0;i<0x10;i++){
-		if(i != 0xf){
-			exRegs[i]=0x0;
-		}
-	}
-
 	//gbamap reset
 	for(i = 0; i < 256; i++) {
 		map[i].address = (u8 *)(u32)0;
