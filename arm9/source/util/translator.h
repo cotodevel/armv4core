@@ -93,8 +93,6 @@ extern u8 setcond_arm;
 extern u8 armstate;	//0 arm / 1 thumb
 extern u8 armirqstate;//0 disabled / 1 enabled
 extern u8 armswistate;//0 disabled / 1 enabled
-
-//u32  addresslookup(u32 srcaddr, u32 blacklist[], u32 whitelist[]);
 extern u32 updatecpuflags(u8 mode, u32 cpsr, u32 cpumode); //updatecpuflags(mode,cpsr,cpumode); mode: 0 = hardware asm cpsr update / 1 = virtual CPU mode change,  CPSR , change to CPU mode
 
 //disassemblers

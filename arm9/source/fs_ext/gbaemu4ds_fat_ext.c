@@ -348,7 +348,7 @@ void testGBAEMU4DSFSTGDS(FILE * f, sint32 fileSize){	//FILE * f is already open 
 		int indexBlock = 0;
 		for(indexBlock = 0; indexBlock < (streamBufSize/sizeof(uint32)) ; indexBlock++){
 			int fileOffset = (index*streamBufSize) + ( (indexBlock*sizeof(uint32)) );
-			strmBuf[indexBlock] = ichfly_readu32(fileOffset);
+			strmBuf[indexBlock] = stream_readu32(fileOffset);
 		}
 		fwrite((uint8*)strmBuf,1,streamBufSize,fout);		
 	}
@@ -360,7 +360,7 @@ void testGBAEMU4DSFSTGDS(FILE * f, sint32 fileSize){	//FILE * f is already open 
 		int indexBlock = 0;
 		for(indexBlock = 0; indexBlock < FileMapChunks ; indexBlock++){
 			int fileOffset = (FileOffsetChunks * streamBufSize) + indexBlock;
-			streambuf[indexBlock] = ichfly_readu8(fileOffset);
+			streambuf[indexBlock] = stream_readu32(fileOffset);
 		}
 		fwrite((uint8*)streambuf,1,FileMapChunks,fout);
 		printf("this file is ODD!-Size:%d",fileSize);

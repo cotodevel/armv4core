@@ -376,12 +376,6 @@ exceptreservC:
 exceptirqC:
 	.word 0x00000000		
 
-@------------------------------nds IRQ vectors directly
-.global vblank_thread
-.global hblank_thread
-.global vcount_thread
-.global fifo_thread
-
 
 .align
 .pool

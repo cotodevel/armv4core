@@ -784,14 +784,8 @@ int CPULoadRom(const char *szFile, bool extram){
 	memcpy((u8*)&gbaheader,(u8*)&rom_pl[0], sizeof(gbaheader));
 	exRegs[0xe]=exRegs[0xf]=(u8*)(u32*)(0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
 	printf("ROMTEST:entrypoint @ %x! ",(unsigned int)(u32*)exRegs[0xf]);
-#endif
 	
-	printf("Press (A) to continue.");
-	scanKeys();
-	while(!(keysPressed() & KEY_A)){
-		scanKeys();
-		IRQVBlankWait();
-	}
+#endif
 	
 	flashInit();
 	eepromInit();
@@ -845,7 +839,7 @@ void printGBACPU(){
 	for(cntr=0;cntr<15;cntr=cntr+3){
 		printf(" r%d :[0x%x] r%d :[0x%x] r%d :[0x%x] ", 0 + cntr, (unsigned int)exRegs[0 + cntr], 1 + cntr, (unsigned int)exRegs[1 + cntr], 2 + cntr, (unsigned int)exRegs[2 + cntr]);
 	}
-	printf(" r%d Addr[0x%x]: [0x%x] ", 0xf, (unsigned int)exRegs[0xf], cpuread_word(exRegs[0xf]));
+	printf(" r%d Addr[0x%x]: [0x%x] ", 0xf, (unsigned int)exRegs[0xf], CPUReadMemory(exRegs[0xf]));
 	
 	printf("CPSR[%x] / SPSR:[%x] ",(unsigned int)exRegs[0x10],(unsigned int)exRegs[0x11]);
 	if(armstate == true){

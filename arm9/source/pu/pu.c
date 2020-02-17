@@ -292,41 +292,6 @@ u32 exceptswi (u32 swiaddress){
 		return 0;
 	}
 	
-	/*
-	//detect game filesize otherwise cause freezes
-	else if((swiaddress >= 0x08000000) && (swiaddress < (romsize+0x08000000))  ){
-		//printf("swigb");
-		//return (ichfly_readu32(swiaddress ^ (u32)0x08000000));
-	}
-	*/
-	
-	else{
-		//printf("swi unknown! ");
-		/*
-		//cpu_SetCP15Cnt(cpu_GetCP15Cnt() & ~0x1);
-		unsigned int *lnk_ptr;
-		__asm__ volatile (
-		"mov %[lnk_ptr],#0;" "\t"
-		"add %[lnk_ptr],%[lnk_ptr], lr" "\t"//"sub lr, lr, #8;" "\t"
-		"sub %[lnk_ptr],%[lnk_ptr],#0x8" 
-		:[lnk_ptr] "=r" (lnk_ptr)
-		);
-	
-		printf(" before exception: ");
-		if (cpuGetSPSR() & 0x5) printf("thumb mode ");
-		else printf("ARM mode ");
-	
-		printf(" IN exception: ");
-		if (cpuGetCPSR() & 0x5) printf("thumb mode ");
-		else printf("ARM mode ");
-		printf(" SWI #num: %x",swiaddress);
-		printf(" PU exception type: swi  at %p (0x%08X) ", lnk_ptr, *(lnk_ptr));
-		//printf(" btw romsize: %x",romsize);
-	
-		//pu_Enable();
-		*/
-	}
-	
 	char buf[MAX_TGDSFILENAME_LENGTH+1];
 	sprintf(buf, "Exception[SWI]: range 0..1Fh: Current: %x", swiaddress);
 	exception_dump(buf);
@@ -353,26 +318,26 @@ u32 exceptdataabt(u32 dabtaddress){
 	if( ((exRegs[0x10]>>5)&1) == 0x1 ){
 	
 		if((dabtaddress >= 0x08000000) && (dabtaddress < 0x08000200)  ){
-			//printf(" => data abt! (%x):%x ",dabtaddress,gbaheaderbuf[(dabtaddress ^ 0x08000000)/4]);
-			return ((gbaheaderbuf[(dabtaddress ^ 0x08000000)/4])&0xffff);
+			//printf(" => data abt! (%x):%x ",dabtaddress,gbaheaderbuf[(dabtaddress - 0x08000000)/4]);
+			return ((gbaheaderbuf[(dabtaddress - 0x08000000)/4])&0xffff);
 		}
 	
 		else if((dabtaddress >= 0x08000200) && (dabtaddress < (romsize+0x08000000))  ){
-			//printf(" => data abt! (%x):%x ",dabtaddress,ichfly_readu32(dabtaddress ^ 0x08000000));
-			return stream_readu16(dabtaddress ^ 0x08000000);
+			//printf(" => data abt! (%x):%x ",dabtaddress, stream_readu16(dabtaddress - 0x08000000));
+			return stream_readu16(dabtaddress - 0x08000000);
 		}
 	}
 	//32Bit reads
 	else{
 	
 		if((dabtaddress >= 0x08000000) && (dabtaddress < 0x08000200)  ){
-			//printf(" => data abt! (%x):%x ",dabtaddress,gbaheaderbuf[(dabtaddress ^ 0x08000000)/4]);
-			return gbaheaderbuf[(dabtaddress ^ 0x08000000)/4];
+			//printf(" => data abt! (%x):%x ",dabtaddress,gbaheaderbuf[(dabtaddress - 0x08000000)/4]);
+			return gbaheaderbuf[(dabtaddress - 0x08000000)/4];
 		}
 	
 		else if((dabtaddress >= 0x08000200) && (dabtaddress < (romsize+0x08000000))  ){
-			//printf(" => data abt! (%x):%x ",dabtaddress,ichfly_readu32(dabtaddress ^ 0x08000000));
-			return stream_readu32(dabtaddress ^ 0x08000000);
+			//printf(" => data abt! (%x):%x ",dabtaddress,stream_readu32(dabtaddress - 0x08000000));
+			return stream_readu32(dabtaddress - 0x08000000);
 		}
 	}
 	*/

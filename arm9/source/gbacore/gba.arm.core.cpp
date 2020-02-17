@@ -2345,7 +2345,7 @@ return CPUReadHalfWord(address);
 //prefetch next opcode
 u32 armnextpc(u32 address){
 	//0:ARM | 1:THUMB
-	if(armState)
+	if(armState == true)
 		return CPUReadMemory(address+0x4);
 	//else
 	return CPUReadHalfWord(address+0x2);
@@ -2616,16 +2616,7 @@ u32 CPUReadMemory(u32 address)
   case 10:
   case 11:
   case 12:
-    /*
-	if( (int)(address&0x1FFFFFC) < romSize){						//our offset is inside the GBA Image (2MB)
-		value = READ32LE(((u8 *)&rom[address & 0x1FFFFFC]));
-	}
-	else		//it's a valid GBA read
-	{
-		value = ichfly_readu32(address&0x1FFFFFC);
-	}
-	*/
-    value = ichfly_readu32((int)address & 0x1FFFFFC);
+    value = (u32)(stream_readu32(address & 0x1FFFFFC));
     break;
   case 13:
     if(cpuEEPROMEnabled)
@@ -2842,16 +2833,7 @@ u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is sma
 		break;
 		
 		default:
-            /*
-			if( (int)(address&0x1FFFFFE) < romSize){						//our offset is inside the GBA Image (2MB)
-				value = READ16LE(((u8 *)&rom[address & 0x1FFFFFE]));
-			}
-			else//it's a valid GBA read
-			{
-				value = ichfly_readu16(address&0x1FFFFFE);
-			}
-			*/
-            value = ichfly_readu16((int)address & 0x1FFFFFE);
+            value = stream_readu16((int)address & 0x1FFFFFE);
 		break;
 	}
 	break;
@@ -3037,18 +3019,7 @@ printf("r8 %02x",address);
   case 10:
   case 11:
   case 12:
-    /*
-	if( (int)(address&0x1FFFFFF) < romSize){						//our offset is inside the GBA Image (2MB)
-		return rom[address & 0x1FFFFFF];
-	}
-	else        //it's a valid GBA read
-	{
-		return ichfly_readu8(address&0x1FFFFFF);
-	}
-	*/
-    
-    return ichfly_readu8((int)address & 0x1FFFFFF);
-    
+    return stream_readu8((int)address & 0x1FFFFFF);
 	break;
 
   case 13:

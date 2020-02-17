@@ -225,7 +225,6 @@ extern u32 swi_virt(u32 swinum);
 extern u8 cpuBitsSet[256];
 extern u8 cpuLowestBitSet[256];
 
-//CPU GBA:
 extern s16 CPUReadHalfWordSigned_stack(u32 address);
 extern s8 CPUReadByteSigned_stack(u32 address);
 extern s16 CPUReadHalfWordSigned(u32 address);

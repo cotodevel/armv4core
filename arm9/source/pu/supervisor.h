@@ -74,50 +74,12 @@ extern u32  cputotalticks;
 extern "C" {
 #endif
 
-//lookup address tables
-extern const u32 addresslookup(u32 srcaddr, u32 blacklist[], u32 whitelist[]);
-
 //swi
 extern u32 swi_virt(u32 swinum);
-
-extern u32 gbaboot(u32); //main jumper
-extern u32 thumbcode(u32); //jump to thumbmode gba
-extern u32 armcode(u32); //jump to thumbmode gba
-
-//virtual stack management
-extern u32 ldmiavirt(u8 * output_buf, u32 stackptr, u16 regs, u8 access, u8 byteswapped, u8 order);
-extern u32 stmiavirt(u8 * input_buf, u32 stackptr, u16 regs, u8 access, u8 byteswapped, u8 order);
 
 //IO GBA (virtual < -- > hardware) handlers
 extern u32 gbacpu_refreshvcount();	//CPUCompareVCOUNT(gba);
 extern u32 cpu_updateregisters(u32 address, u16 value);		//CPUUpdateRegister(0xn, 0xnn);
-
-//CPU GBA:
-
-//direct GBA CPU reads
-extern u32 virtread_word(u32 address);
-extern u16 virtread_hword(u32 address);
-extern u8 virtread_byte(u32 address);
-
-////direct GBA CPU writes
-extern u32 virtwrite_word(u32 address,u32 data);
-extern u16 virtwrite_hword(u32 address,u16 data);
-extern u8 virtwrite_byte(u32 address,u8 data);
-
-//GBA addressing hamming weight approach fast
-extern u8 	cpuread_bytefast(u8 address); 		//CPUReadByteQuick(gba, addr)
-extern u16 cpuread_hwordfast(u16 address);		//CPUReadHalfWordQuick(gba, addr)
-extern u32 cpuread_wordfast(u32 address);		//CPUReadMemoryQuick(gba, addr)
-
-//process list GBA load
-extern u8 cpuread_byte(u32 address);	//old:	CPUReadByte(GBASystem *gba, u32 address);
-extern u16 cpuread_hword(u32 address);	//old:	CPUReadHalfWord(GBASystem *gba, u32 address)
-extern u32 cpuread_word(u32 address); 	//old:	CPUReadMemory(GBASystem *gba, u32 address)
-
-//process list GBA writes
-extern u32 cpuwrite_byte(u32 address,u8 b);			//old: CPUWriteByte(GBASystem *gba, u32 address, u8 b)
-extern u32 cpuwrite_hword(u32 address, u16 value);	//old: CPUWriteHalfWord(GBASystem *gba, u32 address, u16 value)
-extern u32 cpuwrite_word(u32 address, u32 value);		//old: CPUWriteMemory(GBASystem *gba, u32 address, u32 value)
 
 //IRQ
 extern u32 irqbiosinst();

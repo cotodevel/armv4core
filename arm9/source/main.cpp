@@ -186,38 +186,29 @@ int main(int _argc, sint8 **_argv) {
 		printf("CPULoadRom: failed");
 		while(1);
 	}
-	printf("OK");
-	
-	//GBA PC OK
-	
 	useBios = false;
 	CPUInit(biospath, useBios,false);
+	bios_cpureset();
+	bios_registerramreset(0xFF);
 	
 	clrscr();
 	printf(" - ");
-	printf(" - ");
-	printf(" - ");
-	printf(" - ");
+	printf(" ARMv4 Core start.");
 	
+	/*
 	printf("R15: %x", exRegs[15]);
 	while(1==1){}
+	*/
 	
-	
-	bios_cpureset();
-
-	bios_registerramreset(0xFF);
-
-	//execute_arm7_command(0xc0700100,0x1FFFFFFF,gba_frame_line);
-
-	//IEBACKUP = 0;
-
 	//old entrypoint: gba map cant reach this ... so
 	//exRegs[0xf] = (u32)&gba_setup;
 	
-	//re enable when opcodes are implemented
+	
 	#ifndef ROMTEST
+	/*
+	//
+	//Helper to implement and test ARM/THUMB full set opcodes
 	u8* gba_stack_src =(u8*)0x03000000;
-
 	//new
 	u32 * PATCH_BOOTCODE_PTR = (u32*)&gba_setup;
 	//required if buffer from within a destructable function
@@ -233,7 +224,8 @@ int main(int _argc, sint8 **_argv) {
 	printf("nds payload set correctly! payload size: %d",(int)PATCH_BOOTCODE_SIZE*4);
 	
 	//int size_dumped = ram2file_nds((const char*)"fat:/armv4dump.bin",(u8*)&puzzle_original[0],puzzle_original_size);
-
+	*/
+	
 	//re enable when opcodes are implemented
 	#else
 		//jump to homebrew rom : But rom is mapped to 0x08000000 because branch relative precalculated offsets are from 0x08000000 base.
@@ -262,6 +254,7 @@ int main(int _argc, sint8 **_argv) {
 	spinlock_createproc(8,1,(u32cback_ptr) 0);
 	spinlock_createproc(9,1,(u32cback_ptr) 0);
 	#endif
+	
 	
 	
 	while (1){

@@ -264,16 +264,6 @@ u32 __attribute__ ((hot)) disthumbcode(u32 thumbinstr){
 debuggeroutput();
 #endif
 
-//testing gba accesses translation to allocated ones
-//printf("output: %x ",addresslookup( 0x070003ff, (u32*)&addrpatches[0],(u32*)&addrfixes[0]));
-
-//debug addrfixes
-//int i=0;
-//for(i=0;i<16;i++){
-//	printf(" patch : %x",*((u32*)&addrfixes+(i)));
-//	if (i==15) printf("");
-//}
-
 //Low regs
 switch(thumbinstr>>11){
 	////////////////////////5.1
@@ -389,7 +379,7 @@ switch(thumbinstr>>11){
 	//5.6
 	//PC relative load WORD 10-bit Imm
 	case 0x9:{
-		u32 destroyableRegister = cpuread_word(((exRegs[0xf]&0xfffffffe)+0x4)+((thumbinstr&0xff)<<2)); //[PC+0x4,#(8<<2)Imm] / because prefetch and alignment
+		u32 destroyableRegister = CPUReadMemory(((exRegs[0xf]&0xfffffffe)+0x4)+((thumbinstr&0xff)<<2)); //[PC+0x4,#(8<<2)Imm] / because prefetch and alignment
 		#ifdef DEBUGEMU
 		printf("(WORD) LDR r%d[%x], [PC:%x,#%x] (5.6) ",(int)((thumbinstr>>8)&0x7),(unsigned int)destroyableRegister,(unsigned int)exRegs[0xf],(unsigned int)(thumbinstr&0xff));
 		#endif
@@ -415,9 +405,9 @@ switch(thumbinstr>>11){
 		//2b) RB = #Imm + RB 
 		u32 destroyableRegister = addsasm(exRegs[((thumbinstr>>3)&0x7)],(u32)(((thumbinstr>>6)&0x1f)<<2));
 		//store RD into [RB,#Imm]
-		cpuwrite_word(destroyableRegister, exRegs[(thumbinstr&0x7)]);
+		CPUWriteMemory(destroyableRegister, exRegs[(thumbinstr&0x7)]);
 		#ifdef DEBUGEMU
-		printf("content @%x:[%x]",(unsigned int)destroyableRegister,(unsigned int)cpuread_word(destroyableRegister));
+		printf("content @%x:[%x]",(unsigned int)destroyableRegister,(unsigned int)CPUReadMemory(destroyableRegister));
 		#endif
 		return 0;
 	}
@@ -434,7 +424,7 @@ switch(thumbinstr>>11){
 		
 		//add with #imm
 		u32 destroyableRegister = addsasm(exRegs[((thumbinstr>>3)&0x7)],destroyableRegister2);
-		destroyableRegister = cpuread_word(destroyableRegister);
+		destroyableRegister = CPUReadMemory(destroyableRegister);
 		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		#ifdef DEBUGEMU
@@ -457,11 +447,11 @@ switch(thumbinstr>>11){
 		u32 destroyableRegister = addsasm(exRegs[((thumbinstr>>3)&0x7)],(u32)(((thumbinstr>>6)&0x1f)<<2));
 		
 		//store RD into [RB,#Imm]
-		cpuwrite_byte(destroyableRegister, exRegs[(thumbinstr&0x7)]&0xff);
+		CPUWriteByte(destroyableRegister, exRegs[(thumbinstr&0x7)]&0xff);
 		
 		#ifdef DEBUGEMU
 			printf(" STRB r%d(%x), [r%d(%x),#0x%x]:[%x] (5.9)",(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],(int)((thumbinstr>>3)&0x7),(unsigned int)exRegs[((thumbinstr>>3)&0x7)],(unsigned int)((thumbinstr>>6)&0x1f)<<2);
-			printf(" Content: @%x:[%x]",(unsigned int)destroyableRegister,(unsigned int)cpuread_byte(destroyableRegister));
+			printf(" Content: @%x:[%x]",(unsigned int)destroyableRegister,(unsigned int)CPUReadByte(destroyableRegister));
 		#endif
 		return 0;
 	}
@@ -477,7 +467,7 @@ switch(thumbinstr>>11){
 		
 		//add with #imm
 		u32 destroyableRegister = addsasm(exRegs[((thumbinstr>>3)&0x7)], (((thumbinstr>>6)&0x1f)<<2));
-		u32 destroyableRegister2 = cpuread_byte(destroyableRegister);
+		u32 destroyableRegister2 = CPUReadByte(destroyableRegister);
 		exRegs[(thumbinstr&0x7)] = destroyableRegister2;
 		
 		#ifdef DEBUGEMU
@@ -502,7 +492,7 @@ switch(thumbinstr>>11){
 		//exRegs[(thumbinstr&0x7)]
 		u32 destroyableRegister =addsasm(exRegs[((thumbinstr>>3)&0x7)],(((thumbinstr>>6)&0x1f)<<1)); // Rb + #Imm bit[6] depth (adds >>0)
 		//store RD into [RB,#Imm]
-		cpuwrite_hword(destroyableRegister, exRegs[(thumbinstr&0x7)]);
+		CPUWriteHalfWord(destroyableRegister, exRegs[(thumbinstr&0x7)]);
 		
 		#ifdef DEBUGEMU
 		printf("strh r(%d)[%x] ,[Rb(%d)[%x],#[%x]] (5.7)",
@@ -525,7 +515,7 @@ switch(thumbinstr>>11){
 		
 		//add with #imm
 		u32 destroyableRegister = addsasm(exRegs[((thumbinstr>>3)&0x7)], (((thumbinstr>>6)&0x1f)<<1));
-		destroyableRegister = cpuread_hword(destroyableRegister);
+		destroyableRegister = CPUReadHalfWord(destroyableRegister);
 		
 		//Rd
 		exRegs[(thumbinstr&0x7)] = destroyableRegister;
@@ -551,7 +541,7 @@ switch(thumbinstr>>11){
 		
 		//#imm 
 		u32 destroyableRegister = ((thumbinstr&0xff)<<2);
-		cpuwrite_word((exRegs[(0xd)]+destroyableRegister), exRegs[((thumbinstr>>8)&0x7)]);
+		CPUWriteMemory((exRegs[(0xd)]+destroyableRegister), exRegs[((thumbinstr>>8)&0x7)]);
 		
 		#ifdef DEBUGEMU
 			printf("str rd(%d)[%x], [SP:(%x),#[%x]] ",(int)((thumbinstr>>8)&0x7), (unsigned int)exRegs[((thumbinstr>>8)&0x7)],(unsigned int)exRegs[(0xd)],(unsigned int)destroyableRegister);
@@ -570,7 +560,7 @@ switch(thumbinstr>>11){
 		//#imm 
 		u32 destroyableRegister = ((thumbinstr&0xff)<<2);
 		
-		u32 destroyableRegister2 = cpuread_word(exRegs[(0xd)] + destroyableRegister);
+		u32 destroyableRegister2 = CPUReadMemory(exRegs[(0xd)] + destroyableRegister);
 		//save Rd
 		exRegs[((thumbinstr>>8)&0x7)] = destroyableRegister2;
 		
@@ -599,7 +589,7 @@ switch(thumbinstr>>11){
 		
 		//add with #imm
 		u32 destroyableRegister = addsasm(exRegs[(0xf)], ((thumbinstr&0xff)<<2));
-		u32 destroyableRegister2 = cpuread_word(destroyableRegister);
+		u32 destroyableRegister2 = CPUReadMemory(destroyableRegister);
 		exRegs[((thumbinstr>>8)&0x7)] = destroyableRegister2;
 		
 		#ifdef DEBUGEMU
@@ -624,7 +614,7 @@ switch(thumbinstr>>11){
 		//add with #imm
 		u32 destroyableRegister = addsasm(exRegs[(0xd)], ((thumbinstr&0xff)<<2));
 		
-		u32 destroyableRegister2 = cpuread_word(destroyableRegister);
+		u32 destroyableRegister2 = CPUReadMemory(destroyableRegister);
 		exRegs[((thumbinstr>>8)&0x7)] = destroyableRegister2;
 		
 		#ifdef DEBUGEMU
@@ -646,7 +636,7 @@ switch(thumbinstr>>11){
 		while(cntr<0x8){ //8 working low regs for thumb cpu 
 			if( ((1<<cntr) & (thumbinstr&0xff)) > 0 ){
 				//stmia reg! is (forcefully for thumb) descendent
-				cpuwrite_word(exRegs[((thumbinstr>>8)&0x7)]-(offset*4), exRegs[(1<<cntr)]); //word aligned
+				CPUWriteMemory(exRegs[((thumbinstr>>8)&0x7)]-(offset*4), exRegs[(1<<cntr)]); //word aligned
 				offset++;
 			}
 			cntr++;
@@ -704,7 +694,7 @@ switch(thumbinstr>>11){
 		while(cntr<0x8){ //8 working low regs for thumb cpu 
 			if( ((1<<cntr) & (thumbinstr&0xff)) > 0 ){
 				//ldmia reg! is (forcefully for thumb) ascendent
-				cpuwrite_word(exRegs[((thumbinstr>>8)&0x7)]+(offset*4), exRegs[(1<<cntr)]); //word aligned
+				CPUWriteMemory(exRegs[((thumbinstr>>8)&0x7)]+(offset*4), exRegs[(1<<cntr)]); //word aligned
 				offset++;
 			}
 			cntr++;
@@ -720,10 +710,8 @@ switch(thumbinstr>>11){
 	//				5.18 BAL (branch always) PC-Address (+/- 2048 bytes)
 	//must be half-word aligned (bit 0 set to 0)
 	case(0x1c):{
-			//address patch is required for virtual environment
-			//hword=addresslookup(hword, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (hword & 0x3FFFF);
-			
-			exRegs[0xf]=(cpuread_word((thumbinstr&0x3ff)<<1)+0x4&0xfffffffe); //bit[11] but word-aligned so assembler puts 0>>1
+	
+			exRegs[0xf]=(CPUReadMemory((thumbinstr&0x3ff)<<1)+0x4&0xfffffffe); //bit[11] but word-aligned so assembler puts 0>>1
 			#ifdef DEBUGEMU
 			printf("[BAL] label[%x] THUMB mode / CPSR:%x (5.18) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
 			#endif
@@ -759,7 +747,7 @@ switch(thumbinstr>>11){
 		//if only a gbarom area read..
 		if( (((uint32)(exRegs[0xf]&0xfffffffe)>>24) == 0x8) || (((uint32)(exRegs[0xf]&0xfffffffe)>>24) == 0x9) ){
 			//new read method (reads from gba cpu core)
-			u32read=cpuread_word((uint32)(exRegs[0xf]&0xfffffffe));
+			u32read=CPUReadMemory((uint32)(exRegs[0xf]&0xfffffffe));
 			#ifndef ROMTEST //gbareads (stream) are byte swapped, we swap bytes here if streamed data
 				printf("byteswap gbaread! ");
 				u32read=rorasm(u32read,0x10);
@@ -767,7 +755,7 @@ switch(thumbinstr>>11){
 		}
 		else{
 			//new read method (reads from gba cpu core)
-			u32read=cpuread_word(( ((uint32)(exRegs[0xf]&0xfffffffe) >>2) )<<2);
+			u32read=CPUReadMemory(( ((uint32)(exRegs[0xf]&0xfffffffe) >>2) )<<2);
 		}
 		
 		printf("BL rom @(%x):[%x] ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)u32read);
@@ -913,7 +901,7 @@ switch(thumbinstr>>9){
 		#endif
 		
 		//store RD into [RB,#Imm]
-		cpuwrite_word((exRegs[((thumbinstr>>3)&0x7)] + exRegs[((thumbinstr>>6)&0x7)]), exRegs[(thumbinstr&0x7)]);
+		CPUWriteMemory((exRegs[((thumbinstr>>3)&0x7)] + exRegs[((thumbinstr>>6)&0x7)]), exRegs[(thumbinstr&0x7)]);
 		return 0;
 	}	
 	break;
@@ -930,7 +918,7 @@ switch(thumbinstr>>9){
 		//exRegs[(thumbinstr&0x7)]
 		
 		//store RD into [RB,#Imm]
-		cpuwrite_byte((exRegs[((thumbinstr>>3)&0x7)] + exRegs[((thumbinstr>>6)&0x7)]), (exRegs[(thumbinstr&0x7)]&0xff));
+		CPUWriteByte((exRegs[((thumbinstr>>3)&0x7)] + exRegs[((thumbinstr>>6)&0x7)]), (exRegs[(thumbinstr&0x7)]&0xff));
 		
 		#ifdef DEBUGEMU
 		printf("strb rd(%d)[%x] ,rb(%d)[%x],ro(%d)[%x] (5.7)",
@@ -954,7 +942,7 @@ switch(thumbinstr>>9){
 		
 		//Rd
 		//exRegs[(thumbinstr&0x7)]
-		u32 destroyableRegister = cpuread_word(exRegs[((thumbinstr>>3)&0x7)]+exRegs[((thumbinstr>>6)&0x7)]);
+		u32 destroyableRegister = CPUReadMemory(exRegs[((thumbinstr>>3)&0x7)]+exRegs[((thumbinstr>>6)&0x7)]);
 		#ifdef DEBUGEMU
 		printf("LDR rd(%d)[%x] ,[rb(%d)[%x],ro(%d)[%x]] (5.7)",
 		(int)(thumbinstr&0x7),(unsigned int)exRegs[(thumbinstr&0x7)],
@@ -974,7 +962,7 @@ switch(thumbinstr>>9){
 		//Ro
 		//exRegs[((thumbinstr>>6)&0x7)]
 		
-		u32 destroyableRegister = cpuread_byte((exRegs[((thumbinstr>>3)&0x7)]+exRegs[((thumbinstr>>6)&0x7)]));
+		u32 destroyableRegister = CPUReadByte((exRegs[((thumbinstr>>3)&0x7)]+exRegs[((thumbinstr>>6)&0x7)]));
 		
 		//Rd
 		exRegs[(thumbinstr&0x7)] = destroyableRegister;
@@ -1005,7 +993,7 @@ switch(thumbinstr>>9){
 		//exRegs[(thumbinstr&0x7)]
 		
 		//store RD into [RB,#Imm]
-		cpuwrite_hword((exRegs[((thumbinstr>>3)&0x7)]+exRegs[((thumbinstr>>6)&0x7)]), (exRegs[(thumbinstr&0x7)]&0xffff));	
+		CPUWriteHalfWord((exRegs[((thumbinstr>>3)&0x7)]+exRegs[((thumbinstr>>6)&0x7)]), (exRegs[(thumbinstr&0x7)]&0xffff));	
 		
 		#ifdef DEBUGEMU
 		printf("strh rd(%d)[%x] ,rb(%d)[%x],ro(%d)[%x] (5.7)",
@@ -1026,7 +1014,7 @@ switch(thumbinstr>>9){
 		//Ro
 		//exRegs[((thumbinstr>>6)&0x7)]
 		
-		u32 destroyableRegister = cpuread_hword((exRegs[((thumbinstr>>3)&0x7)]+exRegs[((thumbinstr>>6)&0x7)]));
+		u32 destroyableRegister = CPUReadHalfWord((exRegs[((thumbinstr>>3)&0x7)]+exRegs[((thumbinstr>>6)&0x7)]));
 		
 		//Rd
 		exRegs[(thumbinstr&0x7)] = destroyableRegister;
@@ -1052,7 +1040,7 @@ switch(thumbinstr>>9){
 		//Ro
 		//exRegs[((thumbinstr>>6)&0x7)]
 		
-		s8 sbyte=cpuread_byte(exRegs[((thumbinstr>>3)&0x7)]+exRegs[((thumbinstr>>6)&0x7)]);
+		s8 sbyte=CPUReadByte(exRegs[((thumbinstr>>3)&0x7)]+exRegs[((thumbinstr>>6)&0x7)]);
 		
 		//Rd
 		exRegs[(thumbinstr&0x7)] = (u32)sbyte;
@@ -1076,7 +1064,7 @@ switch(thumbinstr>>9){
 		//Ro
 		//exRegs[((thumbinstr>>6)&0x7)]
 		
-		s16 shword=cpuread_hword(exRegs[((thumbinstr>>3)&0x7)] + exRegs[((thumbinstr>>6)&0x7)]);
+		s16 shword=CPUReadHalfWord(exRegs[((thumbinstr>>3)&0x7)] + exRegs[((thumbinstr>>6)&0x7)]);
 		
 		//Rd
 		exRegs[(thumbinstr&0x7)] = (u32)shword;
@@ -1120,7 +1108,7 @@ switch(thumbinstr>>8){
 		while(cntr<0x8){ //8 working low regs for thumb cpu 
 				if( ((1<<cntr) & (thumbinstr&0xff)) > 0 ){
 					//ldmia reg! is (forcefully for thumb) descendent
-					cpuwrite_word(exRegs[(0xd)]-(offset*4), exRegs[(1<<cntr)]); //word aligned
+					CPUWriteMemory(exRegs[(0xd)]-(offset*4), exRegs[(1<<cntr)]); //word aligned
 					offset++;
 				}
 			cntr++;
@@ -1143,12 +1131,12 @@ switch(thumbinstr>>8){
 			if(cntr!=0x8){
 				if( ((1<<cntr) & (thumbinstr&0xff)) > 0 ){
 					//push is descending stack
-					cpuwrite_word(exRegs[(0xd)]-(offset*4), exRegs[(1<<cntr)]); //word aligned
+					CPUWriteMemory(exRegs[(0xd)]-(offset*4), exRegs[(1<<cntr)]); //word aligned
 					offset++;
 				}
 			}
 			else{ //our lr operator
-				cpuwrite_word(exRegs[(0xd)]-(offset*4), exRegs[0xe]); //word aligned
+				CPUWriteMemory(exRegs[(0xd)]-(offset*4), exRegs[0xe]); //word aligned
 				//#ifdef DEBUGEMU
 				//	printf("offset(%x):LR! ",(int)cntr);
 				//#endif
@@ -1189,7 +1177,7 @@ switch(thumbinstr>>8){
 		while(cntr<0x8){ //8 working low regs for thumb cpu
 			if( ((1<<cntr) & (thumbinstr&0xff)) > 0 ){
 				//pop is ascending
-				exRegs[(1<<cntr)]=cpuread_word(destroyableRegister+(offset*4)); //word aligned
+				exRegs[(1<<cntr)]=CPUReadMemory(destroyableRegister+(offset*4)); //word aligned
 				offset++;
 			}
 			cntr++;
@@ -1214,12 +1202,12 @@ switch(thumbinstr>>8){
 			if(cntr!=0x8){
 				if(((1<<cntr) & (thumbinstr&0xff)) > 0){
 					//restore is ascending (so Fixup stack offset address, to restore n registers)
-					exRegs[(1<<cntr)]=cpuread_word(destroyableRegister+(offset*4)); //word aligned
+					exRegs[(1<<cntr)]=CPUReadMemory(destroyableRegister+(offset*4)); //word aligned
 					offset++;
 				}
 			}
 			else{//our pc operator
-				exRegs[0xf]=(cpuread_word(destroyableRegister+(offset*4))&0xfffffffe); //word aligned
+				exRegs[0xf]=(CPUReadMemory(destroyableRegister+(offset*4))&0xfffffffe); //word aligned
 			}
 			cntr++;
 		}
@@ -1235,11 +1223,8 @@ switch(thumbinstr>>8){
 	//these read NZCV VIRT FLAGS (this means opcodes like this must be called post updatecpuregs(0);
 	
 	case(0xd0):{
-		if (z_flag==1){
-			//address patch is required for virtual environment
-			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
-		
-			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+		if (z_flag==1){	
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("[BEQ] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
@@ -1257,11 +1242,8 @@ switch(thumbinstr>>8){
 	//b: 1101 0001 / BNE / Branch if Z clear (not equal)
 	//BNE label (5.16)
 	case(0xd1):{
-		if (z_flag==0){ 
-			//address patch is required for virtual environment
-			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
-			
-			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+		if (z_flag==0){
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("[BNE] label[%x] THUMB mode (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe)); 
@@ -1280,12 +1262,8 @@ switch(thumbinstr>>8){
 	//b: 1101 0010 / BCS / Branch if C set (unsigned higher or same)
 	//BCS label (5.16)
 	case(0xd2):{
-		if (c_flag==1){ 
-			
-			//address patch is required for virtual environment
-			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
-		
-			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+		if (c_flag==1){
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("[BCS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
@@ -1304,11 +1282,7 @@ switch(thumbinstr>>8){
 	//b: 1101 0011 / BCC / Branch if C unset (lower)
 	case(0xd3):{
 		if (c_flag==0){
-		
-			//address patch is required for virtual environment
-			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
-	
-			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("[BCC] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
@@ -1326,12 +1300,8 @@ switch(thumbinstr>>8){
 	
 	//b: 1101 0100 / BMI / Branch if N set (negative)
 	case(0xd4):{
-		if (n_flag==1){ 
-		
-			//address patch is required for virtual environment
-			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
-		
-			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+		if (n_flag==1){
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("[BMI] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
@@ -1349,12 +1319,8 @@ switch(thumbinstr>>8){
 	
 	//b: 1101 0101 / BPL / Branch if N clear (positive or zero)
 	case(0xd5):{
-		if (n_flag==0){ 
-			
-			//address patch is required for virtual environment
-			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
-		
-			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+		if (n_flag==0){
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("[BPL] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
@@ -1372,12 +1338,8 @@ switch(thumbinstr>>8){
 	
 	//b: 1101 0110 / BVS / Branch if V set (overflow)
 	case(0xd6):{
-		if (v_flag==1){ 
-			
-			//address patch is required for virtual environment
-			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
-			
-			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+		if (v_flag==1){
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("[BVS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
@@ -1395,12 +1357,8 @@ switch(thumbinstr>>8){
 	
 	//b: 1101 0111 / BVC / Branch if V unset (no overflow)
 	case(0xd7):{
-		if (v_flag==0){ 
-		
-			//address patch is required for virtual environment
-			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
-			
-			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+		if (v_flag==0){
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("[BVC] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
@@ -1418,12 +1376,8 @@ switch(thumbinstr>>8){
 	
 	//b: 1101 1000 / BHI / Branch if C set and Z clear (unsigned higher)
 	case(0xd8):{
-		if ((c_flag==1)&&(z_flag==0)){ 
-		
-			//address patch is required for virtual environment
-			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
-			
-			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+		if ((c_flag==1)&&(z_flag==0)){
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("[BHI] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
@@ -1442,11 +1396,7 @@ switch(thumbinstr>>8){
 	//b: 1101 1001 / BLS / Branch if C clr or Z Set (lower or same [zero included])
 	case(0xd9):{
 		if ((c_flag==0)||(z_flag==1)){
-		
-			//address patch is required for virtual environment
-			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
-			
-			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);	
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);	
 			
 			#ifdef DEBUGEMU
 			printf("[BLS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
@@ -1465,11 +1415,7 @@ switch(thumbinstr>>8){
 	//b: 1101 1010 / BGE / Branch if N set and V set, or N clear and V clear
 	case(0xda):{
 		if ( ((n_flag==1)&&(v_flag==1)) || ((n_flag==0)&&(v_flag==0)) ){
-		
-			//address patch is required for virtual environment
-			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
-			
-			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("[BGE] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
@@ -1488,11 +1434,7 @@ switch(thumbinstr>>8){
 	//b: 1101 1011 / BLT / Branch if N set and V clear, or N clear and V set
 	case(0xdb):{
 		if ( ((n_flag==1)&&(v_flag==0)) || ((n_flag==0)&&(v_flag==1)) ){ 
-		
-			//address patch is required for virtual environment
-			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);	
-			
-			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("[BLT] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
@@ -1509,12 +1451,8 @@ switch(thumbinstr>>8){
 	
 	//b: 1101 1100 / BGT / Branch if Z clear, and either N set and V set or N clear and V clear
 	case(0xdc):{
-		if ( (z_flag==0) && ( ((n_flag==1)&&(v_flag==1)) || ((n_flag==0)&&(v_flag==0)) ) ){ 
-		
-			//address patch is required for virtual environment
-			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
-			
-			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+		if ( (z_flag==0) && ( ((n_flag==1)&&(v_flag==1)) || ((n_flag==0)&&(v_flag==0)) ) ){
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("[BGT] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
@@ -1532,11 +1470,7 @@ switch(thumbinstr>>8){
 	//b: 1101 1101 / BLE / Branch if Z set, or N set and V clear, or N clear and V set (less than or equal)
 	case(0xdd):{	
 		if ( ((z_flag==1) || (n_flag==1)) && ((v_flag==0) || ((n_flag==0) && (v_flag==1)) )  ){ 
-		
-			//address patch is required for virtual environment
-			//dbyte_tmp=addresslookup(dbyte_tmp, (u32*)&addrpatches[0],(u32*)&addrfixes[0]) | (dbyte_tmp & 0x3FFFF);
-			
-			exRegs[0xf]=((cpuread_word((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
 			
 			#ifdef DEBUGEMU
 			printf("[BLE] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
@@ -5627,7 +5561,7 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 				if((DestroyableRegister6&0x4)==0x4){
 					//dereference Rn+offset
 					//store RD into [Rn,#Imm]
-					cpuwrite_byte(DestroyableRegister3,(exRegs[((arminstr>>12)&0xf)]&0xff));
+					CPUWriteByte(DestroyableRegister3,(exRegs[((arminstr>>12)&0xf)]&0xff));
 					#ifdef DEBUGEMU
 						printf("ARM:5.7 trying STRB rd(%d), [b:rn(%d)[%x],xxx] (5.9) ",(int)((arminstr>>12)&0xf),(int)((arminstr>>16)&0xf),(unsigned int)DestroyableRegister3);
 					#endif
@@ -5635,7 +5569,7 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 				//transfer word quantity
 				else{
 					//store RD into [RB,#Imm]
-					cpuwrite_word(DestroyableRegister3,exRegs[((arminstr>>12)&0xf)]);
+					CPUWriteMemory(DestroyableRegister3,exRegs[((arminstr>>12)&0xf)]);
 					#ifdef DEBUGEMU
 						printf("ARM:5.7 trying to STR rd(%d), [b:rn(%d)[%x],xxx] (5.9)",(int)((arminstr>>12)&0xf),(int)((arminstr>>16)&0xf),(unsigned int)DestroyableRegister3);
 					#endif
@@ -5648,7 +5582,7 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 				//transfer byte quantity
 				if((DestroyableRegister6&0x4)==0x4){
 					//dereference Rn+offset
-					u32 DestroyableRegister1 = cpuread_byte(DestroyableRegister3);
+					u32 DestroyableRegister1 = CPUReadByte(DestroyableRegister3);
 					#ifdef DEBUGEMU
 						printf(" GBA LDRB rd(%d)[%x], [#0x%x] (5.9)",
 						(int)((arminstr>>12)&0xf),(unsigned int)DestroyableRegister1,(unsigned int)(DestroyableRegister3));
@@ -5659,7 +5593,7 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 				//transfer word quantity
 				else{
 					//dereference Rn+offset
-					u32 DestroyableRegister1=cpuread_word(DestroyableRegister3);
+					u32 DestroyableRegister1=CPUReadMemory(DestroyableRegister3);
 					
 					#ifdef DEBUGEMU
 						printf(" GBA LDR rd(%d)[%x], [#0x%x] (5.9)",
@@ -5684,7 +5618,7 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 					(int)((arminstr>>12)&0xf),(unsigned int)(exRegs[((arminstr>>12)&0xf)]&0xff),(int)((arminstr>>16)&0xf),(unsigned int)DestroyableRegister3);
 					#endif
 					//str rd,[rn]
-					cpuwrite_byte(DestroyableRegister3, exRegs[((arminstr>>12)&0xf)]&0xff);
+					CPUWriteByte(DestroyableRegister3, exRegs[((arminstr>>12)&0xf)]&0xff);
 				}
 				//word quantity
 				else{
@@ -5693,7 +5627,7 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 					(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)],(int)((arminstr>>16)&0xf),(unsigned int)DestroyableRegister3);
 					#endif
 					//str rd,[rn]
-					cpuwrite_word(DestroyableRegister3, exRegs[((arminstr>>12)&0xf)]); //broken?
+					CPUWriteMemory(DestroyableRegister3, exRegs[((arminstr>>12)&0xf)]); //broken?
 				}
 			}
 			
@@ -5708,12 +5642,12 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 					//if rn == r15 use rom / generate [PC, #imm] value into rd
 					if(((arminstr>>16)&0xf)==0xf){
 						DestroyableRegister1=(DestroyableRegister3+(0x8)); //align +8 for prefetching
-						destroyableRegister=cpuread_byte(DestroyableRegister1);
+						destroyableRegister=CPUReadByte(DestroyableRegister1);
 					}
 					//else rn / generate [Rn, #imm] value into rd
 					else{
 						DestroyableRegister1=DestroyableRegister3; //rd is destroyableRegister now, old rd is rewritten
-						destroyableRegister=cpuread_byte(DestroyableRegister1);
+						destroyableRegister=CPUReadByte(DestroyableRegister1);
 					}
 					
 					#ifdef DEBUGEMU
@@ -5726,12 +5660,12 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 					//if rn == r15 use rom / generate [PC, #imm] value into rd
 					if(((arminstr>>16)&0xf)==0xf){
 						DestroyableRegister2=(DestroyableRegister3+(0x8)); //align +8 for prefetching
-						destroyableRegister=cpuread_word(DestroyableRegister2);
+						destroyableRegister=CPUReadMemory(DestroyableRegister2);
 					}
 					//else rn / generate [Rn, #imm] value into rd
 					else{
 						DestroyableRegister2=DestroyableRegister3; //rd is destroyableRegister now, old rd is rewritten
-						destroyableRegister=cpuread_word(DestroyableRegister2);
+						destroyableRegister=CPUReadMemory(DestroyableRegister2);
 					}
 					
 					#ifdef DEBUGEMU
@@ -5850,7 +5784,7 @@ switch( ( (DestroyableRegister6=((arminstr>>20)&0xff)) & 0x80)  ){
 					while(cntr<0x10){ //16 working registers for ARM cpu 
 						if(((1<<cntr) & (arminstr&0xffff)) > 0){
 							//ascending stack
-							cpuwrite_word(exRegs[((arminstr>>16)&0xf)]+(offset*4), exRegs[(1<<cntr)]); //word aligned
+							CPUWriteMemory(exRegs[((arminstr>>16)&0xf)]+(offset*4), exRegs[(1<<cntr)]); //word aligned
 							offset++;
 						}
 						cntr++;
@@ -5866,7 +5800,7 @@ switch( ( (DestroyableRegister6=((arminstr>>20)&0xff)) & 0x80)  ){
 					while(cntr<0x10){ //16 working registers for ARM cpu
 						if(((1<<cntr) & (arminstr&0xffff)) > 0){
 							//descending stack
-							cpuwrite_word(exRegs[((arminstr>>16)&0xf)]-(offset*4), exRegs[(1<<cntr)]); //word aligned
+							CPUWriteMemory(exRegs[((arminstr>>16)&0xf)]-(offset*4), exRegs[(1<<cntr)]); //word aligned
 							offset++;
 						}
 						cntr++;
@@ -5917,7 +5851,7 @@ switch( ( (DestroyableRegister6=((arminstr>>20)&0xff)) & 0x80)  ){
 					
 					while(cntr<0x10){ //16 working registers for ARM cpu
 						if(((1<<cntr) & (arminstr&0xffff)) > 0){
-							exRegs[(1<<cntr)]=cpuread_word(exRegs[((arminstr>>16)&0xf)]+(offset*4)); //word aligned
+							exRegs[(1<<cntr)]=CPUReadMemory(exRegs[((arminstr>>16)&0xf)]+(offset*4)); //word aligned
 							offset++;
 						}
 						cntr++;
@@ -5932,7 +5866,7 @@ switch( ( (DestroyableRegister6=((arminstr>>20)&0xff)) & 0x80)  ){
 					
 					while(cntr<0x10){ //16 working registers for ARM cpu
 						if(((1<<cntr) & (arminstr&0xffff)) > 0){
-							exRegs[(1<<cntr)]=cpuread_word(exRegs[((arminstr>>16)&0xf)]-(offset*4)); //word aligned
+							exRegs[(1<<cntr)]=CPUReadMemory(exRegs[((arminstr>>16)&0xf)]-(offset*4)); //word aligned
 							offset++;
 						}
 						cntr++;
@@ -5999,13 +5933,13 @@ switch( ( (DestroyableRegister6=(arminstr)) & 0x1000090)  ){
 		if(DestroyableRegister6 & (1<<22)){
 			//printf("byte quantity!");
 			//[rn]->rd
-			u32 DestroyableRegister2=cpuread_byte(exRegs[((DestroyableRegister6>>16)&0xf)]);
+			u32 DestroyableRegister2=CPUReadByte(exRegs[((DestroyableRegister6>>16)&0xf)]);
 			exRegs[((DestroyableRegister6>>12)&0xf)]=DestroyableRegister2;
 			#ifdef DEBUGEMU
 			printf("SWPB 1/2 [rn(%d):%x]->rd(%d)[%x] ",(int)((DestroyableRegister6>>16)&0xf),(unsigned int)exRegs[((DestroyableRegister6>>16)&0xf)],(int)((DestroyableRegister6>>12)&0xf),(unsigned int)DestroyableRegister2);
 			#endif
 			//rm->[rn]
-			cpuwrite_byte(exRegs[((DestroyableRegister6>>16)&0xf)],exRegs[((DestroyableRegister6)&0xf)]&0xff);
+			CPUWriteByte(exRegs[((DestroyableRegister6>>16)&0xf)],exRegs[((DestroyableRegister6)&0xf)]&0xff);
 			#ifdef DEBUGEMU
 			printf("SWPB 2/2 rm(%d):[%x]->[rn(%d):[%x]] ",(int)((DestroyableRegister6)&0xf),(unsigned int)(exRegs[((DestroyableRegister6)&0xf)]&0xff),(int)((DestroyableRegister6>>16)&0xf),(unsigned int)exRegs[((DestroyableRegister6>>16)&0xf)]);
 			#endif
@@ -6013,12 +5947,12 @@ switch( ( (DestroyableRegister6=(arminstr)) & 0x1000090)  ){
 		else{
 			//printf("word quantity!");
 			//[rn]->rd
-			exRegs[((DestroyableRegister6>>12)&0xf)]=cpuread_word(exRegs[((DestroyableRegister6>>16)&0xf)]);
+			exRegs[((DestroyableRegister6>>12)&0xf)]=CPUReadMemory(exRegs[((DestroyableRegister6>>16)&0xf)]);
 			#ifdef DEBUGEMU
 			printf("SWP 1/2 rm(%d):[%x]->[rn(%d):[%x]] ",(int)((DestroyableRegister6)&0xf),(unsigned int)(exRegs[((DestroyableRegister6)&0xf)]&0xff),(int)((DestroyableRegister6>>16)&0xf),(unsigned int)exRegs[((DestroyableRegister6>>16)&0xf)]);
 			#endif
 			//rm->[rn]
-			cpuwrite_word(exRegs[((DestroyableRegister6>>16)&0xf)],exRegs[((DestroyableRegister6)&0xf)]);
+			CPUWriteMemory(exRegs[((DestroyableRegister6>>16)&0xf)],exRegs[((DestroyableRegister6)&0xf)]);
 			#ifdef DEBUGEMU
 			printf("SWP 2/2 rm(%d):[%x]->[rn(%d):[%x]] ",(int)((DestroyableRegister6)&0xf),(unsigned int)(exRegs[((DestroyableRegister6)&0xf)]&0xff),(int)((DestroyableRegister6>>16)&0xf),(unsigned int)exRegs[((DestroyableRegister6>>16)&0xf)]);
 			#endif
