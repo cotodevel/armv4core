@@ -96,33 +96,13 @@ u32 bios_cpureset(){
 	exRegs[0x10]=0x0;
 	updatecpuflags(1,exRegs[0x10],0x10);
 	
-	//flush working CPU registers
+	//flush working CPU registers except GBA PC 15 since the entrypoint was written by the GBA header
 	for(i=0;i<0x10;i++){
-		exRegs[i]=0x0;
+		if(i != 0xf){
+			exRegs[i]=0x0;
+		}
 	}
-	exRegs[0x0]=0;
 
-	// clean caioMem memory
-	memset(gbacaioMem, 0, 0x400);
-	
-	// clean io memory
-	memset(iomem, 0, 0x400);
-	
-	// clean bios memory
-	//memset(bios,0, 0x4000);
-	
-	// clean internal work ram
-	memset(internalRAM,0, 0x8000);
-	
-	// clean palette
-	memset(palram, 0, 0x400);
-	
-	// clean OAM
-	memset(oam, 0, 0x400);
-	
-	// clean vram
-	//memset(vram, 0, 0x20000);	//test later
-	
 	//gbamap reset
 	for(i = 0; i < 256; i++) {
 		map[i].address = (u8 *)(u32)0;

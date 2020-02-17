@@ -51,7 +51,6 @@ extern u8 * palram;	//[0x400];
 extern u8 * gbabios;	//[0x4000];
 extern u8 * gbaintram;	//[0x8000];
 extern u8 * gbaoam;	//[0x400];
-extern u8 * gbacaioMem;	//[0x400];
 extern u8 * saveram;	//[128*1024]; //128K
 extern u8 * iomem[0x400];
 extern volatile u32 disk_buf[chucksize];

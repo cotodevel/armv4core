@@ -188,9 +188,21 @@ int main(int _argc, sint8 **_argv) {
 	}
 	printf("OK");
 	
+	//GBA PC OK
+	
 	useBios = false;
 	CPUInit(biospath, useBios,false);
-
+	
+	clrscr();
+	printf(" - ");
+	printf(" - ");
+	printf(" - ");
+	printf(" - ");
+	
+	printf("R15: %x", exRegs[15]);
+	while(1==1){}
+	
+	
 	bios_cpureset();
 
 	bios_registerramreset(0xFF);
@@ -251,14 +263,6 @@ int main(int _argc, sint8 **_argv) {
 	spinlock_createproc(9,1,(u32cback_ptr) 0);
 	#endif
 	
-	clrscr();
-	printf(" - ");
-	printf(" - ");
-	printf(" - ");
-	printf(" - ");
-	
-	printf("R15: %x", exRegs[15]);
-	while(1==1){}
 	
 	while (1){
 		scanKeys();

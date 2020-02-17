@@ -167,169 +167,69 @@ int VolumeFromString(const char * volumestring) {
 
 
 void initmemory(){
-		//4000240h - NDS9 - VRAMCNT_A - 8bit - VRAM-A (128K) Bank Control (W)
-	//  0-2   VRAM MST              ;Bit2 not used by VRAM-A,B,H,I
-	//  3-4   VRAM Offset (0-3)     ;Offset not used by VRAM-E,H,I
-	//  5-6   Not used
-	//  7     VRAM Enable (0=Disable, 1=Enable)
-
-	//					Post-setup settings:
-	//  VRAM    SIZE  MST  OFS   ARM9, 2D Graphics Engine A, BG-VRAM (max 512K)
-	//  A,B,C,D 128K  1    0..3  6000000h+(20000h*OFS)
-	//  E       64K   1    -     6000000h
-	//  F,G     16K   1    0..3  6000000h+(4000h*OFS.0)+(10000h*OFS.1)
-  
 	gbawram = (u8*)malloc(256*1024);
 	palram = (u8*)malloc(0x400);
 	gbabios = (u8*)malloc(0x4000);
 	gbaintram = (u8*)malloc(0x8000);
 	gbaoam = (u8*)malloc(0x400);
-	gbacaioMem = (u8*)malloc(0x400);
 	saveram = (u8*)malloc(128*1024);
 
-	u8 vramofs=(0<<3);
-	u8 vrammst=(1<<0);
-	
-	u32store(0x04000240,vrammst|vramofs|(1<<7)); //MST 1 , vram offset 0 (A), VRAM enable
-	
-	int ramtestsz=0;
-	
-	ramtestsz=wramtstasm((int)workRAM,256*1024);
+	int ramtestsz=wramtstasm((int)workRAM, 256*1024);
 	if(ramtestsz==alignw(256*1024))
-		printf(" GBAWRAM tst: OK :[%x]!",(unsigned int)(u8*)workRAM); 
+		memset(gbawram, 0, 256*1024); //Same as workRAM
 	else{
 		printf(" FAILED ALLOCING GBAEWRAM[%x]:@%d (bytes: %d)",(unsigned int)(u8*)gbawram,ramtestsz,0x10000);
 		while(1);
 	}
-	memset((void*)workRAM,0x0,0x10000);
-
-	//OK
+	
 	ramtestsz=wramtstasm((int)iomem,0x400);
-	if(ramtestsz==alignw(0x400))
-		printf(" IOMEM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)iomem,ramtestsz);
-	else 
+	if(ramtestsz==alignw(0x400)){
+		memset((void*)iomem,0x0,0x400);	//same as u8 ioMem[]
+	}
+	else{
 		printf(" IOMEM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)iomem,ramtestsz);
-	memset((void*)iomem,0x0,0x400);
+	}
 
-
-	//this is OK
-	ramtestsz=wramtstasm((int)bios,0x4000);
-	if(ramtestsz==alignw(0x4000))
-		printf(" BIOS tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)bios,ramtestsz);
-	else 
+	ramtestsz=wramtstasm((int)bios,0x4000);	
+	if(ramtestsz==alignw(0x4000)){
+		memset(gbabios, 0, 0x4000); 	//Same as u8 * bios
+	}	
+	else{
 		printf(" BIOS tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)bios,ramtestsz);
-	memset((void*)bios,0x0,0x4000);
-
-	//this is OK
+	}
+	
 	ramtestsz=wramtstasm((int)internalRAM,0x8000);
-	if(ramtestsz==alignw(0x8000))
-		printf(" IRAM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)internalRAM,ramtestsz);
-	else 
+	if(ramtestsz==alignw(0x8000)){
+		memset(gbaintram, 0, 0x8000); //Same as u8* internalRAM
+	}
+	else{
 		printf(" IRAM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)internalRAM,ramtestsz);
-	memset((void*)internalRAM,0x0,0x8000);
-
-	//this is OK
+	}
+	
 	ramtestsz=wramtstasm((int)(u8*)palram,0x400);
-	if(ramtestsz==alignw(0x400))
-		printf(" PaletteRAM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)palram,ramtestsz);
-	else 
+	if(ramtestsz==alignw(0x400)){
+		memset(palram, 0, 0x400); 
+	}
+	else {
 		printf(" PaletteRAM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)palram,ramtestsz);
-	memset((void*)palram,0x0,0x400);
-
-	//this is OK
-	ramtestsz=wramtstasm((int)oam,0x400);
-	if(ramtestsz==alignw(0x400))
-		printf(" OAM tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)oam,ramtestsz);
-	else 
+	}
+	
+	ramtestsz=wramtstasm((int)gbaoam,0x400);
+	if(ramtestsz==alignw(0x400)){
+		memset(gbaoam, 0, 0x400);	//Same as u8* oam
+	}
+	else{
 		printf(" OAM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)oam,ramtestsz);
-	memset((void*)oam,0x0,0x400);
-
-	//this is OK
-	ramtestsz=wramtstasm((int)gbacaioMem,0x400);
-	if(ramtestsz==alignw(0x400))
-		printf(" caioMem tst: OK (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gbacaioMem,ramtestsz);
-	else 
-		printf(" caioMem tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)gbacaioMem,ramtestsz);
-	memset((void*)gbacaioMem,0x0,0x400);
-
-	//gba stack test
-	for(i=0;i<sizeof(gbastck_usr)/2;i++){
-		
-		u16store((u32)&gbastck_usr[0]+(i*2),0xc070+i);	//gbastack[i] = 0xc070;	
-		
-		//printf("%x ",(unsigned int)gbastack[i]); //printf("%x ",(unsigned int)**(&gbastack+i*2)); //non contiguous memory 
-
-		if(u16read((u32)&gbastck_usr[0]+i*2)!=0xc070+i){
-			printf("stackusr:failed writing @ %x ",(unsigned int)&gbastck_usr+(i*2));
-			printf("stackusr:reads: %x",(unsigned int)u16read((u32)&gbastck_usr[0]+i*2));
-			printf("stackusr:base: %x",(unsigned int)&gbastck_usr[0]);
-			while(1);
-		}
-	
-		u16store((u32)&gbastck_usr[0]+i*2,0x0);
-	}
-
-	for(i=0;i<sizeof(gbastck_fiq)/2;i++){
-		u16store((u32)&gbastck_fiq[0]+i*2,0xc070+i); //gbastack[i] = 0xc070;
-		//printf("%x ",(unsigned int)gbastack[i]); //printf("%x ",(unsigned int)**(&gbastack+i*2)); //non contiguous memory 
-
-		if(u16read((u32)&gbastck_fiq[0]+i*2)!=0xc070+i){
-			printf("stackfiq:failed writing @ %x ",(unsigned int)&gbastck_fiq+(i*2));
-			while(1);
-		}
-	
-		u16store((u32)&gbastck_fiq[0]+i*2,0x0);
-	}
-
-	for(i=0;i<sizeof(gbastck_irq)/2;i++){
-		u16store((u32)&gbastck_irq[0]+i*2,0xc070+i); //gbastack[i] = 0xc070;
-		//printf("%x ",(unsigned int)gbastack[i]); //printf("%x ",(unsigned int)**(&gbastack+i*2)); //non contiguous memory 
-
-		if(u16read((u32)&gbastck_irq[0]+i*2)!=0xc070+i){
-			printf("stackirq:failed writing @ %x ",(unsigned int)&gbastck_irq+(i*2));
-			while(1);
-		}
-	
-		u16store((u32)&gbastck_irq[0]+i*2,0x0);
-	}
-
-	for(i=0;i<sizeof(gbastck_svc)/2;i++){
-		u16store((u32)&gbastck_svc[0]+i*2,0xc070+i); //gbastack[i] = 0xc070;				
-		//printf("%x ",(unsigned int)gbastack[i]); //printf("%x ",(unsigned int)**(&gbastack+i*2)); //non contiguous memory 
-
-		if(u16read((u32)&gbastck_svc[0]+i*2)!=0xc070+i){
-			printf("stacksvc:failed writing @ %x ",(unsigned int)&gbastck_svc+(i*2));
-			while(1);
-		}
-	
-		u16store((u32)&gbastck_svc[0]+i*2,0x0);
-	}
-
-	for(i=0;i<sizeof(gbastck_abt)/2;i++){
-		u16store((u32)&gbastck_abt[0]+i*2,0xc070+i); //gbastack[i] = 0xc070;				
-		//printf("%x ",(unsigned int)gbastack[i]); //printf("%x ",(unsigned int)**(&gbastack+i*2)); //non contiguous memory 
-
-		if(u16read((u32)&gbastck_abt[0]+i*2)!=0xc070+i){
-			printf("stackabt:failed writing @ %x ",(unsigned int)&gbastck_abt+(i*2));
-			while(1);
-		}
-	
-		u16store((u32)&gbastck_abt[0]+i*2,0x0);
-	}
-
-	for(i=0;i<sizeof(gbastck_und)/2;i++){
-		u16store((u32)&gbastck_und[0]+i*2,0xc070+i); //gbastack[i] = 0xc070;				
-		//printf("%x ",(unsigned int)gbastack[i]); //printf("%x ",(unsigned int)**(&gbastack+i*2)); //non contiguous memory
-
-		if(u16read((u32)&gbastck_und[0]+i*2)!=0xc070+i){
-			printf("stackund:failed writing @ %x ",(unsigned int)&gbastck_und+(i*2));
-			while(1);
-		}
-	
-		u16store((u32)&gbastck_und[0]+i*2,0x0);
 	}
 	
-	//usr/sys are same stacks, so removed
+	ramtestsz=wramtstasm((int)saveram, 128*1024);
+	if(ramtestsz==alignw(128*1024)){
+		memset(saveram, 0, 128*1024);	//128K Contiguous SaveRAM
+	}
+	else{
+		printf(" SAVERAM tst: FAIL at (%d bytes @ 0x%x+0x%x)",ramtestsz,(unsigned int)(u8 *)oam,ramtestsz);
+	}
+	
 }
 
 void initemu(){
@@ -369,7 +269,6 @@ void initemu(){
 	*/
 
 	initmemory();
-	printf("init&teststacks OK");
 
 	//GBA address MAP setup
 	for(i = 0; i < 256; i++){
@@ -595,8 +494,6 @@ void initemu(){
 	//reg[R13_SVC].I = 0x03007FE0;
 	//armIrqEnable = true;
 	
-	//todo stack setup
-	
 }
 
 void u32store(u32 address, u32 value){
@@ -786,11 +683,7 @@ void CPUInit(const char *biosFileName, bool useBiosFile,bool extram)
 	
 	
 	//misc
-	i = 0;
-	for(i = 0; i < sizeof(exRegs); i++){
-		exRegs[i] = 0;
-	}
-
+	
 	exRegs_r13usr[0x1] = 0;
 	exRegs_r14usr[0x1] = 0;
 	exRegs_r13fiq[0x1] = 0;
@@ -840,7 +733,6 @@ void CPUInit(const char *biosFileName, bool useBiosFile,bool extram)
 
 int CPULoadRom(const char *szFile, bool extram){
 	systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
-	exRegs[0xf] = 0;
 	romSize = 0x40000;
 	
 	#ifndef ROMTEST

@@ -10,7 +10,6 @@ u8 * palram = NULL;	//[0x400];
 u8 * gbabios = NULL;	//[0x4000];
 u8 * gbaintram = NULL;	//[0x8000];
 u8 * gbaoam = NULL;	//[0x400];
-u8 * gbacaioMem = NULL;	//[0x400];
 u8 * saveram = NULL;	//[128*1024]; //128K
 u8 * iomem[0x400];
 
