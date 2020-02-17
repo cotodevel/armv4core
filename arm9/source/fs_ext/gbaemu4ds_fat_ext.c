@@ -383,6 +383,9 @@ void testGBAEMU4DSFSTGDS(FILE * f, sint32 fileSize){	//FILE * f is already open 
 
 u8 stream_readu8(u32 pos){
 	#ifndef ROMTEST
+		if(pos < (32*1024)){	//ichfly_readuXXXX is bugged the first 0x200 bytes
+			return (u8)*(u8*)&first32krom[pos];
+		}
 		return ichfly_readu8((unsigned int)pos);
 	#endif
 	#ifdef ROMTEST
@@ -392,6 +395,9 @@ u8 stream_readu8(u32 pos){
 
 u16 stream_readu16(u32 pos){
 	#ifndef ROMTEST
+		if(pos < (32*1024)){	//ichfly_readuXXXX is bugged the first 0x200 bytes
+			return (u16)*(u16*)&first32krom[pos];
+		}
 		return ichfly_readu16((unsigned int)pos);
 	#endif
 	#ifdef ROMTEST
@@ -401,6 +407,9 @@ u16 stream_readu16(u32 pos){
 
 u32 stream_readu32(u32 pos){
 	#ifndef ROMTEST
+		if(pos < (32*1024)){	//ichfly_readuXXXX is bugged the first 0x200 bytes
+			return (u32)*(u32*)&first32krom[pos];
+		}
 		return ichfly_readu32((unsigned int)pos);
 	#endif
 	#ifdef ROMTEST

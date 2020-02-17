@@ -211,11 +211,11 @@ u32 updatecpuflags(u8 mode ,u32 cpsr, u32 cpumode){
 				cpsr&=~0x1f;
 				cpsr|=(cpumode&0x1f);
 				
-				//->switch to arm/thumb mode depending on cpsr for virtual env
+				//->switch to arm/thumb mode depending on cpsr
 				if( ((cpsr>>5)&1) == 0x1 )
-					armstate=0x1;
+					armstate=CPUSTATE_THUMB;
 				else
-					armstate=0x0;
+					armstate=CPUSTATE_ARM;
 				
 				cpsr&=~(1<<0x5);
 				cpsr|=((armstate&1)<<0x5);
@@ -1495,7 +1495,6 @@ switch(thumbinstr>>8){
 		
 		u32 stack2svc=exRegs[0xe];	//ARM has r13,r14 per CPU <mode> but this is shared on gba
 		
-		//ori: updatecpuflags(1,temp_arm_psr,0x13);
 		updatecpuflags(1,exRegs[0x10],0x13);
 		
 		exRegs[0xe]=stack2svc;		//ARM has r13,r14 per CPU <mode> but this is shared on gba

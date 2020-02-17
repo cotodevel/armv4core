@@ -34,6 +34,10 @@ USA
 #include "supervisor.h"
 #include "fatfslayerTGDS.h"
 
+#define CPUSTATE_ARM (u8)(0)
+#define CPUSTATE_THUMB (u8)(1)
+
+
 #endif
 
 #ifdef __cplusplus

@@ -276,6 +276,10 @@ int main(int _argc, sint8 **_argv) {
 			
 		if(keysPressed() & KEY_SELECT){
 			emulatorgba();
+			scanKeys();
+			while(keysPressed() & KEY_SELECT){
+				scanKeys();
+			}
 		}
 		
 		handleARM9SVC();	/* Do not remove, handles TGDS services */

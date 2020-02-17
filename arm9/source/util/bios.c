@@ -92,9 +92,51 @@ u32 bios_cpureset(){
 	biosProtected[2] = 0x29;
 	biosProtected[3] = 0xe1;
 	
-	//set CPU-stack to usermode
-	exRegs[0x10]=0x0;
-	updatecpuflags(1,exRegs[0x10],0x10);
+	exRegs_r13usr[0x1] = 0;
+	exRegs_r14usr[0x1] = 0;
+	exRegs_r13fiq[0x1] = 0;
+	exRegs_r14fiq[0x1] = 0;
+	exRegs_r13irq[0x1] = 0;
+	exRegs_r14irq[0x1] = 0;
+	exRegs_r13svc[0x1] = 0;
+	exRegs_r14svc[0x1] = 0;
+	exRegs_r13abt[0x1] = 0;
+	exRegs_r14abt[0x1] = 0;
+	exRegs_r13und[0x1] = 0;
+	exRegs_r14und[0x1] = 0;
+	//exRegs_r14sys[0x1] = 0; //usr/sys uses same stacks
+	//exRegs_r14sys[0x1] = 0;
+	
+	//original registers used by any PSR_MODE that do belong to FIQ r8-r12
+	exRegs_fiq[0x5] = 0;
+
+	//Set CPSR virtualized bits & perform USR/SYS CPU mode change and set stacks
+	z_flag = 0;
+	n_flag = 0;
+	v_flag = 0;
+	c_flag = 0;
+	
+	//Host  sp_svc    sp_irq    sp_sys    zerofilled area       return address
+	//GBA   3007FE0h  3007FA0h  3007F00h  [3007E00h..3007FFFh]  Flag[3007FFAh]
+	
+	u32 startCPSR = (u32)((n_flag << 31) | (z_flag << 30) | (c_flag << 29) | (v_flag << 28) | (CPUSTATE_ARM << 5) | (0x10));	//ARM Mode default + USR mode
+	updatecpuflags(1, startCPSR, 0x10);
+	exRegs[0x11] = exRegs[0x10];	//SPSR=CPSR
+	
+	//IRQ
+	updatecpuflags(1, exRegs[0x10], 0x12);
+	exRegs[13] = 0x03007FA0;
+	
+	//SVC
+	updatecpuflags(1, exRegs[0x10], 0x13);
+	exRegs[13] = 0x03007FE0;
+	
+	//USR/SYS (where CPU defaults to sys mode)
+	updatecpuflags(1, exRegs[0x10], 0x10);
+	exRegs[13] = 0x03007F00;
+	
+	updatecpuflags(1, exRegs[0x10], 0x1F);
+	exRegs[13] = 0x03007F00;
 	
 	//flush working CPU registers except GBA PC 15 since the entrypoint was written by the GBA header
 	for(i=0;i<0x10;i++){
@@ -108,16 +150,15 @@ u32 bios_cpureset(){
 		map[i].address = (u8 *)(u32)0;
 		map[i].mask = 0;
 	}
-return 0;	
+	
+	cpuStart = true;
+	return 0;	
 }
 
 //swi 1
 u32 bios_registerramreset(u32 flags){
-	// no need to trace here. this is only called directly from cpp
-	// to emulate bios initialization
 
-	cpu_updateregisters(0x0, 0x80);	//CPUUpdateRegister(0x0, 0x80);
-		
+	CPUUpdateRegister(0x0, 0x80);
 	if(flags) {
 		if(flags & 0x01) {
 			// clear work RAM
@@ -147,32 +188,32 @@ u32 bios_registerramreset(u32 flags){
 		if(flags & 0x80) {
 			int i;
 			for(i = 0; i < 0x10; i++)
-				cpu_updateregisters(0x200+(i*2), 0x0);	//CPUUpdateRegister(0x200+i*2, 0);
+				CPUUpdateRegister(0x200+i*2, 0);
 
 			for(i = 0; i < 0xF; i++)
-				cpu_updateregisters(0x4+(i*2), 0x0);	//CPUUpdateRegister(0x4+i*2, 0);
+				CPUUpdateRegister(0x4+i*2, 0);
 
 			for(i = 0; i < 0x20; i++)
-				cpu_updateregisters(0x20+(i*2), 0x0);	//CPUUpdateRegister(0x20+(i*2), 0);
+				CPUUpdateRegister(0x20+(i*2), 0);
 
 			for(i = 0; i < 0x18; i++)
-				cpu_updateregisters(0xb0+(i*2), 0x0);	//CPUUpdateRegister(0xb0+(i*2), 0);
+				CPUUpdateRegister(0xb0+(i*2), 0);
 
-			cpu_updateregisters(0x130, 0x0);			//CPUUpdateRegister(0x130, 0);
-			cpu_updateregisters(0x20, 0x100);			//CPUUpdateRegister(0x20, 0x100);
-			cpu_updateregisters(0x30, 0x100);			//CPUUpdateRegister(0x30, 0x100);
-			cpu_updateregisters(0x26, 0x100);			//CPUUpdateRegister(0x26, 0x100);
-			cpu_updateregisters(0x36, 0x100);			//CPUUpdateRegister(0x36, 0x100);
+			CPUUpdateRegister(0x130, 0);
+			CPUUpdateRegister(0x20, 0x100);
+			CPUUpdateRegister(0x30, 0x100);
+			CPUUpdateRegister(0x26, 0x100);
+			CPUUpdateRegister(0x36, 0x100);
 			//printf("register map 1!");
 		}
 		
 		if(flags & 0x20) {
 			int i;
 			for(i = 0; i < 8; i++)
-				cpu_updateregisters(0x110+(i*2), 0x0);		//CPUUpdateRegister(0x110+i*2, 0);
-				cpu_updateregisters(0x134, 0x8000);			//CPUUpdateRegister(0x134, 0x8000);
+				CPUUpdateRegister(0x110+i*2, 0);
+				CPUUpdateRegister(0x134, 0x8000);
 			for(i = 0; i < 7; i++)
-				cpu_updateregisters(0x140+(i*2), 0x0);		//CPUUpdateRegister(0x140+i*2, 0);
+				CPUUpdateRegister(0x140+i*2, 0);
 		}
 
 		if(flags & 0x40) {
@@ -181,18 +222,17 @@ u32 bios_registerramreset(u32 flags){
 			CPUWriteByte(0x04000084, 0x80);					//CPUWriteByte(0x4000084, 0x80);
 			CPUWriteMemory(0x04000080, 0x880e0000);			//CPUWriteMemory(0x4000080, 0x880e0000);
 			
-			//CPUUpdateRegister(0x88, CPUReadHalfWord(0x04000088)&0x3ff);
-			cpu_updateregisters(0x88, (CPUReadHalfWord(0x04000088)&0x3ff));
+			CPUUpdateRegister(0x88, CPUReadHalfWord(0x04000088)&0x3ff);
 			
 			CPUWriteByte(0x04000070, 0x70);				//CPUWriteByte(0x4000070, 0x70);
 			
 			for(i = 0; i < 8; i++)
-				cpu_updateregisters(0x90+(i*2), 0x0);		//CPUUpdateRegister(0x90+i*2, 0);
+				CPUUpdateRegister(0x90+i*2, 0);
 			
 			CPUWriteByte(0x04000070, 0x0);					//CPUWriteByte(0x4000070, 0);
 		  
 			for(i = 0; i < 8; i++)
-				cpu_updateregisters(0x90+(i*2), 0x0);		//CPUUpdateRegister(0x90+i*2, 0);
+				CPUUpdateRegister(0x90+i*2, 0);
 			CPUWriteByte(0x04000084, 0x0);					//CPUWriteByte(0x4000084, 0);
 		//printf("register map 2!");
 		}

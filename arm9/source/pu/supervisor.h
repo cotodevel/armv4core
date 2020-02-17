@@ -77,9 +77,7 @@ extern "C" {
 //swi
 extern u32 swi_virt(u32 swinum);
 
-//IO GBA (virtual < -- > hardware) handlers
 extern u32 gbacpu_refreshvcount();	//CPUCompareVCOUNT(gba);
-extern u32 cpu_updateregisters(u32 address, u16 value);		//CPUUpdateRegister(0xn, 0xnn);
 
 //IRQ
 extern u32 irqbiosinst();

@@ -77,10 +77,12 @@ u16 swap16(u16 v){
 	return (v<<8)|(v>>8);
 }
 
+//CPUUpdateRegister only handles GBA Hardware registers
 
+//Where as UPDATE_REG writes all the GBA io map
 u32 UPDATE_REG(u32 address, u32 value){
 	WRITE16LE(iomem[address],(u16)value);
-return 0;
+	return 0;
 }
 
 int utilReadInt2(FILE *f){
@@ -395,15 +397,16 @@ void initemu(){
 	GBAIE=0x0000;			//  IE       = 0x0000;
 	GBAIF=0x0000;			//  IF       = 0x0000;
 	GBAIME=0x0000;			// IME      = 0x0000;
-
-	cpu_updateregisters(0x00, GBADISPCNT);	//UPDATE_REG(0x00, GBADISPCNT);
-	cpu_updateregisters(0x06, GBAVCOUNT);	//UPDATE_REG(0x06, VCOUNT);
-	cpu_updateregisters(0x20, GBABG2PA);		//UPDATE_REG(0x20, GBABG2PA);
-	cpu_updateregisters(0x26, GBABG2PD);		//UPDATE_REG(0x26, GBABG2PD);
-	cpu_updateregisters(0x30, GBABG3PA);		//UPDATE_REG(0x30, GBABG3PA);
-	cpu_updateregisters(0x36, GBABG3PD);		//UPDATE_REG(0x36, GBABG3PD);
-	cpu_updateregisters(0x130, GBAP1);		//UPDATE_REG(0x130, GBAP1);
-	cpu_updateregisters(0x88, 0x200);			//UPDATE_REG(0x88, 0x200);
+	
+	//GBA IO Init
+	UPDATE_REG(0x00, GBADISPCNT);
+	UPDATE_REG(0x06, VCOUNT);
+	UPDATE_REG(0x20, GBABG2PA);
+	UPDATE_REG(0x26, GBABG2PD);
+	UPDATE_REG(0x30, GBABG3PA);
+	UPDATE_REG(0x36, GBABG3PD);
+	UPDATE_REG(0x130, GBAP1);
+	UPDATE_REG(0x88, 0x200);
 
 	#ifndef NOBIOS
 	lcdTicks = 1008;
@@ -681,53 +684,6 @@ void CPUInit(const char *biosFileName, bool useBiosFile,bool extram)
 		//agbPrintEnable(false);
 	//}
 	
-	
-	//misc
-	
-	exRegs_r13usr[0x1] = 0;
-	exRegs_r14usr[0x1] = 0;
-	exRegs_r13fiq[0x1] = 0;
-	exRegs_r14fiq[0x1] = 0;
-	exRegs_r13irq[0x1] = 0;
-	exRegs_r14irq[0x1] = 0;
-	exRegs_r13svc[0x1] = 0;
-	exRegs_r14svc[0x1] = 0;
-	exRegs_r13abt[0x1] = 0;
-	exRegs_r14abt[0x1] = 0;
-	exRegs_r13und[0x1] = 0;
-	exRegs_r14und[0x1] = 0;
-	//exRegs_r14sys[0x1] = 0; //usr/sys uses same stacks
-	//exRegs_r14sys[0x1] = 0;
-
-	//original registers used by any PSR_MODE that do belong to FIQ r8-r12
-	exRegs_fiq[0x5] = 0;
-
-	//Set CPSR virtualized bits & perform USR/SYS CPU mode change and set stacks
-	z_flag = 0;
-	n_flag = 0;
-	v_flag = 0;
-	c_flag = 0;
-	
-	//Host  sp_svc    sp_irq    sp_sys    zerofilled area       return address
-	//GBA   3007FE0h  3007FA0h  3007F00h  [3007E00h..3007FFFh]  Flag[3007FFAh]
-	
-	u32 startCPSR = (u32)((n_flag << 31) | (z_flag << 30) | (c_flag << 29) | (v_flag << 28) | (0 << 5) | (0x10));	//ARM Mode default + USR mode
-	updatecpuflags(1, startCPSR, 0x10);
-	exRegs[0x11] = exRegs[0x10];	//SPSR=CPSR
-	
-	//IRQ
-	exRegs[13] = 0x03007FA0;
-	updatecpuflags(1, exRegs[0x10], 0x12);
-	
-	//SVC
-	exRegs[13] = 0x03007FE0;
-	updatecpuflags(1, exRegs[0x10], 0x13);
-	
-	//USR/SYS (where CPU defaults to sys mode)
-	exRegs[13] = 0x03007F00;
-	updatecpuflags(1, exRegs[0x10], 0x10);
-	exRegs[13] = 0x03007F00;
-	updatecpuflags(1, exRegs[0x10], 0x1F);
 }
 
 
@@ -842,7 +798,7 @@ void printGBACPU(){
 	printf(" r%d Addr[0x%x]: [0x%x] ", 0xf, (unsigned int)exRegs[0xf], CPUReadMemory(exRegs[0xf]));
 	
 	printf("CPSR[%x] / SPSR:[%x] ",(unsigned int)exRegs[0x10],(unsigned int)exRegs[0x11]);
-	if(armstate == true){
+	if(armstate == CPUSTATE_ARM){
 		printf("CPU Model: %s - Running: %d - CPUMode: %s", ARMModel, cpuStart, "ARM");
 	}
 	else{

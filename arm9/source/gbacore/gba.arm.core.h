@@ -61,8 +61,8 @@ extern "C" {
 extern patch_t patchheader;
 
 //GBAProcess
-extern u32 cpu_fdexecute();
-extern u32 cpu_calculate();
+extern void cpu_fdexecute();
+extern u32 cpu_calculate();	//todo
 extern u32 cpuirq(u32 cpumode);
 
 //IO GBA (virtual < -- > hardware) handlers
@@ -125,7 +125,6 @@ extern u32  exRegs_fiq[0x5];
 
 extern memoryMap map[256];
 extern bool ioReadable[0x400];
-extern bool armState ;
 extern bool armIrqEnable ;
 extern u32 armNextPC ;
 extern int armMode ;

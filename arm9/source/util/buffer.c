@@ -16,4 +16,4 @@ u8 * iomem[0x400];
 //disk buffer
 volatile u32 disk_buf[chucksize]; 
 
-u8 first32krom[1024*32];
+u8 first32krom[32*1024];

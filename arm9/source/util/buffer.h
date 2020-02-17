@@ -54,7 +54,7 @@ extern u8 * gbaoam;	//[0x400];
 extern u8 * saveram;	//[128*1024]; //128K
 extern u8 * iomem[0x400];
 extern volatile u32 disk_buf[chucksize];
-extern u8 first32krom[1024*32];
+extern u8 first32krom[32*1024];
 
 #ifdef __cplusplus
 }

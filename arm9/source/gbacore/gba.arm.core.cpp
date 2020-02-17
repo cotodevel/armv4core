@@ -121,8 +121,7 @@ patch_t patchheader;
 int   sound_clock_ticks = 0;
 memoryMap map[256];
 bool ioReadable[0x400];
-bool cpuStart = false;	//1 virtualizing / 0 halt
-bool armState = true;               //true = ARM / false = thumb
+bool cpuStart = false;				//1 CPU Running / 0 CPU Halt
 bool armIrqEnable = true;
 u32 armNextPC = 0x00000000;
 int armMode = 0x1f;
@@ -454,7 +453,7 @@ u32 __attribute__ ((hot)) ndsvcounter(){
 
 
 //CPULoop-> processes registers from various mem and generate threads for each one
-__attribute__ ((hot)) u32 cpu_calculate(){
+__attribute__ ((hot)) u32 cpu_calculate(){	//todo
 	int clockticks=0; //actual CPU ticking (heartbeat)
 	
 	//***********************(CPU prefetch cycle lapsus)********************************/
@@ -660,17 +659,15 @@ __attribute__ ((hot)) u32 cpu_calculate(){
 	return 0;
 }
 
-u32 __attribute__ ((hot)) cpu_fdexecute(){
+__attribute__ ((hot)) void cpu_fdexecute(){
 
-//1) read GBAROM entrypoint
-//2) reserve registers r0-r15, stack pointer , LR, PC and stack (for USR, AND SYS MODES)
-//3) get pointers from all reserved memory areas (allocated)
-//4) use this function to fetch addresses from GBAROM, patch swi calls (own BIOS calls), patch interrupts (by calling correct vblank draw, sound)
-//patch IO access , REDIRECT VIDEO WRITES TO ALLOCATED VRAM & VRAMIO [use switch and intercalls for asm]
-
-//btw entrypoint is always ARM code 
+	//1) read GBAROM entrypoint
+	//2) reserve registers r0-r15, stack pointer , LR, PC and stack (for USR, AND SYS MODES)
+	//3) get pointers from all reserved memory areas (allocated)
+	//4) use this function to fetch addresses from GBAROM, patch swi calls (own BIOS calls), patch interrupts (by calling correct vblank draw, sound)
+	//patch IO access , REDIRECT VIDEO WRITES TO ALLOCATED VRAM & VRAMIO [use switch and intercalls for asm]
 	
-	if(armState){
+	if(armstate == CPUSTATE_ARM){
 		//Fetch Decode & Execute ARM
 		//Word alignment for opcode fetch. (doesn't ignore opcode's bit[0] globally, bc fetch will carry whatever Word is)
 		u32 new_instr=armfetchpc_arm(exRegs[0xf]&0xfffffffe); 
@@ -679,9 +676,8 @@ u32 __attribute__ ((hot)) cpu_fdexecute(){
 			printf(" rom:%x [%x]",(unsigned int)exRegs[0xf]&0xfffffffe,(unsigned int)new_instr);
 		#endif
 		disarmcode(new_instr);
-		
 	}
-	else{
+	else if(armstate == CPUSTATE_THUMB){
 		//Fetch Decode & Execute THUMB
 		//Half Word alignment for opcode fetch. (doesn't ignore opcode's bit[0] globally, bc fetch will carry whatever HalfWord is)
 		u16 new_instr=armfetchpc_thumb((exRegs[0xf])&0xfffffffe);
@@ -694,22 +690,13 @@ u32 __attribute__ ((hot)) cpu_fdexecute(){
 	}
 	//HBLANK Handles CPU_EMULATE(); //checks and interrupts all the emulator kind of requests (IRQ,DMA)
 
-/*
-if((exRegs[0xf]&0xfffffffe)==0x081e2b31){
-	printf("opcode for PC:(%x) [%x] ",(unsigned int)exRegs[0xf]&0xfffffffe,(unsigned int)armfetchpc_thumb(exRegs[0xf]&0xfffffffe));
-	while(1);
-}
-*/
-
-//increase PC depending on CPUmode
-if (armState)
-	exRegs[0xf]+=4;
-else
-	exRegs[0xf]+=2;
-
-//before anything, interrupts (GBA generated) are checked on NDS9 IRQ.s PU.C exceptirq()
-
-return 0;
+	//increase PC depending on CPUmode
+	if (armstate == CPUSTATE_ARM){
+		exRegs[0xf]+=4;
+	}
+	else if(armstate == CPUSTATE_THUMB){
+		exRegs[0xf]+=2;
+	}
 }
 
 //cpu interrupt
@@ -718,10 +705,10 @@ u32 cpuirq(u32 cpumode){
 	updatecpuflags(1,exRegs[0x10],cpumode);
 	exRegs[0xe]=exRegs[0xf];
 	
-	if(!armState){	//thumb
+	if(armstate == CPUSTATE_THUMB){	//thumb
 		exRegs[0xe]+=2;
 	}
-	armState=true;
+	armstate = CPUSTATE_ARM;
 	armIrqEnable = false;
 	
 	//refresh jump opcode in biosprotected vector
@@ -1248,1074 +1235,487 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
 
 //IO opcodes
 __attribute__ ((hot))
-void  CPUUpdateRegister(u32 address, u16 value)
-{
-  switch(address) {
-    
-  #ifdef own_bg_render
-  
-  case 0x00:
-  
-    
-        //well, this part 1/2: setup vram and engines
-        //  part 2/2 redirects all writes to each tile sections / map sections of current gba video mode
-		
-		switch(value & 0x7){
-		
-		
-		//In this mode, four text background layers can be shown. In this mode backgrounds 0 - 3 all count as "text" backgrounds, and cannot be scaled or rotated. 
-		//Check out the section on text backgrounds for details on this. 
-		case(0):{
-			
-			set_gba_bgmode(0);
-            
-			//(LCD) blend control register
-			//higher prio bg against lower prio, for alpha / blend / transparency (sprite pixels)
-			REG_BLDCNT = GBABLDMOD;
-			
-			//window
-			WIN_IN = GBAWININ;
-			WIN_OUT = GBAWINOUT;
-			
-			//scrolling
-			//bg0
-			bgSetScroll(bg_0_setting,GBABG0HOFS,GBABG0VOFS);
-			//bg1
-			bgSetScroll(bg_1_setting,GBABG1HOFS,GBABG1VOFS);
-			//bg2
-			bgSetScroll(bg_2_setting,GBABG2HOFS,GBABG2VOFS);
-			//bg3
-			bgSetScroll(bg_3_setting,GBABG3HOFS,GBABG3VOFS);
-			
-			//mode 0 does not use rotscale registers
-			
+void  CPUUpdateRegister(u32 address, u16 value){
+	switch(address){
+		case 0x00:{ 
+			// we need to place the following code in { } because we declare & initialize variables in a case statement
+			if((value & 7) > 5) {
+				// display modes above 0-5 are prohibited
+				GBADISPCNT = (value & 7);
 			}
-			break;
+			bool change = (0 != ((GBADISPCNT ^ value) & 0x80)); //forced vblank? (1 means delta time vram access)
+			bool changeBG = (0 != ((GBADISPCNT ^ value) & 0x0F00));
+			u16 changeBGon = ((~GBADISPCNT) & value) & 0x0F00; // these layers are being activated
 			
-			//This mode is similar in most respects to Mode 0, the main difference being that only 3 backgrounds are accessible -- 0, 1, and 2. 
-			//Bgs 0 and 1 are text backgrounds, while bg 2 is a rotation/scaling background.
-			case(1):
-			{
-                set_gba_bgmode(1);
-				
-                //not yet
-                //bgSetControlBits(bg_0_setting,GBABG0CNT);
-				//bgSetControlBits(bg_1_setting,GBABG0CNT);
-				//bgSetControlBits(bg_2_setting,GBABG2CNT);
-                    //bgSetControlBits(bg_3_setting,GBABG3CNT); //bg 0,1 & 2 only
-				
-				//(LCD) blend control register
-				//higher prio bg against lower prio, for alpha / blend / transparency (sprite pixels)
-				REG_BLDCNT = GBABLDMOD;
-				
-				//window
-				WIN_IN = GBAWININ;
-				WIN_OUT = GBAWINOUT;
-				
-				//scrolling
-                bgSetScroll(bg_0_setting,GBABG0HOFS,GBABG0VOFS);
-                bgSetScroll(bg_1_setting,GBABG1HOFS,GBABG1VOFS);
-				
-				//libnds rotscale/affine
-				//bg 2
-				bgSetAffineMatrixScroll (
-					bg_2_setting, 
-					(int)GBABG2PA, 
-					(int)GBABG2PB, 
-					(int)GBABG2PC, 
-					(int)GBABG2PD, 
-					(int)(GBABG2X_L | (GBABG2X_H << 16)), 	//scroll x 
-					(int)(GBABG2Y_L | (GBABG2Y_H << 16))		//scroll y
-				);
-				
-			}
-			break;
-			
-			
-			//Like modes 0 and 1, this uses tiled backgrounds. It uses backgrounds 2 and 3, both of which are rotate/scale backgrounds. 
-			case(2):
-			{
-				
-				//handled directly BG CNT because engine 0:0 is used
-				REG_BG0CNT = GBABG0CNT;
-				bgSetControlBits(bg_1_setting,GBABG1CNT);	//bg 0 only text
-				bgSetControlBits(bg_2_setting,GBABG2CNT);
-				bgSetControlBits(bg_3_setting,GBABG3CNT);
-				
-				//libnds rotscale/affine
-				//bg2
-				bgSetAffineMatrixScroll (bg_2_setting, 
-				(int)GBABG2PA, 
-				(int)GBABG2PB, 
-				(int)GBABG2PC, 
-				(int)GBABG2PD, 
-				(int)(GBABG2X_L | (GBABG2X_H << 16)), 	//scroll x 
-				(int)(GBABG2Y_L | (GBABG2Y_H << 16))		//scroll y
-				);
-				
-				//bg3
-				bgSetAffineMatrixScroll (bg_3_setting, 
-				(int)GBABG3PA, 
-				(int)GBABG3PB, 
-				(int)GBABG3PC, 
-				(int)GBABG3PD, 
-				(int)(GBABG3X_L | (GBABG3X_H << 16)), 	//scroll x 
-				(int)(GBABG3Y_L | (GBABG3Y_H << 16))		//scroll y
-				);
-				
-				//(LCD) blend control register
-				//higher prio bg against lower prio, for alpha / blend / transparency (sprite pixels)
-				REG_BLDCNT = GBABLDMOD;
-				
-				//window
-				WIN_IN = GBAWININ;
-				WIN_OUT = GBAWINOUT;
-				
-				//scrolling
-				//bg zero is direct reg access
-				REG_BG0HOFS = GBABG0HOFS;
-				REG_BG0VOFS = GBABG0VOFS;
-				//bgsetscroll
-				bgSetScroll(bg_1_setting,GBABG1HOFS,GBABG1VOFS);
-				bgSetScroll(bg_2_setting,GBABG2HOFS,GBABG2VOFS);
-				bgSetScroll(bg_3_setting,GBABG3HOFS,GBABG3VOFS);
-			}
-			break;
-			
-			
-			//The screen is a 16 bit linear buffer. Meaning every pixel has two bytes of information. Those two bytes are made up of red, green, and blue component. 
-			//Each of those basic three colors can have a value from 0..31 resulting in a maximum of 32,768 colors. Mode 3 has a resolution of 240x160. 
-			case(3):
-			{			
-			}	
-			break;
-			
-			//Mode 4:8-Bit paletted bitmapped mode at 240x160. The bitmap starts at either 0x06000000 or 0x0600A000, depending on bit 4 of REG_DISPCNT. 
-			//Swapping the map and drawing in the one that isn't displayed allows for page flipping techniques to be used. The palette is at 0x5000000, 
-			//and contains 256 16-bit color entries.
-			case(4):
-			{
-			}
-			break;
-			
-			case(5):
-            {
-            }
-			break;
-		}
-        
-     
-    break;
-    
-    //ori bg code
-    #else
-    case 0:    
-    {		
-		if((value & 7) < 3)
-		{
-			if(value != GBADISPCNT)
-			{
-				if(!((GBADISPCNT & 7) < 3))
-				{
-					//reset GBABG3HOFS and GBABG3VOFS
-					REG_BG3HOFS = GBABG3HOFS;
-					REG_BG3VOFS = GBABG3VOFS;
+			GBADISPCNT = (value & 0xFFF7); // bit 3 can only be accessed by the BIOS to enable GBC mode
+			UPDATE_REG(0x00 , GBADISPCNT);
 
-					//reset
-					REG_BG3CNT = GBABG3CNT;
-					REG_BG2CNT = GBABG2CNT;
-					REG_BLDCNT = GBABLDMOD;
-					WIN_IN = GBAWININ;
-					WIN_OUT = GBAWINOUT;
+			if(changeBGon) {
+				layerEnableDelay = 4;
+				layerEnable = layerSettings & value & (~changeBGon);
+			}
+			else {
+				layerEnable = layerSettings & value;
+				cpuupdateticks();	// CPUUpdateTicks();
+			}
 
-					REG_BG2PA = GBABG2PA;
-					REG_BG2PB = GBABG2PB;
-					REG_BG2PC = GBABG2PC;
-					REG_BG2PD = GBABG2PD;
-					REG_BG2X = (GBABG2X_L | (GBABG2X_H << 16));
-					REG_BG2Y = (GBABG2Y_L | (GBABG2Y_H << 16));
-
-					REG_BG3PA = GBABG3PA;
-					REG_BG3PB = GBABG3PB;
-					REG_BG3PC = GBABG3PC;
-					REG_BG3PD = GBABG3PD;
-					REG_BG3X = (GBABG3X_L | (GBABG3X_H << 16));
-					REG_BG3Y = (GBABG3Y_L | (GBABG3Y_H << 16));
+			windowOn = (layerEnable & 0x6000) ? true : false;
+			if(change && !((value & 0x80))) {
+				if(!(GBADISPSTAT & 1)) {
+					lcdTicks = 1008;
+					//      GBAVCOUNT = 0;
+					//      UPDATE_REG(0x06, GBAVCOUNT);
+					GBADISPSTAT &= 0xFFFC;
+					UPDATE_REG(0x04 , GBADISPSTAT);
+					//gbacpu_refreshvcount(); moved to vcount thread	//CPUCompareVCOUNT(gba);
 				}
+			//        (*renderLine)();
+			}
+			// we only care about changes in BG0-BG3
+			if(changeBG) {
+			}
+		break;
+		}
+		case 0x04:
+			GBADISPSTAT = (value & 0xFF38) | (GBADISPSTAT & 7);
+			UPDATE_REG(0x04 , GBADISPSTAT);
+		break;
+		case 0x06:
+			// not writable
+		break;
+		case 0x08:
+			GBABG0CNT = (value & 0xDFCF);
+			UPDATE_REG(0x08 , GBABG0CNT);
+		break;
+		case 0x0A:
+			GBABG1CNT = (value & 0xDFCF);
+			UPDATE_REG(0x0A , GBABG1CNT);
+		break;
+		case 0x0C:
+			GBABG2CNT = (value & 0xFFCF);
+			UPDATE_REG(0x0C , GBABG2CNT);
+		break;
+		case 0x0E:
+			GBABG3CNT = (value & 0xFFCF);
+			UPDATE_REG(0x0E , GBABG3CNT);
+		break;
+		case 0x10:
+			GBABG0HOFS = value & 511;
+			UPDATE_REG(0x10 , GBABG0HOFS);
+		break;
+		case 0x12:
+			GBABG0VOFS = value & 511;	
+			UPDATE_REG(0x12 , GBABG0VOFS);
+		break;
+		case 0x14:
+			GBABG1HOFS = value & 511;
+			UPDATE_REG(0x14 , GBABG1HOFS);
+		break;
+		case 0x16:
+			GBABG1VOFS = value & 511;
+			UPDATE_REG(0x16 , GBABG1VOFS);
+		break;
+		case 0x18:
+			GBABG2HOFS = value & 511;
+			UPDATE_REG(0x18 , GBABG2HOFS);
+		break;
+		case 0x1A:
+			GBABG2VOFS = value & 511;
+			UPDATE_REG(0x1A , GBABG2VOFS);
+		break;
+		case 0x1C:
+			GBABG3HOFS = value & 511;
+			UPDATE_REG(0x1C , GBABG3HOFS);
+		break;
+		case 0x1E:
+			GBABG3VOFS = value & 511;
+			UPDATE_REG(0x1E , GBABG3VOFS);
+		break;
+		case 0x20:
+			GBABG2PA = value;
+			UPDATE_REG(0x20 , GBABG2PA);
+		break;
+		case 0x22:
+			GBABG2PB = value;
+			UPDATE_REG(0x22 , GBABG2PB);
+		break;
+		case 0x24:
+			GBABG2PC = value;
+			UPDATE_REG(0x24 , GBABG2PC);
+		break;
+		case 0x26:
+			GBABG2PD = value;
+			UPDATE_REG(0x26 , GBABG2PD);
+		break;
+		case 0x28:
+			GBABG2X_L = value;
+			UPDATE_REG(0x28 , GBABG2X_L);
+			//gfxbg2changed |= 1;
+		break;
+		case 0x2A:
+			GBABG2X_H = (value & 0xFFF);
+			UPDATE_REG(0x2A , GBABG2X_H);	
+			//gfxbg2changed |= 1;
+		break;
+		case 0x2C:
+			GBABG2Y_L = value;
+			UPDATE_REG(0x2C , GBABG2Y_L);
+			//gfxbg2changed |= 2;
+		break;
+		case 0x2E:
+			GBABG2Y_H = value & 0xFFF;
+			UPDATE_REG(0x2E , GBABG2Y_H);
+			//gfxbg2changed |= 2;
+		break;
+		case 0x30:
+			GBABG3PA = value;
+			UPDATE_REG(0x30 , GBABG3PA);	
+		break;
+		case 0x32:
+			GBABG3PB = value;
+			UPDATE_REG(0x32 , GBABG3PB);
+		break;
+		case 0x34:
+			GBABG3PC = value;
+			UPDATE_REG(0x34 , GBABG3PC);	
+		break;
+		case 0x36:
+			GBABG3PD = value;
+			UPDATE_REG(0x36 , GBABG3PD);
+		break;
+		case 0x38:
+			GBABG3X_L = value;
+			UPDATE_REG(0x38 , GBABG3X_L);
+			//gfxbg3changed |= 1;
+		break;
+		case 0x3A:
+			GBABG3X_H = value & 0xFFF;
+			UPDATE_REG(0x3A , GBABG3X_H);
+			//gfxbg3changed |= 1;
+		break;
+		case 0x3C:
+			GBABG3Y_L = value;
+			UPDATE_REG(0x3C , GBABG3Y_L);	
+			//gfxbg3changed |= 2;
+		break;
+		case 0x3E:
+			GBABG3Y_H = value & 0xFFF;
+			UPDATE_REG(0x3E , GBABG3Y_H);	
+			//gfxbg3changed |= 2;
+		break;
+		case 0x40:
+			GBAWIN0H = value;
+			UPDATE_REG(0x40 , GBAWIN0H);	
+		break;
+		case 0x42:
+			GBAWIN1H = value;
+			UPDATE_REG(0x42 , GBAWIN1H);	
+		break;
+		case 0x44:
+			GBAWIN0V = value;
+			UPDATE_REG(0x44 , GBAWIN0V);
+		break;
+		case 0x46:
+			GBAWIN1V = value;
+			UPDATE_REG(0x46 , GBAWIN1V);
+		break;
+		case 0x48:
+			GBAWININ = value & 0x3F3F;
+			UPDATE_REG(0x48 , GBAWININ);
+		break;
+		case 0x4A:
+			GBAWINOUT = value & 0x3F3F;
+			UPDATE_REG(0x4A , GBAWINOUT);
+		break;
+		case 0x4C:
+			GBAMOSAIC = value;
+			UPDATE_REG(0x4C , GBAMOSAIC);
+		break;
+		case 0x50:
+			GBABLDMOD = value & 0x3FFF;
+			UPDATE_REG(0x50 , GBABLDMOD);
+		break;
+		case 0x52:
+			GBACOLEV = value & 0x1F1F;
+			UPDATE_REG(0x52 , GBACOLEV);
+		break;
+		case 0x54:
+			GBACOLY = value & 0x1F;
+			UPDATE_REG(0x54 , GBACOLY);	
+		break;
+		case 0x60:
+		case 0x62:
+		case 0x64:
+		case 0x68:
+		case 0x6c:
+		case 0x70:
+		case 0x72:
+		case 0x74:
+		case 0x78:
+		case 0x7c:
+		case 0x80:
+		case 0x84:
+			//soundEvent(gba, address&0xFF, (u8)(value & 0xFF));	//sound not yet!
+			//soundEvent(gba, (address&0xFF)+1, (u8)(value>>8));
+		break;
+		case 0x82:
+		case 0x88:
+		case 0xa0:
+		case 0xa2:
+		case 0xa4:
+		case 0xa6:
+		case 0x90:
+		case 0x92:
+		case 0x94:
+		case 0x96:
+		case 0x98:
+		case 0x9a:
+		case 0x9c:
+		case 0x9e:
+			//soundEvent(gba, address&0xFF, value);	//sound not yet!
+		break;
+		case 0xB0:
+			GBADM0SAD_L = value;
+			UPDATE_REG(0xB0 , GBADM0SAD_L);
+		break;
+		case 0xB2:
+			GBADM0SAD_H = value & 0x07FF;
+			UPDATE_REG(0xB2, GBADM0SAD_H);
+		break;
+		case 0xB4:
+			GBADM0DAD_L = value;
+			UPDATE_REG(0xB4, GBADM0DAD_L);
+		break;
+		case 0xB6:
+			GBADM0DAD_H = value & 0x07FF;
+			UPDATE_REG(0xB6, GBADM0DAD_H);
+		break;
+		case 0xB8:
+			GBADM0CNT_L = value & 0x3FFF;
+			UPDATE_REG(0xB8 , 0);
+		break;
+		case 0xBA:{
+			bool start = ((GBADM0CNT_H ^ value) & 0x8000) ? true : false;
+			value &= 0xF7E0;
 
-				u32 dsValue;
-				dsValue  = value & 0xFF87;
-				dsValue |= (value & (1 << 5)) ? (1 << 23) : 0;	/* oam hblank access */
-				dsValue |= (value & (1 << 6)) ? (1 << 4) : 0;	/* obj mapping 1d/2d */
-				dsValue |= (value & (1 << 7)) ? 0 : (1 << 16);	/* forced blank => no display mode (both)*/
-				REG_DISPCNT = dsValue; 
+			GBADM0CNT_H = value;
+			UPDATE_REG(0xBA, GBADM0CNT_H);
+
+			if(start && (value & 0x8000)) {
+				dma0Source = GBADM0SAD_L | (GBADM0SAD_H << 16);
+				dma0Dest = GBADM0DAD_L | (GBADM0DAD_H << 16);
+				//CPUCheckDMA(gba, 0, 1); //launch DMA hardware , user dma args , serve them and unset dma used bits
 			}
 		}
-		else
-		{
-			if((value & 0xFFEF) != (GBADISPCNT & 0xFFEF))
-			{
+		break;
+		case 0xBC:
+			GBADM1SAD_L = value;
+			UPDATE_REG(0xBC, GBADM1SAD_L);
+		break;
+		case 0xBE:
+			GBADM1SAD_H = value & 0x0FFF;
+			UPDATE_REG(0xBE, GBADM1SAD_H);
+		break;
+		case 0xC0:
+			GBADM1DAD_L = value;
+			UPDATE_REG(0xC0, GBADM1DAD_L);
+		break;
+		case 0xC2:
+			GBADM1DAD_H = value & 0x07FF;
+			UPDATE_REG(0xC2, GBADM1DAD_H);
+		break;
+		case 0xC4:
+			GBADM1CNT_L = value & 0x3FFF;
+			UPDATE_REG(0xC4, GBADM1CNT_L);
+		break;
+		case 0xC6:{
+			bool start = ((GBADM1CNT_H ^ value) & 0x8000) ? true : false;
+			value &= 0xF7E0;
 
-				u32 dsValue;
-				dsValue  = value & 0xF087;
-				dsValue |= (value & (1 << 5)) ? (1 << 23) : 0;	/* oam hblank access */
-				dsValue |= (value & (1 << 6)) ? (1 << 4) : 0;	/* obj mapping 1d/2d */
-				dsValue |= (value & (1 << 7)) ? 0 : (1 << 16);	/* forced blank => no display mode (both)*/
-				REG_DISPCNT = (dsValue | BIT(11)); //enable BG3
-				if((GBADISPCNT & 7) != (value & 7))
-				{
-					//8<<2 = bit 32 (but it is bit 31)
-					if((value & 7) == 4)
-					{
-						//bgInit_call(3, BgType_Bmp8, BgSize_B8_256x256,8,8);
-						//ori: REG_BG3CNT = (u32)(BG_MAP_BASE(/*mapBase*/8) | (u32)(BG_TILE_BASE(/*tileBase*/8)-1) | (u32)BgSize_B8_256x256);
-						REG_BG3CNT = (u32)(BG_MAP_BASE(/*mapBase*/1) | (u32)BG_TILE_BASE(/*tileBase*/2) | (u16)BgSize_B8_256x256);
-					}
-					else 
-					{
-						//bgInit_call(3, BgType_Bmp16, BgSize_B16_256x256,8,8);
-						//ori: REG_BG3CNT = (u32)BG_MAP_BASE(/*mapBase*/8) | (u32)BG_TILE_BASE(/*tileBase*/8) | (u32)BgSize_B16_256x256;
-						REG_BG3CNT = (u32)BG_MAP_BASE(/*mapBase*/1) | (u32)BG_TILE_BASE(/*tileBase*/2) | (u16)BgSize_B16_256x256;
-					}
-					if((GBADISPCNT & 7) < 3)
-					{
-						//reset GBABG3HOFS and GBABG3VOFS
-						REG_BG3HOFS = 0;
-						REG_BG3VOFS = 0;
+			GBADM1CNT_H = value;
+			UPDATE_REG(0xC6, GBADM1CNT_H);
 
-						//BLDCNT(2 enabeled bits)
-						int tempBLDMOD = GBABLDMOD & ~0x404;
-						tempBLDMOD = tempBLDMOD | ((GBABLDMOD & 0x404) << 1);
-						REG_BLDCNT = tempBLDMOD;
-
-						//GBAWINOUT(2 enabeled bits)
-						int tempWINOUT = GBAWINOUT & ~0x404;
-						tempWINOUT = tempWINOUT | ((GBAWINOUT & 0x404) << 1);
-						WIN_OUT = tempWINOUT;
-
-						//GBAWININ(2 enabeled bits)
-						int tempWININ = GBAWININ & ~0x404;
-						tempWININ = tempWININ | ((GBAWININ & 0x404) << 1);
-						WIN_IN = tempWININ;
-
-						//swap LCD I/O BG Rotation/Scaling
-
-						REG_BG3PA = GBABG2PA;
-						REG_BG3PB = GBABG2PB;
-						REG_BG3PC = GBABG2PC;
-						REG_BG3PD = GBABG2PD;
-						REG_BG3X = (GBABG2X_L | (GBABG2X_H << 16));
-						REG_BG3Y = (GBABG2Y_L | (GBABG2Y_H << 16));
-						REG_BG3CNT = REG_BG3CNT | (GBABG2CNT & 0x43); //swap GBABG2CNT (BG Priority and Mosaic) 
-					}
-				}
+			if(start && (value & 0x8000)) {
+				dma1Source = GBADM1SAD_L | (GBADM1SAD_H << 16);
+				dma1Dest = GBADM1DAD_L | (GBADM1DAD_H << 16);
+				//CPUCheckDMA(gba, 0, 2); //launch DMA hardware , user dma args , serve them and unset dma used bits
 			}
 		}
-		GBADISPCNT = value & 0xFFF7;
-		UPDATE_REG(0x00, GBADISPCNT);
-    }
-  
-    
-    break;
-    
-    #endif
-  case 0x04:
-    GBADISPSTAT = (value & 0xFF38) | (GBADISPSTAT & 7);
-    UPDATE_REG(0x04, GBADISPSTAT);
+		break;
+		case 0xC8:
+			GBADM2SAD_L = value;
+			UPDATE_REG(0xC8, GBADM2SAD_L);
+		break;
+		case 0xCA:
+			GBADM2SAD_H = value & 0x0FFF;
+			UPDATE_REG(0xCA, GBADM2SAD_H);
+		break;
+		case 0xCC:
+			GBADM2DAD_L = value;
+			UPDATE_REG(0xCC, GBADM2DAD_L);
+		break;
+		case 0xCE:
+			GBADM2DAD_H = value & 0x07FF;
+			UPDATE_REG(0xCE, GBADM2DAD_H);
+		break;
+		case 0xD0:
+			GBADM2CNT_L = value & 0x3FFF;
+			UPDATE_REG(0xD0 , 0);
+		break;
+		case 0xD2:{
+			bool start = ((GBADM2CNT_H ^ value) & 0x8000) ? true : false;
+			
+			value &= 0xF7E0;
+			
+			GBADM2CNT_H = value;
+			UPDATE_REG(0xD2, GBADM2CNT_H);
 
-    break;
-  case 0x06:
-    // not writable in NDS mode bzw not possible todo
-    break;
-  case 0x08:
-    GBABG0CNT = (value & 0xDFCF);
-    UPDATE_REG(0x08, GBABG0CNT);
-	*(u16 *)(0x4000008) = GBABG0CNT;
-    break;
-  case 0x0A:
-    GBABG1CNT = (value & 0xDFCF);
-    UPDATE_REG(0x0A, GBABG1CNT);
-    *(u16 *)(0x400000A) = GBABG1CNT;
-	break;
-  case 0x0C:
-    GBABG2CNT = (value & 0xFFCF);
-    UPDATE_REG(0x0C, GBABG2CNT);
-	if((GBADISPCNT & 7) < 3)*(u16 *)(0x400000C) = GBABG2CNT;
-	else //ichfly some extra handling 
-	{
-		REG_BG3CNT = REG_BG3CNT | (GBABG2CNT & 0x43);
-	}
-    break;
-  case 0x0E:
-    GBABG3CNT = (value & 0xFFCF);
-    UPDATE_REG(0x0E, GBABG3CNT);
-	if((GBADISPCNT & 7) < 3)*(u16 *)(0x400000E) = GBABG3CNT;
-    break;
-  case 0x10:
-    GBABG0HOFS = value & 511;
-    UPDATE_REG(0x10, GBABG0HOFS);
-    *(u16 *)(0x4000010) = value;
-	break;
-  case 0x12:
-    GBABG0VOFS = value & 511;
-    UPDATE_REG(0x12, GBABG0VOFS);
-    *(u16 *)(0x4000012) = value;
-	break;
-  case 0x14:
-    GBABG1HOFS = value & 511;
-    UPDATE_REG(0x14, GBABG1HOFS);
-	*(u16 *)(0x4000014) = value;
-    break;
-  case 0x16:
-    GBABG1VOFS = value & 511;
-    UPDATE_REG(0x16, GBABG1VOFS);
-    *(u16 *)(0x4000016) = value;
-	break;      
-  case 0x18:
-    GBABG2HOFS = value & 511;
-    UPDATE_REG(0x18, GBABG2HOFS);
-	*(u16 *)(0x4000018) = value;
-    break;
-  case 0x1A:
-    GBABG2VOFS = value & 511;
-    UPDATE_REG(0x1A, GBABG2VOFS);
-    if((GBADISPCNT & 7) < 3)*(u16 *)(0x400001A) = value; //ichfly only update if it is save
-	break;
-  case 0x1C:
-    GBABG3HOFS = value & 511;
-    UPDATE_REG(0x1C, GBABG3HOFS);
-    if((GBADISPCNT & 7) < 3)*(u16 *)(0x400001C) = value; //ichfly only update if it is save
-	break;
-  case 0x1E:
-    GBABG3VOFS = value & 511;
-    UPDATE_REG(0x1E, GBABG3VOFS);
-    *(u16 *)(0x400001E) = value;
-	break;      
-  case 0x20:
-    GBABG2PA = value;
-    UPDATE_REG(0x20, GBABG2PA);
-    if((GBADISPCNT & 7) < 3)*(u16 *)(0x4000020) = value;
-	else *(u16 *)(0x4000030) = value;
-	break;
-  case 0x22:
-    GBABG2PB = value;
-    UPDATE_REG(0x22, GBABG2PB);
-    if((GBADISPCNT & 7) < 3)*(u16 *)(0x4000022) = value;
-	else *(u16 *)(0x4000032) = value;
-	break;
-  case 0x24:
-    GBABG2PC = value;
-    UPDATE_REG(0x24, GBABG2PC);
-    if((GBADISPCNT & 7) < 3)*(u16 *)(0x4000024) = value;
-	else *(u16 *)(0x4000034) = value;
-	break;
-  case 0x26:
-    GBABG2PD = value;
-    UPDATE_REG(0x26, GBABG2PD);
-	if((GBADISPCNT & 7) < 3)*(u16 *)(0x4000026) = value;
-	else *(u16 *)(0x4000036) = value;
-	break;
-  case 0x28:
-    GBABG2X_L = value;
-    UPDATE_REG(0x28, GBABG2X_L);
-    //gfxBG2Changed |= 1;
-	if((GBADISPCNT & 7) < 3)*(u16 *)(0x4000028) = value;
-	else *(u16 *)(0x4000038) = value;
-    break;
-  case 0x2A:
-    GBABG2X_H = (value & 0xFFF);
-    UPDATE_REG(0x2A, GBABG2X_H);
-    //gfxBG2Changed |= 1;
-	if((GBADISPCNT & 7) < 3)*(u16 *)(0x400002A) = value;
-	else *(u16 *)(0x400003A) = value;
-    break;
-  case 0x2C:
-    GBABG2Y_L = value;
-    UPDATE_REG(0x2C, GBABG2Y_L);
-    //gfxBG2Changed |= 2;
-	if((GBADISPCNT & 7) < 3)*(u16 *)(0x400002C) = value;
-	else *(u16 *)(0x400003C) = value;
-    break;
-  case 0x2E:
-    GBABG2Y_H = value & 0xFFF;
-    UPDATE_REG(0x2E, GBABG2Y_H);
-    //gfxBG2Changed |= 2;
-	if((GBADISPCNT & 7) < 3)*(u16 *)(0x400002E) = value;
-	else *(u16 *)(0x400003E) = value;
-    break;
-  case 0x30:
-    GBABG3PA = value;
-    UPDATE_REG(0x30, GBABG3PA);
-    if((GBADISPCNT & 7) < 3)*(u16 *)(0x4000030) = value;
-	break;
-  case 0x32:
-    GBABG3PB = value;
-    UPDATE_REG(0x32, GBABG3PB);
-    if((GBADISPCNT & 7) < 3)*(u16 *)(0x4000032) = value;
-	break;
-  case 0x34:
-    GBABG3PC = value;
-    UPDATE_REG(0x34, GBABG3PC);
-    if((GBADISPCNT & 7) < 3)*(u16 *)(0x4000034) = value;
-	break;
-  case 0x36:
-    GBABG3PD = value;
-    UPDATE_REG(0x36, GBABG3PD);
-    if((GBADISPCNT & 7) < 3)*(u16 *)(0x4000036) = value;
-	break;
-  case 0x38:
-    GBABG3X_L = value;
-    UPDATE_REG(0x38, GBABG3X_L);
-    //gfxBG3Changed |= 1;
-    if((GBADISPCNT & 7) < 3)*(u16 *)(0x4000038) = value;
-	break;
-  case 0x3A:
-    GBABG3X_H = value & 0xFFF;
-    UPDATE_REG(0x3A, GBABG3X_H);
-    //gfxBG3Changed |= 1;    
-    if((GBADISPCNT & 7) < 3)*(u16 *)(0x400003A) = value;
-	break;
-  case 0x3C:
-    GBABG3Y_L = value;
-    UPDATE_REG(0x3C, GBABG3Y_L);
-    //gfxBG3Changed |= 2;    
-    if((GBADISPCNT & 7) < 3)*(u16 *)(0x400003C) = value;
-	break;
-  case 0x3E:
-    GBABG3Y_H = value & 0xFFF;
-    UPDATE_REG(0x3E, GBABG3Y_H);
-    //gfxBG3Changed |= 2;    
-    if((GBADISPCNT & 7) < 3)*(u16 *)(0x400003E) = value;
-	break;
-  case 0x40:
-    GBAWIN0H = value;
-    UPDATE_REG(0x40, GBAWIN0H);
-    //CPUUpdateWindow0();
-    *(u16 *)(0x4000040) = value;
-	break;
-  case 0x42:
-    GBAWIN1H = value;
-    UPDATE_REG(0x42, GBAWIN1H);
-	*(u16 *)(0x4000042) = value;
-    //CPUUpdateWindow1();    
-    break;      
-  case 0x44:
-    GBAWIN0V = value;
-    UPDATE_REG(0x44, GBAWIN0V);
-    *(u16 *)(0x4000044) = value;
-	break;
-  case 0x46:
-    GBAWIN1V = value;
-    UPDATE_REG(0x46, GBAWIN1V);
-    *(u16 *)(0x4000046) = value;
-	break;
-  case 0x48:
-    GBAWININ = value & 0x3F3F;
-    UPDATE_REG(0x48, GBAWININ);
-    if((GBADISPCNT & 7) < 3)*(u16 *)(0x4000048) = value;
-	else
-	{
-		int tempWININ = GBAWININ & ~0x404;
-		tempWININ = tempWININ | ((GBAWININ & 0x404) << 1);
-		WIN_IN = tempWININ;
-	}
-	break;
-  case 0x4A:
-    GBAWINOUT = value & 0x3F3F;
-    UPDATE_REG(0x4A, GBAWINOUT);
-    if((GBADISPCNT & 7) < 3)*(u16 *)(0x400004A) = value;
-	else
-	{
-		int tempWINOUT = GBAWINOUT & ~0x404;
-		tempWINOUT = tempWINOUT | ((GBAWINOUT & 0x404) << 1);
-		WIN_OUT = tempWINOUT;
-	}
-	break;
-  case 0x4C:
-    GBAMOSAIC = value;
-    UPDATE_REG(0x4C, GBAMOSAIC);
-    *(u16 *)(0x400004C) = value;
-	break;
-  case 0x50:
-    GBABLDMOD = value & 0x3FFF;
-    UPDATE_REG(0x50, GBABLDMOD);
-    //CPUUpdateRender();
-	if((GBADISPCNT & 7) < 3)*(u16 *)(0x4000050) = value;
-	else
-	{
-		int tempBLDMOD = GBABLDMOD & ~0x404;
-		tempBLDMOD = tempBLDMOD | ((GBABLDMOD & 0x404) << 1);
-		REG_BLDCNT = tempBLDMOD;
-	}
-    break;
-  case 0x52:
-    GBACOLEV = value & 0x1F1F;
-    UPDATE_REG(0x52, GBACOLEV);
-    *(u16 *)(0x4000052) = value;
-	break;
-  case 0x54:
-    GBACOLY = value & 0x1F;
-    UPDATE_REG(0x54, GBACOLY);
-	*(u16 *)(0x4000054) = value;
-    break;
-	
-//SOUND EVENT: ORI
-  case 0x60:
-  case 0x62:
-  case 0x64:
-  case 0x68:
-  case 0x6c:
-  case 0x70:
-  case 0x72:
-  case 0x74:
-  case 0x78:
-  case 0x7c:
-  case 0x80:
-  case 0x84:
-    //soundEvent(address&0xFF, (u8)(value & 0xFF));
-    //soundEvent((address&0xFF)+1, (u8)(value>>8));
-    //break; //ichfly disable sound
-  case 0x82:
-  //case 0x88: //bias setting is handled separately
-  case 0xa0:
-  case 0xa2:
-  case 0xa4:
-  case 0xa6:
-  case 0x90:
-  case 0x92:
-  case 0x94:
-  case 0x96:
-  case 0x98:
-  case 0x9a:
-  case 0x9c:
-  case 0x9e:{
-        //soundEvent(address&0xFF, value);  //ichfly send sound to arm7
-        
-        #ifdef soundwriteprint
-            printf("ur %04x to %08x\r",value,address);
-        #endif
-        
-        //sound command writes
-        //execute_arm7_command(0xc0700100,address,value);
-        
-        UPDATE_REG(address,value);
-    }
-    break;
-    
-    //bias setting //Delay Count (NDS/DSi only) (GBA uses a fixed delay count of 8)
-    case 0x88:{
-        //execute_arm7_command(0xc0700104,value,0x8);
-    }
+			if(start && (value & 0x8000)) {
+				dma2Source = GBADM2SAD_L | (GBADM2SAD_H << 16);
+				dma2Dest = GBADM2DAD_L | (GBADM2DAD_H << 16);
 
-  case 0xB0:
-    GBADM0SAD_L = value;
-    UPDATE_REG(0xB0, GBADM0SAD_L);
-    break;
-  case 0xB2:
-    GBADM0SAD_H = value & 0x07FF;
-    UPDATE_REG(0xB2, GBADM0SAD_H);
-    break;
-  case 0xB4:
-    GBADM0DAD_L = value;
-    UPDATE_REG(0xB4, GBADM0DAD_L);
-    break;
-  case 0xB6:
-    GBADM0DAD_H = value & 0x07FF;
-    UPDATE_REG(0xB6, GBADM0DAD_H);
-    break;
-  case 0xB8:
-    GBADM0CNT_L = value & 0x3FFF;
-    UPDATE_REG(0xB8, 0);
-    break;
-  case 0xBA:
-    {
-      bool start = ((GBADM0CNT_H ^ value) & 0x8000) ? true : false;
-      value &= 0xF7E0;
-
-      GBADM0CNT_H = value;
-      UPDATE_REG(0xBA, GBADM0CNT_H);    
-    
-      if(start && (value & 0x8000)) {
-        dma0Source = GBADM0SAD_L | (GBADM0SAD_H << 16);
-        dma0Dest = GBADM0DAD_L | (GBADM0DAD_H << 16);
-        CPUCheckDMA(0, 1);
-      }
-    }
-    break;      
-  case 0xBC:
-#ifdef dmawriteprint
-	printf("ur %04x to %08x\r",value,address);
-#endif
-
-    //sound command writes
-    //execute_arm7_command(0xc0700100,address,value);    
-	
-    GBADM1SAD_L = value;
-    UPDATE_REG(0xBC, GBADM1SAD_L);
-    break;
-  case 0xBE:
-#ifdef dmawriteprint
-	printf("ur %04x to %08x\r",value,address);
-#endif
-
-    //sound command writes
-    //execute_arm7_command(0xc0700100,address,value);
-    
-    GBADM1SAD_H = value & 0x0FFF;
-    UPDATE_REG(0xBE, GBADM1SAD_H);
-    break;
-  case 0xC0:
-#ifdef dmawriteprint
-    printf("ur %04x to %08x\r",value,address);
-#endif
-
-    //sound command writes 
-    //execute_arm7_command(0xc0700100,address,value);
-    
-	GBADM1DAD_L = value;
-    UPDATE_REG(0xC0, GBADM1DAD_L);
-    break;
-  case 0xC2:
-#ifdef dmawriteprint
-	printf("ur %04x to %08x\r",value,address);
-#endif
-
-    //sound command writes
-    //execute_arm7_command(0xc0700100,address,value);
-    
-    GBADM1DAD_H = value & 0x07FF;
-    UPDATE_REG(0xC2, GBADM1DAD_H);
-    break;
-  case 0xC4:
-#ifdef dmawriteprint
-	printf("ur %04x to %08x\r",value,address);
-#endif
-
-    //sound command writes
-    //execute_arm7_command(0xc0700100,address,value);
-    
-	GBADM1CNT_L = value & 0x3FFF;
-    UPDATE_REG(0xC4, 0);
-    break;
-  case 0xC6:
-#ifdef dmawriteprint
-	printf("ur %04x to %08x\r",value,address);
-#endif
-
-    //sound command writes
-    //execute_arm7_command(0xc0700100,address,value);
-    
-    {
-        bool start = ((GBADM1CNT_H ^ value) & 0x8000) ? true : false;
-        value &= 0xF7E0;
-      
-        GBADM1CNT_H = value;
-        UPDATE_REG(0xC6, GBADM1CNT_H);
-      
-        if(start && (value & 0x8000)) {
-            dma1Source = GBADM1SAD_L | (GBADM1SAD_H << 16);
-            dma1Dest = GBADM1DAD_L | (GBADM1DAD_H << 16);
-            CPUCheckDMA(0, 2);
-        }
-    }
-    
-    break;
-  case 0xC8:
-#ifdef dmawriteprint
-	printf("ur %04x to %08x\r",value,address);
-#endif
-
-    //sound command writes
-    //execute_arm7_command(0xc0700100,address,value);
-    
-    GBADM2SAD_L = value;
-    UPDATE_REG(0xC8, GBADM2SAD_L);
-    break;
-  case 0xCA:
-#ifdef dmawriteprint
-	printf("ur %04x to %08x\r",value,address);
-#endif
-
-    //sound command writes
-    //execute_arm7_command(0xc0700100,address,value);
-    
-	GBADM2SAD_H = value & 0x0FFF;
-    UPDATE_REG(0xCA, GBADM2SAD_H);
-    break;
-  case 0xCC:
-#ifdef dmawriteprint
-	printf("ur %04x to %08x\r",value,address);
-#endif
-
-    //sound command writes
-    //execute_arm7_command(0xc0700100,address,value);
-    
-    GBADM2DAD_L = value;
-    UPDATE_REG(0xCC, GBADM2DAD_L);
-    break;
-  case 0xCE:
-#ifdef dmawriteprint
-	printf("ur %04x to %08x\r",value,address);
-#endif
-
-    //sound command writes
-    //execute_arm7_command(0xc0700100,address,value);
-    
-    GBADM2DAD_H = value & 0x07FF;
-    UPDATE_REG(0xCE, GBADM2DAD_H);
-    break;
-  case 0xD0:
-#ifdef dmawriteprint
-
-	printf("ur %04x to %08x\r",value,address);
-#endif
-
-    //sound command writes
-    //execute_arm7_command(0xc0700100,address,value);
-    
-    GBADM2CNT_L = value & 0x3FFF;
-    UPDATE_REG(0xD0, 0);
-    break;
-  case 0xD2:
-#ifdef dmawriteprint
-
-	printf("ur %04x to %08x\r",value,address);
-#endif
-
-    //sound command writes
-    //execute_arm7_command(0xc0700100,address,value);
-        
-    {
-        bool start = ((GBADM2CNT_H ^ value) & 0x8000) ? true : false;
-        value &= 0xF7E0;
-      
-        GBADM2CNT_H = value;
-        UPDATE_REG(0xD2, GBADM2CNT_H);
-        UPDATE_REG(0xD2, GBADM2CNT_H);
-      
-        if(start && (value & 0x8000)) {
-            dma2Source = GBADM2SAD_L | (GBADM2SAD_H << 16);
-            dma2Dest = GBADM2DAD_L | (GBADM2DAD_H << 16);
-            CPUCheckDMA(0, 4);
-        }       
-    }
-    
-    break;
-  case 0xD4:
-    GBADM3SAD_L = value;
-    UPDATE_REG(0xD4, GBADM3SAD_L);
-    break;
-  case 0xD6:
-    GBADM3SAD_H = value & 0x0FFF;
-    UPDATE_REG(0xD6, GBADM3SAD_H);
-    break;
-  case 0xD8:
-    GBADM3DAD_L = value;
-    UPDATE_REG(0xD8, GBADM3DAD_L);
-    break;
-  case 0xDA:
-    GBADM3DAD_H = value & 0x0FFF;
-    UPDATE_REG(0xDA, GBADM3DAD_H);
-    break;
-  case 0xDC:
-    GBADM3CNT_L = value;
-    UPDATE_REG(0xDC, 0);
-    break;
-  case 0xDE:
-    {
-        bool start = ((GBADM3CNT_H ^ value) & 0x8000) ? true : false;
-        
-        value &= 0xFFE0;
-        
-        GBADM3CNT_H = value;
-        UPDATE_REG(0xDE, GBADM3CNT_H);
-        
-        if(start && (value & 0x8000)) {
-            dma3Source = GBADM3SAD_L | (GBADM3SAD_H << 16);
-            dma3Dest = GBADM3DAD_L | (GBADM3DAD_H << 16);
-            CPUCheckDMA(0,8);
-        }
-    }
-    break;
- case 0x100:
-    timer0Reload = value;
-#ifdef printsoundtimer
-	printf("ur %04x to %08x\r",value,address);
-#endif
-
-    //sound command writes
-    //execute_arm7_command(0xc0700100,address,value);
-    
-    UPDATE_REG(0x100, value);
-    break;
-  case 0x102:
-    timer0Value = value;
-    //timerOnOffDelay|=1;
-    //cpuNextEvent = cpuTotalTicks;
-	UPDATE_REG(0x102, value);
-#ifdef printsoundtimer
-	printf("ur %04x to %08x\r",value,address);
-#endif
-
-    //sound command writes
-    //execute_arm7_command(0xc0700100,address,value);
-
-	/*if(timer0Reload & 0x8000)
-	{
-		if((value & 0x3) == 0)
-		{
-			*(u16 *)(0x4000100) = timer0Reload >> 5;
-			*(u16 *)(0x4000102) = value + 1;
-			break;
+				//CPUCheckDMA(gba, 0, 4); //launch DMA hardware , user dma args , serve them and unset dma used bits
+			}
 		}
-		if((value & 0x3) == 1)
-		{
-			*(u16 *)(0x4000100) = timer0Reload >> 1;
-			*(u16 *)(0x4000102) = value + 1;
-			break;
-		}
-		if((value & 3) == 2)
-		{
-			*(u16 *)(0x4000100) = timer0Reload >> 1;
-			*(u16 *)(0x4000102) = value + 1;
-			break;
-		}
-		*(u16 *)(0x4000102) = value;
-		printf("big reload0\r");//todo 
-	}
-	else*/
-	{	
-		*(u16 *)(0x4000100) = timer1Reload << 1;
-		*(u16 *)(0x4000102) = value;
-	}
-    break;
-  case 0x104:
-    timer1Reload = value;
-#ifdef printsoundtimer
-	printf("ur %04x to %08x\r",value,address);
-#endif
+		break;
+		case 0xD4:
+			GBADM3SAD_L = value;
+			UPDATE_REG(0xD4, GBADM3SAD_L);
+		break;
+		case 0xD6:
+			GBADM3SAD_H = value & 0x0FFF;
+			UPDATE_REG(0xD6, GBADM3SAD_H);
+		break;
+		case 0xD8:
+			GBADM3DAD_L = value;
+			UPDATE_REG(0xD8, GBADM3DAD_L);
+		break;
+		case 0xDA:
+			GBADM3DAD_H = value & 0x0FFF;
+			UPDATE_REG(0xDA, GBADM3DAD_H);
+		break;
+		case 0xDC:
+			GBADM3CNT_L = value;
+			UPDATE_REG(0xDC , 0);
+		break;
+		case 0xDE:{
+			bool start = ((GBADM3CNT_H ^ value) & 0x8000) ? true : false;
+			
+			value &= 0xFFE0;
+			
+			GBADM3CNT_H = value;
+			UPDATE_REG(0xDE, GBADM3CNT_H);
 
-    //sound command writes
-    //execute_arm7_command(0xc0700100,address,value);
+			if(start && (value & 0x8000)) {
+				dma3Source = GBADM3SAD_L | (GBADM3SAD_H << 16);
+				dma3Dest = GBADM3DAD_L | (GBADM3DAD_H << 16);
+				//CPUCheckDMA(gba, 0, 8); //launch DMA hardware , user dma args , serve them and unset dma used bits
+			}
+		}
+		break;
+		case 0x100:
+			timer0Reload = value;
+		break;
+		case 0x102:
+			timer0Value = value;
+			//timerOnOffDelay|=1; //added delta before activating timer?
+			cpuNextEvent = cpuTotalTicks;	//ori: cpuNextEvent = cpuTotalTicks;
+		break;
+		case 0x104:
+			timer1Reload = value;
+		break;
+		case 0x106:
+			timer1Value = value;
+			//timerOnOffDelay|=2;
+			cpuNextEvent = cpuTotalTicks;	//ori: cpuNextEvent = cpuTotalTicks;
+		break;
+		case 0x108:
+			timer2Reload = value;
+		break;
+		case 0x10A:
+			timer2Value = value;
+			//timerOnOffDelay|=4;
+			cpuNextEvent = cpuTotalTicks;	//ori: cpuNextEvent = cpuTotalTicks;
+		break;
+		case 0x10C:
+			timer3Reload = value;
+		break;
+		case 0x10E:
+			timer3Value = value;
+			//timerOnOffDelay|=8;
+			cpuNextEvent = cpuTotalTicks;	//ori: cpuNextEvent = cpuTotalTicks;
+		break;
 
-	UPDATE_REG(0x104, value);
-	break;
-  case 0x106:
-#ifdef printsoundtimer
-	printf("ur %04x to %08x\r",value,address);
-#endif
+		case 0x130:
+			GBAP1 |= (value & 0x3FF);
+			UPDATE_REG(0x130, GBAP1);
+		break;
 
-    //sound command writes
-    //execute_arm7_command(0xc0700100,address,value);
-    
-    timer1Value = value;
-    //timerOnOffDelay|=2;
-    //cpuNextEvent = cpuTotalTicks;
-	UPDATE_REG(0x106, value);
+		case 0x132:
+			UPDATE_REG(0x132 , value & 0xC3FF);	//UPDATE_REG(0x132, value & 0xC3FF);
+		break;
 
-	/*if(timer1Reload & 0x8000)
-	{
-		if((value & 0x3) == 0)
-		{
-			*(u16 *)(0x4000104) = timer1Reload >> 5;
-			*(u16 *)(0x4000106) = value + 1;
-			break;
-		}
-		if((value & 0x3) == 1)
-		{
-			*(u16 *)(0x4000104) = timer1Reload >> 1;
-			*(u16 *)(0x4000106) = value + 1;
-			break;
-		}
-		if((value & 3) == 2)
-		{
-			*(u16 *)(0x4000104) = timer1Reload >> 1;
-			*(u16 *)(0x4000106) = value + 1;
-			break;
-		}
-		*(u16 *)(0x4000106) = value;
-		printf("big reload1\r");//todo 
-	}
-	else*/
-	{	
-		*(u16 *)(0x4000104) = timer1Reload << 1;
-		*(u16 *)(0x4000106) = value;
-	}
-	  break;
-  case 0x108:
-    timer2Reload = value;
-	UPDATE_REG(0x108, value);
-	*(u16 *)(0x4000108) = value;
-    break;
-  case 0x10A:
-    timer2Value = value;
-    //timerOnOffDelay|=4;
-    //cpuNextEvent = cpuTotalTicks;
-	UPDATE_REG(0x10A, value);
+		case 0x200:
+			GBAIE = (value & 0x3FFF);
+			UPDATE_REG(0x200 , GBAIE);
+			if ((GBAIME & 1) && (GBAIF & GBAIE) && (i_flag==true))
+				cpuNextEvent = cpuTotalTicks;	//ori: cpuNextEvent = cpuTotalTicks; //acknowledge cycle & program flow
+		break;
+		case 0x202:
+			GBAIF ^= (value & GBAIF);
+			UPDATE_REG(0x202 , GBAIF);
+		break;
+		case 0x204:{
+			memoryWait[0x0e] = memoryWaitSeq[0x0e] = gamepakramwaitstate[value & 3];
 
-	/*if(timer2Reload & 0x8000)
-	{
-		if((value & 0x3) == 0)
-		{
-			*(u16 *)(0x4000108) = timer2Reload >> 5;
-			*(u16 *)(0x400010A) = value + 1;
-			break;
-		}
-		if((value & 0x3) == 1)
-		{
-			*(u16 *)(0x4000108) = timer2Reload >> 1;
-			*(u16 *)(0x400010A) = value + 1;
-			break;
-		}
-		if((value & 3) == 2)
-		{
-			*(u16 *)(0x4000108) = timer2Reload >> 1;
-			*(u16 *)(0x400010A) = value + 1;
-			break;
-		}
-		printf("big reload2\r");//todo 
-		*(u16 *)(0x400010A) = value;
-	}
-	else*/
-	{	
-		*(u16 *)(0x4000108) = timer2Reload << 1;
-		*(u16 *)(0x400010A) = value;
-	}
-	  break;
-  case 0x10C:
-    timer3Reload = value;
-	UPDATE_REG(0x10C, value);
-	  break;
-  case 0x10E:
-    timer3Value = value;
-    //timerOnOffDelay|=8;
-    //cpuNextEvent = cpuTotalTicks;
-	UPDATE_REG(0x10E, value);
+			memoryWait[0x08] = memoryWait[0x09] = gamepakwaitstate[(value >> 2) & 3];
+			memoryWaitSeq[0x08] = memoryWaitSeq[0x09] =
+			gamepakwaitstate0[(value >> 4) & 1];
 
-	/*if(timer3Reload & 0x8000)
-	{
-		if((value & 0x3) == 0)
-		{
-			*(u16 *)(0x400010C) = timer3Reload >> 5;
-			*(u16 *)(0x400010E) = value + 1;
-			break;
-		}
-		if((value & 0x3) == 1)
-		{
-			*(u16 *)(0x400010C) = timer3Reload >> 1;
-			*(u16 *)(0x400010E) = value + 1;
-			break;
-		}
-		if((value & 3) == 2)
-		{
-			*(u16 *)(0x400010C) = timer3Reload >> 1;
-			*(u16 *)(0x400010E) = value + 1;
-			break;
-		}
-		printf("big reload3\r");//todo 
-		*(u16 *)(0x400010E) = value;
-	}
-	else*/
-    
-    /* //coto: timer3 is used by wifi
-	{	
-		*(u16 *)(0x400010C) = timer3Reload << 1;
-		*(u16 *)(0x400010E) = value;
-	}
-    */
-  break;
-  case 0x128:
-    if(value & 0x80) {
-      value &= 0xff7f;
-      if(value & 1 && (value & 0x4000)) {
-        UPDATE_REG(0x12a, 0xFF);
-        GBAIF |= 0x80;
-        UPDATE_REG(0x202, GBAIF);
-        value &= 0x7f7f;
-      }
-    }
-    UPDATE_REG(0x128, value);
-    break;
-  case 0x130:
-    //GBAP1 |= (value & 0x3FF); //ichfly readonly
-    //UPDATE_REG(0x130, GBAP1);
-    break;
-  case 0x132:
-    UPDATE_REG(0x132, value & 0xC3FF);
-	break;
-  case 0x200:
-    GBAIE = value & 0x3FFF;
-    UPDATE_REG(0x200, GBAIE);
-    
-    /*if ((GBAIME & 1) && (GBAIF & GBAIE) && armIrqEnable)
-      cpuNextEvent = cpuTotalTicks;*/
-	
-    break;
-  case 0x202:
-    //GBAIF = value & 0x3FFF;
-    //UPDATE_REG(0x204, GBAIF);
-    
-    break;
-  case 0x204:
-    { //ichfly can't emulate that
-      /*memoryWait[0x0e] = memoryWaitSeq[0x0e] = gamepakRamWaitState[value & 3];
-      
-      if(!speedHack) {
-        memoryWait[0x08] = memoryWait[0x09] = gamepakWaitState[(value >> 2) & 3];
-        memoryWaitSeq[0x08] = memoryWaitSeq[0x09] =
-          gamepakWaitState0[(value >> 4) & 1];
-        
-        memoryWait[0x0a] = memoryWait[0x0b] = gamepakWaitState[(value >> 5) & 3];
-        memoryWaitSeq[0x0a] = memoryWaitSeq[0x0b] =
-          gamepakWaitState1[(value >> 7) & 1];
-        
-        memoryWait[0x0c] = memoryWait[0x0d] = gamepakWaitState[(value >> 8) & 3];
-        memoryWaitSeq[0x0c] = memoryWaitSeq[0x0d] =
-          gamepakWaitState2[(value >> 10) & 1];
-      } else {
-        memoryWait[0x08] = memoryWait[0x09] = 3;
-        memoryWaitSeq[0x08] = memoryWaitSeq[0x09] = 1;
-        
-        memoryWait[0x0a] = memoryWait[0x0b] = 3;
-        memoryWaitSeq[0x0a] = memoryWaitSeq[0x0b] = 1;
-        
-        memoryWait[0x0c] = memoryWait[0x0d] = 3;
-        memoryWaitSeq[0x0c] = memoryWaitSeq[0x0d] = 1;
-      }
-         
-      for(int i = 8; i < 15; i++) {
-        memoryWait32[i] = memoryWait[i] + memoryWaitSeq[i] + 1;
-        memoryWaitSeq32[i] = memoryWaitSeq[i]*2 + 1;
-      }
+			memoryWait[0x0a] = memoryWait[0x0b] = gamepakwaitstate[(value >> 5) & 3];
+			memoryWaitSeq[0x0a] = memoryWaitSeq[0x0b] =
+			gamepakwaitstate1[(value >> 7) & 1];
 
-      if((value & 0x4000) == 0x4000) {
-        busPrefetchEnable = true;
-        busPrefetch = false;
-        busPrefetchCount = 0;
-      } else {
-        busPrefetchEnable = false;
-        busPrefetch = false;
-        busPrefetchCount = 0;
-      }*/
-      UPDATE_REG(0x204, value & 0x7FFF);
+			memoryWait[0x0c] = memoryWait[0x0d] = gamepakwaitstate[(value >> 8) & 3];
+			memoryWaitSeq[0x0c] = memoryWaitSeq[0x0d] =
+			gamepakwaitstate2[(value >> 10) & 1];
+			
+			/* //not now
+			for(i = 8; i < 15; i++) {
+				memoryWait32[i] = memoryWait[i] + memoryWaitSeq[i] + 1;
+				memoryWaitSeq32[i] = memoryWaitSeq[i]*2 + 1;
+			}*/
 
-    }
-    break;
-  case 0x208:
-    GBAIME = value & 1;
-    UPDATE_REG(0x208, GBAIME);
-	/*if ((GBAIME & 1) && (GBAIF & GBAIE) && armIrqEnable)
-      cpuNextEvent = cpuTotalTicks;*/
-    break;
-  case 0x300:
-    if(value != 0) //ichfly this is todo
-      value &= 0xFFFE;
-    UPDATE_REG(0x300, value);
-    break;
-  default:
-    UPDATE_REG(address&0x3FE, value);
-    break;
-  }
+			if((value & 0x4000) == 0x4000) {
+				busPrefetchEnable= true;
+				busPrefetch = false;
+				busPrefetchCount = 0;
+			} 
+			else {
+				busPrefetchEnable= false;
+				busPrefetch = false;
+				busPrefetchCount = 0;
+			}
+			UPDATE_REG(0x204 , value & 0x7FFF); //UPDATE_REG(0x204, value & 0x7FFF);
+
+		}
+		break;
+		case 0x208:
+			GBAIME = value & 1;
+			UPDATE_REG(0x208 , GBAIME);
+			if ((GBAIME & 1) && (GBAIF & GBAIE) && (i_flag==true))
+				cpuNextEvent = cpuTotalTicks;	//ori: cpuNextEvent = cpuTotalTicks;
+		break;
+		case 0x300:
+		if(value != 0)
+			value &= 0xFFFE;
+			UPDATE_REG(0x300 , value); 	//UPDATE_REG(0x300, value);
+		break;
+		default:
+			UPDATE_REG((address&0x3FE) , value);		//UPDATE_REG(address&0x3FE, value);
+		break;
+	  }
+
 }
 
 
@@ -2345,9 +1745,9 @@ return CPUReadHalfWord(address);
 //prefetch next opcode
 u32 armnextpc(u32 address){
 	//0:ARM | 1:THUMB
-	if(armState == true)
+	if(armstate == CPUSTATE_ARM){
 		return CPUReadMemory(address+0x4);
-	//else
+	}
 	return CPUReadHalfWord(address+0x2);
 }
 
