@@ -2861,15 +2861,12 @@ if (((arminstr>>26)&3)==0) {
 
 //2 / 2 process ARM opcode by set bits earlier
 if(isalu==1){
-
-//printf("ARM opcode output %x ",((arminstr>>21)&0xf));
+	//printf("ARM opcode output %x ",((arminstr>>21)&0xf));
 	
-	switch((arminstr>>21)&0xf){
-	
+	switch((arminstr>>21)&0xf){	
 		//AND rd,rs / AND rd,#Imm
 		case(0x0):{
-			if(immop_arm==1){	//for #Inmediate OP operate
-			
+			if(immop_arm==1){	//for #Inmediate OP operate	
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -2893,7 +2890,6 @@ if(isalu==1){
 				#endif
 			}
 			else{	//for Register (operand 2) operator / shift included
-		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -2904,9 +2900,7 @@ if(isalu==1){
 				//applied to Rm available to shifted register
 				//Use bit[11]---bit[8](Rs's) bottom byte ammount 
 				//to do shift #Imm & opcode
-			
 				//printf("bits:%x",((arminstr>>4)&0xfff));
-			
 				//(currently at: shift field) rs shift opcode to Rm
 				u32 DestroyableRegister2 = 0;
 				u32 DestroyableRegister3 = 0;
@@ -2948,13 +2942,11 @@ if(isalu==1){
 						//least signif byte (rs) used opc rm,rs
 						DestroyableRegister3=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//#Imm ammount shift & opcode to Rm
 				else{
-				//show arminstr>>4
-				//printf("DestroyableRegister2:%x",DestroyableRegister2);
+					//show arminstr>>4
+					//printf("DestroyableRegister2:%x",DestroyableRegister2);
 					//lsl
 					if((DestroyableRegister2&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
@@ -2987,8 +2979,6 @@ if(isalu==1){
 						printf("ROR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//op 1 opc op 2
 				exRegs[((arminstr>>12)&0xf)] = andasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister3);
@@ -3003,9 +2993,9 @@ if(isalu==1){
 			}
 		
 			//check for S bit here and update (virt<-asm) processor flags
-			if(setcond_arm==1)
+			if(setcond_arm==1){
 				updatecpuflags(0,cpsrasm,0x0);
-			
+			}
 			return 0;
 		}
 		break;
@@ -3013,7 +3003,6 @@ if(isalu==1){
 		//EOR rd,rs
 		case(0x1):{
 			if(immop_arm==1){	//for #Inmediate OP operate
-			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 			
@@ -3035,7 +3024,6 @@ if(isalu==1){
 				#endif
 			}
 			else{	//for Register (operand 2) operator / shift included
-		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 			
@@ -3089,8 +3077,6 @@ if(isalu==1){
 						//least signif byte (rs) used opc rm,rs
 						DestroyableRegister4=rorasm(exRegs[((arminstr)&0xf)], (exRegs[((DestroyableRegister3>>4)&0xf)]&0xff));
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//#Imm ammount shift & opcode to Rm
 				else{
@@ -3128,8 +3114,6 @@ if(isalu==1){
 						printf("ROR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister3>>3)&0x1f));
 						#endif
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//op 1 opc op 2
 				u32 DestroyableRegister5 = eorasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister4);
@@ -3145,9 +3129,10 @@ if(isalu==1){
 			}
 		
 			//check for S bit here and update (virt<-asm) processor flags
-			if(setcond_arm==1)
+			if(setcond_arm==1){
 				updatecpuflags(0,cpsrasm,0x0);
-		return 0;
+			}
+			return 0;
 		}
 		break;
 	
@@ -3175,7 +3160,6 @@ if(isalu==1){
 				#endif
 			}
 			else{	//for Register (operand 2) operator / shift included
-		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 			
@@ -3229,13 +3213,11 @@ if(isalu==1){
 						//least signif byte (rs) used opc rm,rs
 						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//#Imm ammount shift & opcode to Rm
 				else{
-				//show arminstr>>4
-				//printf("DestroyableRegister1:%x",DestroyableRegister1);
+					//show arminstr>>4
+					//printf("DestroyableRegister1:%x",DestroyableRegister1);
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
@@ -3268,8 +3250,6 @@ if(isalu==1){
 						printf("ROR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//op 1 opc op 2
 				u32 DestroyableRegister3 = subasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2);
@@ -3283,10 +3263,11 @@ if(isalu==1){
 				);
 				#endif
 			}
-		
+			
 			//check for S bit here and update (virt<-asm) processor flags
-			if(setcond_arm==1)
+			if(setcond_arm==1){
 				updatecpuflags(0,cpsrasm,0x0);
+			}
 			return 0;
 		}
 		break;
@@ -3370,8 +3351,6 @@ if(isalu==1){
 						//least signif byte (rs) used opc rm,rs
 						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//#Imm ammount shift & opcode to Rm
 				else{
@@ -3410,8 +3389,6 @@ if(isalu==1){
 						printf("ROR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//op 1 opc op 2
 				//rd destination reg	 bit[15]---bit[12]
@@ -3427,8 +3404,9 @@ if(isalu==1){
 			}
 		
 			//check for S bit here and update (virt<-asm) processor flags
-			if(setcond_arm==1)
+			if(setcond_arm==1){
 				updatecpuflags(0,cpsrasm,0x0);
+			}
 			return 0;
 		}
 		break;
@@ -3436,7 +3414,6 @@ if(isalu==1){
 		//add rd,rs (addarm)
 		case(0x4):{
 			if(immop_arm==1){	//for #Inmediate OP operate
-			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -3458,10 +3435,8 @@ if(isalu==1){
 				#ifdef DEBUGEMU
 				printf("ADD rd%d[%x]",(int)((arminstr>>12)&0xf),(unsigned int)exRegs[(arminstr>>12)&0xf]);
 				#endif
-				return 0;
 			}
 			else{	//for Register (operand 2) operator / shift included
-		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -3477,7 +3452,6 @@ if(isalu==1){
 				u32 DestroyableRegister1 = 0;
 				u32 DestroyableRegister2 = 0;
 				if( ((DestroyableRegister1=((arminstr>>4)&0xfff)) &0x1) == 1){
-			
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//rs loaded into dr4
@@ -3514,8 +3488,6 @@ if(isalu==1){
 						//least signif byte (rs) used opc rm,rs
 						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//#Imm ammount shift & opcode to Rm
 				else{
@@ -3554,8 +3526,6 @@ if(isalu==1){
 						printf("ROR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//op 1 opc op 2
 		
@@ -3564,22 +3534,19 @@ if(isalu==1){
 					#ifdef DEBUGEMU
 					printf("[reg]PC fetch!");
 					#endif
-					
 					DestroyableRegister2=addasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2+(0x12)); //+0x12 for prefetch
-			
-					//check for S bit here and update (virt<-asm) processor flags
-					if(setcond_arm==1)
-						updatecpuflags(0,cpsrasm,0x0);
 				}
 				else{
 					DestroyableRegister2=addasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2);
-					//check for S bit here and update (virt<-asm) processor flags
-					if(setcond_arm==1)
-						updatecpuflags(0,cpsrasm,0x0);
 				}
 				
 				//rd destination reg	 bit[15]---bit[12]
 				exRegs[(arminstr>>12)&0xf]=DestroyableRegister2;
+				
+				//check for S bit here and update (virt<-asm) processor flags
+				if(setcond_arm==1){
+					updatecpuflags(0,cpsrasm,0x0);
+				}
 				
 				#ifdef DEBUGEMU
 				printf("ADD rd(%d)<-rn(%d)[%x],rm(%d)[%x] (5.4)",
@@ -3596,7 +3563,6 @@ if(isalu==1){
 		//adc rd,rs
 		case(0x5):{
 			if(immop_arm==1){	//for #Inmediate OP operate
-			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -3619,7 +3585,6 @@ if(isalu==1){
 				#endif
 			}
 			else{	//for Register (operand 2) operator / shift included
-		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -3672,8 +3637,6 @@ if(isalu==1){
 						//least signif byte (rs) used opc rm,rs
 						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//#Imm ammount shift & opcode to Rm
 				else{
@@ -3712,8 +3675,6 @@ if(isalu==1){
 						printf("ROR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//op 1 opc op 2
 				//rd destination reg	 bit[15]---bit[12]
@@ -3728,9 +3689,9 @@ if(isalu==1){
 			}
 		
 			//check for S bit here and update (virt<-asm) processor flags
-			if(setcond_arm==1)
+			if(setcond_arm==1){
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",exRegs[0x10]);
+			}
 			return 0;
 		}
 		break;
@@ -3760,7 +3721,6 @@ if(isalu==1){
 				#endif
 			}
 			else{	//for Register (operand 2) operator / shift included
-		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -3814,14 +3774,11 @@ if(isalu==1){
 						//least signif byte (rs) used opc rm,rs
 						DestroyableRegister3=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//#Imm ammount shift & opcode to Rm
 				else{
 					//show arminstr>>4
 					//printf("DestroyableRegister2:%x", DestroyableRegister2);
-			
 					//lsl
 					if((DestroyableRegister2&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
@@ -3854,8 +3811,6 @@ if(isalu==1){
 						printf("ROR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//op 1 opc op 2
 				//rd destination reg	 bit[15]---bit[12]
@@ -3871,16 +3826,15 @@ if(isalu==1){
 			}
 		
 			//check for S bit here and update (virt<-asm) processor flags
-			if(setcond_arm==1)
+			if(setcond_arm==1){
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",exRegs[0x10]);
+			}
 			return 0;
 		}
 		break;
 	
 		//rsc rd,rs
 		case(0x7):{
-			
 			if(immop_arm==1){	//for #Inmediate OP operate
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
@@ -3904,7 +3858,6 @@ if(isalu==1){
 				#endif
 			}
 			else{	//for Register (operand 2) operator / shift included
-			
 				//rn (1st op reg) 		 bit[19]---bit[16]
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -3959,8 +3912,6 @@ if(isalu==1){
 						//least signif byte (rs) used opc rm,rs
 						DestroyableRegister3=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//#Imm ammount shift & opcode to Rm
 				else{
@@ -3998,8 +3949,6 @@ if(isalu==1){
 						printf("ROR rm[%x],#imm[%x] ",(unsigned int)((arminstr)&0xf),(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//op 1 opc op 2
 				//rd destination reg	 bit[15]---bit[12]
@@ -4015,17 +3964,19 @@ if(isalu==1){
 			}
 		
 			//check for S bit here and update (virt<-asm) processor flags
-			if(setcond_arm==1)
+			if(setcond_arm==1){
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",exRegs[0x10]);
+			}
 			return 0;
 		}
 		break;
 	
-		//tst rd,rs //set CPSR
+		//tst rd,rs //Restore SPSR into CPSR if(S = 1 && rd = 0xf/PC )
 		case(0x8):{
-			if(immop_arm==1){	//for #Inmediate OP operate
+			//rd
+			//exRegs[((arminstr>>12)&0xf)]
 			
+			if(immop_arm==1){	//for #Inmediate OP operate
 				//rn (1st op reg) 		 bit[19]---bit[16]
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -4045,7 +3996,6 @@ if(isalu==1){
 				#endif
 			}
 			else{	//for Register (operand 2) operator / shift included
-		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -4099,14 +4049,11 @@ if(isalu==1){
 						//least signif byte (rs) used opc rm,rs
 						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//#Imm ammount shift & opcode to Rm
 				else{
 					//show arminstr>>4
 					//printf("DestroyableRegister1:%x", DestroyableRegister1);
-			
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
@@ -4139,10 +4086,7 @@ if(isalu==1){
 						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
-		
 				//op 1 opc op 2
 				u32 DestroyableRegister3 = tstasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2);
 					
@@ -4156,17 +4100,23 @@ if(isalu==1){
 			}
 		
 			//check for S bit here and update (virt<-asm) processor flags
-			if(setcond_arm==1)
+			if(setcond_arm==1){
+				//Restore SPSR into CPSR if(S = 1 && rd = 0xf/PC )
+				if(((arminstr>>12)&0xf) == 0xf){
+					exRegs[0x10] = exRegs[0x11];
+				}
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",exRegs[0x10]);
+			}
 			return 0;
 		}
 		break;
 	
-		//teq rd,rs //set CPSR
+		//teq rd,rs //Restore SPSR into CPSR if(S = 1 && rd = 0xf/PC )
 		case(0x9):{
-			if(immop_arm==1){	//for #Inmediate OP operate
+			//rd
+			//exRegs[((arminstr>>12)&0xf)]
 			
+			if(immop_arm==1){	//for #Inmediate OP operate
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -4186,7 +4136,6 @@ if(isalu==1){
 				#endif
 			}
 			else{	//for Register (operand 2) operator / shift included
-		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -4240,14 +4189,11 @@ if(isalu==1){
 						//least signif byte (rs) used opc rm,rs
 						DestroyableRegister3=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister2>>4)&0xf)]&0xff));
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//#Imm ammount shift & opcode to Rm
 				else{
 					//show arminstr>>4
 					//printf("DestroyableRegister2:%x",DestroyableRegister2);
-			
 					//lsl
 					if((DestroyableRegister2&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
@@ -4280,8 +4226,6 @@ if(isalu==1){
 						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister2>>3)&0x1f));
 						#endif
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//op 1 opc op 2
 				teqasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister3);
@@ -4294,17 +4238,23 @@ if(isalu==1){
 			}
 		
 			//check for S bit here and update (virt<-asm) processor flags
-			if(setcond_arm==1)
+			if(setcond_arm==1){
+				//Restore SPSR into CPSR if(S = 1 && rd = 0xf/PC )
+				if(((arminstr>>12)&0xf) == 0xf){
+					exRegs[0x10] = exRegs[0x11];
+				}
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",exRegs[0x10]);
+			}
 			return 0;
 		}
 		break;
 	
-		//cmp rd,rs //set CPSR
+		//cmp rd,rs //Restore SPSR into CPSR if(S = 1 && rd = 0xf/PC )
 		case(0xa):{
-			if(immop_arm==1){	//for #Inmediate OP operate
+			//rd
+			//exRegs[((arminstr>>12)&0xf)]
 			
+			if(immop_arm==1){	//for #Inmediate OP operate
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -4324,7 +4274,6 @@ if(isalu==1){
 				#endif
 			}
 			else{	//for Register (operand 2) operator / shift included
-		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -4378,8 +4327,6 @@ if(isalu==1){
 						//least signif byte (rs) used opc rm,rs
 						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//#Imm ammount shift & opcode to Rm
 				else{
@@ -4417,8 +4364,6 @@ if(isalu==1){
 						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//op 1 opc op 2
 				cmpasm(exRegs[((arminstr>>16)&0xf)], exRegs[((arminstr)&0xf)]);
@@ -4431,15 +4376,22 @@ if(isalu==1){
 			}
 		
 			//check for S bit here and update (virt<-asm) processor flags
-			if(setcond_arm==1)
+			if(setcond_arm==1){
+				//Restore SPSR into CPSR if(S = 1 && rd = 0xf/PC )
+				if(((arminstr>>12)&0xf) == 0xf){
+					exRegs[0x10] = exRegs[0x11];
+				}
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",exRegs[0x10]);
+			}
 			return 0;
 		}
 		break;
 	
-		//cmn rd,rs //set CPSR
+		//cmn rd,rs //Restore SPSR into CPSR if(S = 1 && rd = 0xf/PC )
 		case(0xb):{
+			//rd
+			//exRegs[((arminstr>>12)&0xf)]
+				
 			if(immop_arm==1){	//for #Inmediate OP operate
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
@@ -4460,7 +4412,6 @@ if(isalu==1){
 				#endif
 			}
 			else{	//for Register (operand 2) operator / shift included
-		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -4515,14 +4466,11 @@ if(isalu==1){
 						//least signif byte (rs) used opc rm,rs
 						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//#Imm ammount shift & opcode to Rm
 				else{
 					//show arminstr>>4
 					//printf("DestroyableRegister1:%x",DestroyableRegister1);
-			
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
@@ -4555,8 +4503,6 @@ if(isalu==1){
 						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 		
 				//op 1 opc op 2
@@ -4570,9 +4516,13 @@ if(isalu==1){
 			}
 			
 			//check for S bit here and update (virt<-asm) processor flags
-			if(setcond_arm==1)
+			if(setcond_arm==1){
+				//Restore SPSR into CPSR if(S = 1 && rd = 0xf/PC )
+				if(((arminstr>>12)&0xf) == 0xf){
+					exRegs[0x10] = exRegs[0x11];
+				}
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",exRegs[0x10]);
+			}
 			return 0;
 		}
 		break;
@@ -4602,7 +4552,6 @@ if(isalu==1){
 				#endif
 			}
 			else{	//for Register (operand 2) operator / shift included
-		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -4656,8 +4605,6 @@ if(isalu==1){
 						//least signif byte (rs) used opc rm,rs
 						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//#Imm ammount shift & opcode to Rm
 				else{
@@ -4695,8 +4642,6 @@ if(isalu==1){
 						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//op 1 opc op 2
 				DestroyableRegister1=orrasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2);
@@ -4714,9 +4659,9 @@ if(isalu==1){
 			}
 		
 			//check for S bit here and update (virt<-asm) processor flags
-			if(setcond_arm==1)
+			if(setcond_arm==1){
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",exRegs[0x10]);
+			}
 			return 0;
 		}
 		break;
@@ -4724,7 +4669,6 @@ if(isalu==1){
 		//mov rd,rs
 		case(0xd):{
 			if(immop_arm==1){	//for #Inmediate OP operate
-			
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -4797,14 +4741,11 @@ if(isalu==1){
 						//least signif byte (rs) used opc rm,rs
 						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//#Imm ammount shift & opcode to Rm
 				else{
 					//show arminstr>>4
 					//printf("DestroyableRegister1:%x",DestroyableRegister1);
-			
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
@@ -4837,15 +4778,14 @@ if(isalu==1){
 						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//opcode rd,rm
 				u32 DestroyableRegister4=movasm(DestroyableRegister2);
 				
 				//if PC align for prefetch
-				if(((arminstr)&0xf)==0xf)
+				if(((arminstr)&0xf)==0xf){
 					DestroyableRegister4+=0x8;
+				}
 				
 				//rd (1st op reg) 		 bit[19]---bit[16]
 				exRegs[((arminstr>>12)&0xf)]=DestroyableRegister4;
@@ -4857,9 +4797,9 @@ if(isalu==1){
 				);
 				#endif
 				//check for S bit here and update (virt<-asm) processor flags
-				if(setcond_arm==1)
+				if(setcond_arm==1){
 					updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",exRegs[0x10]);
+				}
 			}
 			return 0;
 		}
@@ -4890,7 +4830,6 @@ if(isalu==1){
 				#endif
 			}
 			else{	//for Register (operand 2) operator / shift included
-		
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
@@ -4944,8 +4883,6 @@ if(isalu==1){
 						//least signif byte (rs) used opc rm,rs
 						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//#Imm ammount shift & opcode to Rm
 				else{
@@ -4984,8 +4921,6 @@ if(isalu==1){
 						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//op 1 opc op 2
 				//rd destination reg	 bit[15]---bit[12]
@@ -5002,16 +4937,15 @@ if(isalu==1){
 			}
 		
 			//check for S bit here and update (virt<-asm) processor flags
-			if(setcond_arm==1)
+			if(setcond_arm==1){
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",exRegs[0x10]);
+			}
 			return 0;
 		}
 		break;
 	
 		//mvn rd,rs
 		case(0xf):{
-			
 			if(immop_arm==1){	//for #Inmediate OP operate
 				//rn (1st op reg) 		 bit[19]---bit[16] / unused because of #Imm 
 				//exRegs[((arminstr>>16)&0xf)]
@@ -5029,7 +4963,6 @@ if(isalu==1){
 				(unsigned int)DestroyableRegister1
 				);
 				#endif
-			
 				//rd (1st op reg) 		 bit[19]---bit[16] 
 				//there isn't one
 			}
@@ -5087,14 +5020,11 @@ if(isalu==1){
 						//least signif byte (rs) used opc rm,rs
 						DestroyableRegister2=rorasm(exRegs[((arminstr)&0xf)],(exRegs[((DestroyableRegister1>>4)&0xf)]&0xff));
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//#Imm ammount shift & opcode to Rm
 				else{
 					//show arminstr>>4
 					//printf("DestroyableRegister1:%x",DestroyableRegister1);
-			
 					//lsl
 					if((DestroyableRegister1&0x6)==0x0){
 						//bit[11]---bit[7] #Imm used opc rm,#Imm
@@ -5127,8 +5057,6 @@ if(isalu==1){
 						printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((DestroyableRegister1>>3)&0x1f));
 						#endif
 					}
-					//compatibility: refresh CPU flags when barrel shifter is used
-					updatecpuflags(0,cpsrasm,0x0);
 				}
 				//opcode rd,rm
 				//rd (1st op reg) 		 bit[19]---bit[16] 
@@ -5143,9 +5071,9 @@ if(isalu==1){
 			}
 		
 			//check for S bit here and update (virt<-asm) processor flags
-			if(setcond_arm==1)
+			if(setcond_arm==1){
 				updatecpuflags(0,cpsrasm,0x0);
-				//printf(" CPSR:%x",exRegs[0x10]);
+			}
 			return 0;
 		}
 		break;

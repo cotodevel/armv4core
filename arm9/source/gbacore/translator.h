@@ -68,12 +68,6 @@ External Memory (Game Pak)
   0E010000-0FFFFFFF   Not used
 */
 
-//address whitelist to be patched
-extern u32  addrpatches[0x10];
-
-//new redirected patched addresses (requires init first after initemu() as pointers are generated there)
-extern u32  addrfixes[0x10];
-
 //CPU flags will live on the DTCM , so they're accessible
 extern u32 cpsrasm;	//gba hardware cpsr from asm opcodes
 extern u8 z_flag;

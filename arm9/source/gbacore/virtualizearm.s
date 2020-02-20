@@ -1,17 +1,21 @@
 @--------------------------------------------------------------------------------
-@								virtualizer variables
+@								translator inline ARM
 @--------------------------------------------------------------------------------
 .align 4
 .code 32
 .ARM
-@--------------------------------ARM virtualize----------------------------------
 
+@Misc:
 @MOVS PC,R14 @return from exception and restore CPSR from SPSR_mode
 @BL put LR=PC then jumps to subroutine
 @BX changes thumb bit [1..0] then jumps
 @msr CPSR_flg,#0xF0000000		@for modifying CPSR_all flags
 @lsl r0,r0, #0	@set C flag
 
+
+
+@--------------------------------ARM ----------------------------------
+@Notes: All these opcodes forcefully update the cpsrasm flag (emulator scratchpad cpsr), to be later used to update the emulator real cpsr zncv flags (exRegs[0x10])
 .global lslasm	
 .type lslasm STT_FUNC
 lslasm:
@@ -126,7 +130,7 @@ cmpasm:
 	STMFD sp!, {r1-r12,lr}		
 	
 	@opcode
-	cmp r0,r1					
+	cmps r0,r1					
 	@save asmCPSR results
 	mrs r6,CPSR		@APSR
 	ldr r2,=cpsrasm
@@ -222,7 +226,7 @@ tstasm:
 	STMFD sp!, {r1-r12,lr}		
 	
 	@opcode
-	tst r0,r1				
+	tsts r0,r1				
 	@save asmCPSR results
 	mrs r6,CPSR		@APSR
 	ldr r2,=cpsrasm
@@ -254,7 +258,7 @@ cmnasm:
 	STMFD sp!, {r1-r12,lr}		
 	
 	@opcode
-	cmn r0,r1				
+	cmns r0,r1				
 	@save asmCPSR results
 	mrs r6,CPSR		@APSR
 	ldr r2,=cpsrasm
@@ -286,7 +290,7 @@ mulasm:
 	STMFD sp!, {r1-r12,lr}		
 	
 	@opcode
-	mul r0,r1,r0				@rd = mul rd, rs, but compiler disaproves mul rd,rd,rs	
+	muls r0,r1,r0				@rd = mul rd, rs, but compiler disaproves mul rd,rd,rs	
 	@save asmCPSR results
 	mrs r6,CPSR		@APSR
 	ldr r2,=cpsrasm
@@ -366,7 +370,7 @@ rscasm:
 	STMFD sp!, {r1-r12,lr}		
 	
 	@opcode
-	rsc r0,r0,r1						
+	rscs r0,r0,r1						
 	@save asmCPSR results
 	mrs r6,CPSR		@APSR
 	ldr r2,=cpsrasm
@@ -382,7 +386,7 @@ teqasm:
 	STMFD sp!, {r1-r12,lr}		
 	
 	@opcode
-	teq r0,r1						
+	teqs r0,r1						
 	@save asmCPSR results
 	mrs r6,CPSR		@APSR
 	ldr r2,=cpsrasm
@@ -398,7 +402,7 @@ rsbasm:
 	STMFD sp!, {r1-r12,lr}		
 	
 	@opcode
-	rsb r0,r0,r1						
+	rsbs r0,r0,r1						
 	@save asmCPSR results
 	mrs r6,CPSR		@APSR
 	ldr r2,=cpsrasm
@@ -416,7 +420,7 @@ mlaasm:
 	STMFD sp!, {r1-r12,lr}		
 	
 	@opcode
-	mla r0,r1,r0,r2				@rd = mul rd, rs, but compiler disaproves mul rd,rd,rs	
+	mlas r0,r1,r0,r2				@rd = mul rd, rs, but compiler disaproves mul rd,rd,rs	
 	@save asmCPSR results
 	mrs r6,CPSR		@APSR
 	ldr r2,=cpsrasm
@@ -448,7 +452,7 @@ mulltasm:
 	STMFD sp!, {r1-r12,lr}		
 	
 	@opcode
-	mullt r0,r1,r0				@rd = mul rd, rs, but compiler disaproves mul rd,rd,rs	
+	mullts r0,r1,r0				@rd = mul rd, rs, but compiler disaproves mul rd,rd,rs	
 	@save asmCPSR results
 	mrs r6,CPSR		@APSR
 	ldr r2,=cpsrasm
@@ -603,53 +607,12 @@ bx lr
 @---------------------------------------------------------------------------------
 
 
-
-
 @--------------------------------------------------------------------------------------------------------------
 @EWRAM variables
 @---------------------------------------------------------------------------------------------------------------
 
 @--------------------------------- emulator interruptable registers / variables
 	
-@-- address patches
-.global addrpatches
-addrpatches:			@init - end
-	.word 0x00000000	@bios
-	.word 0x00003FFF	
-	.word 0x02000000	@ewram
-	.word 0x0203FFFF
-	.word 0x03000000	@internal wram
-	.word 0x03007FFF
-	.word 0x04000000	@GBA I/O map
-	.word 0x040003FE
-	.word 0x05000000	@BG/OBJ Palette RAM
-	.word 0x050003FF
-	.word 0x06000000	@vram
-	.word 0x06017FFF
-	.word 0x07000000	@object attribute memory
-	.word 0x070003FF
-	.word 0x00000000	@leftover
-	.word 0x00000000	@
-
-.global addrfixes
-addrfixes:				@init - end
-	.word 0x00000000	@bios
-	.word 0x00000000	
-	.word 0x00000000	@ewram
-	.word 0x00000000
-	.word 0x00000000	@internal wram
-	.word 0x00000000
-	.word 0x00000000	@GBA I/O map
-	.word 0x00000000
-	.word 0x00000000	@BG/OBJ Palette RAM
-	.word 0x00000000
-	.word 0x00000000	@vram
-	.word 0x00000000
-	.word 0x00000000	@object attribute memory
-	.word 0x00000000
-	.word 0x00000000	@rom
-	.word 0x00000000	@rom top
-
 @---------------------- CPU flags / CPSR / SPSRs -------------------------
 
 .global z_flag
@@ -668,11 +631,11 @@ c_flag:
 v_flag:
 	.word 0x00000000
 
-.global i_flag
+.global i_flag			@todo: I: when set, disables IRQ interrupts
 i_flag:
 	.word 0x00000000
 
-.global f_flag
+.global f_flag			@kept: F: when set, disables FIQ interrupts, but unused.
 f_flag:
 	.word 0x00000000
 	
@@ -704,31 +667,6 @@ armswistate:
 
 @The ARM9 Exception Vectors are located at FFFF0000h. The IRQ handler redirects to [DTCM+3FFCh].
 @= ADDRESS of label (phys location), dereference address and you get offset content
-
-
-@------------------------for ARM code calls
-.global gbastackarm
-gbastackarm:
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-	.word 0x00000000
-
-
-@----------------------------------------------------------------------------------------------------------------------------
-@ DTCM variables / DTCM IS NOT MEANT TO STORE ASM opcodes because caches must be coherent for that! Otherwise CPU will crash
-@--------------------------------------------------------------------------------
-@.section	.dtcm,"ax",%progbits
-@--------------------------------------------------------------------------------
-
-@useful macro to retrieve DTCMs top reserved area
-.global dtcm_end_alloced
-dtcm_end_alloced:
-	.word _dtcm_end
 
 .align
 .pool

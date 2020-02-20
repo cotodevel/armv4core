@@ -806,25 +806,6 @@ void initemu(){
 	map[12].address = (u8*)(u32)(exRegs[0xf]&0xfffffffe);	// rom; 	/
 	map[12].mask = 0x1FFFFFF;			// 0x1FFFFFF; 	/
 
-
-	//setup patches for gbaoffsets into emulator offsets 
-	addrfixes[0]=(u32)(u8*)bios;	//@bios
-	addrfixes[1]=(u32)0x4000;
-	addrfixes[2]=(u32)(u8*)workRAM;	//@ewram
-	addrfixes[3]=(u32)0x10000;
-	addrfixes[4]=(u32)(u8*)internalRAM;	///internal wram
-	addrfixes[5]=(u32)0x8000;
-	addrfixes[6]=(u32)(u8*)iomem;					//@GBA I/O map
-	addrfixes[7]=(u32)0x00000800;
-	addrfixes[8]=(u32)(u8*)palram;		//palram;				//@BG/OBJ Palette RAM
-	addrfixes[9]=(u32)0x400;
-	addrfixes[0xa]=(u32)(u8*)vram;	//@vram
-	addrfixes[0xb]=(u32)(1024*128);
-	addrfixes[0xc]=(u32)(u8*)oam;	//@object attribute memory
-	addrfixes[0xd]=(u32)0x400;
-	addrfixes[0xe]=(u32)0x0;						//(u32)0x08000000;		//@rom
-	addrfixes[0xf]=(u32)0x0;						//romsize;				//@rom top
-
 	//Cpu_Stack_USR EQU 0x03007F00 ; GBA USR stack adress
 	//Cpu_Stack_IRQ EQU 0x03007FA0 ; GBA IRQ stack adress
 	//Cpu_Stack_SVC EQU 0x03007FE0 ; GBA SVC stack adress

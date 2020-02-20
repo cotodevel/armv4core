@@ -16,24 +16,10 @@
 extern "C" {
 #endif
 
-//linker (bin) objects
-extern unsigned int rom_pl_bin;
-extern unsigned int rom_pl_bin_size;
-extern unsigned int __ewram_end;
-
-//stack info from ld
-//__sp_svc	=	__dtcm_top - 0x08 - 0x400;
-//__sp_irq	=	__sp_svc - 0x400;
-//__sp_usr	=	__sp_irq - 0x400;
-//__sp_abort	=	__sp_usr - 0x400;
-
 extern u32 SPswi;
 extern u32 SPirq;
 extern u32 SPusr;
 extern u32 SPdabt;
-
-//DTCM TOP reserved by compiler/user memory
-extern u32 dtcm_end_alloced;
 extern u32 cpucore_tick;
 
 //patches for ARM code
