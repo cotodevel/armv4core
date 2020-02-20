@@ -123,23 +123,23 @@ u32 bios_cpureset(){
 	//GBA   3007FE0h  3007FA0h  3007F00h  [3007E00h..3007FFFh]  Flag[3007FFAh]
 	
 	u32 startCPSR = (u32)((n_flag << 31) | (z_flag << 30) | (c_flag << 29) | (v_flag << 28) | (CPUSTATE_ARM << 5) | (0x10));	//ARM Mode default + USR mode
-	updatecpuflags(1, startCPSR, 0x10);
+	updatecpuflags(CPUFLAG_UPDATE_CPSR, startCPSR, 0x10);
 	exRegs[0x11] = exRegs[0x10];	//SPSR=CPSR
 	
 	//IRQ
 	exRegs[13] = 0x03007FA0;
-	updatecpuflags(1, exRegs[0x10], 0x12);
+	updatecpuflags(CPUFLAG_UPDATE_CPSR, exRegs[0x10], 0x12);
 	
 	//SVC
 	exRegs[13] = 0x03007FE0;
-	updatecpuflags(1, exRegs[0x10], 0x13);
+	updatecpuflags(CPUFLAG_UPDATE_CPSR, exRegs[0x10], 0x13);
 	
 	//USR/SYS (where CPU defaults to sys mode)
 	exRegs[13] = 0x03007F00;
-	updatecpuflags(1, exRegs[0x10], 0x10);
+	updatecpuflags(CPUFLAG_UPDATE_CPSR, exRegs[0x10], 0x10);
 	
 	exRegs[13] = 0x03007F00;
-	updatecpuflags(1, exRegs[0x10], 0x1F);
+	updatecpuflags(CPUFLAG_UPDATE_CPSR, exRegs[0x10], 0x1F);
 	
 	//gbamap reset
 	for(i = 0; i < 256; i++) {

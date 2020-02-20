@@ -697,7 +697,7 @@ __attribute__ ((hot)) void cpu_fdexecute(){
 //cpu interrupt
 u32 cpuirq(u32 cpumode){
 	//Enter cpu<mode>
-	updatecpuflags(1,exRegs[0x10],cpumode);
+	updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10],cpumode);
 	exRegs[0xe]=exRegs[0xf];
 	
 	if(armstate == CPUSTATE_THUMB){	//thumb
@@ -716,7 +716,7 @@ u32 cpuirq(u32 cpumode){
 	exRegs[0xf]=(u32)0x18;
 	
 	//Restore CPU<mode>
-	updatecpuflags(1,exRegs[0x10],exRegs[0x11]&0x1F);
+	updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10],exRegs[0x11]&0x1F);
 
 	return 0;
 }

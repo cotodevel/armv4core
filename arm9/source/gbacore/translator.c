@@ -48,7 +48,7 @@ External Memory (Game Pak)
 // / 2 = Writes to IO MAP for GBA environment variable updates
 u32 updatecpuflags(u8 mode ,u32 cpsr, u32 cpumode){
 	switch(mode){
-		case (0):
+		case (CPUFLAG_UPDATE_ZNCV_FLAGS):
 			//1) if invoked from hardware asm function, update flags to virtual environment
 			z_flag=(lsrasm(cpsr,0x1e))&0x1;
 			n_flag=(lsrasm(cpsr,0x1f))&0x1;
@@ -61,7 +61,7 @@ u32 updatecpuflags(u8 mode ,u32 cpsr, u32 cpumode){
 			//printf("(0)cpu flags: Z[%x] N[%x] C[%x] V[%x] ",z_flag,n_flag,c_flag,v_flag);
 		break;
 		
-		case (1):{
+		case (CPUFLAG_UPDATE_CPSR):{
 			//1)check if cpu<mode> swap does not come from the same mode
 			if((cpsr&0x1f)!=cpumode){
 				exRegs[0x11]=exRegs[0x10];	//save SPSR
@@ -242,12 +242,7 @@ u32 updatecpuflags(u8 mode ,u32 cpsr, u32 cpumode){
 			}		
 		}
 		break;
-		
-		
-		default:
-		break;
 	}
-
 	return 0;
 }
 
@@ -275,7 +270,7 @@ switch(thumbinstr>>11){
 		exRegs[(thumbinstr&0x7)] = destroyableRegister2;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		return 0;
 	}
 	break;
@@ -291,7 +286,7 @@ switch(thumbinstr>>11){
 		exRegs[(thumbinstr&0x7)] = destroyableRegister2;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		return 0;
 	}
 	break;
@@ -307,7 +302,7 @@ switch(thumbinstr>>11){
 		exRegs[(thumbinstr&0x7)] = destroyableRegister2;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		return 0;
 	}
 	break;
@@ -323,7 +318,7 @@ switch(thumbinstr>>11){
 		exRegs[((thumbinstr>>8)&0x7)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		return 0;
 	}
 	break;
@@ -337,7 +332,7 @@ switch(thumbinstr>>11){
 		cmpasm(exRegs[((thumbinstr>>8)&0x7)],(u32)thumbinstr&0xff);
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		return 0;
 	break;
 	
@@ -352,7 +347,7 @@ switch(thumbinstr>>11){
 		exRegs[((thumbinstr>>8)&0x7)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		return 0;
 	}
 	break;
@@ -368,7 +363,7 @@ switch(thumbinstr>>11){
 		exRegs[((thumbinstr>>8)&0x7)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		return 0;
 	}
 	break;
@@ -803,7 +798,7 @@ switch(thumbinstr>>9){
 		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		return 0;
 	}
 	break;
@@ -827,7 +822,7 @@ switch(thumbinstr>>9){
 		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		return 0;
 	}
 	break;
@@ -850,7 +845,7 @@ switch(thumbinstr>>9){
 		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		return 0;
 	}
 	break;
@@ -870,7 +865,7 @@ switch(thumbinstr>>9){
 		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		return 0;
 	}
 	break;
@@ -1492,7 +1487,7 @@ switch(thumbinstr>>8){
 		
 		u32 stack2svc=exRegs[0xe];	//ARM has r13,r14 per CPU <mode> but this is shared on gba
 		
-		updatecpuflags(1,exRegs[0x10],0x13);
+		updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10],0x13);
 		
 		exRegs[0xe]=stack2svc;		//ARM has r13,r14 per CPU <mode> but this is shared on gba
 		
@@ -1506,7 +1501,7 @@ switch(thumbinstr>>8){
 		#ifndef BIOSHANDLER
 			//Restore CPU<mode> / SPSR (exRegs[0x11]) keeps SVC && restore SPSR T bit (THUMB/ARM mode)
 				//note exRegs[0x10] is required because we validate always if come from same PSR mode or a different. (so stack swaps make sense)
-			updatecpuflags(1,exRegs[0x10] | (((exRegs[0x11]>>5)&1)),exRegs[0x11]&0x1F);
+			updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10] | (((exRegs[0x11]>>5)&1)),exRegs[0x11]&0x1F);
 		#endif
 		
 		//-0x2 because PC THUMB (exRegs[0xf]&0xfffffffe) alignment / -0x2 because prefetch
@@ -1539,7 +1534,7 @@ switch(thumbinstr>>7){
 		exRegs[(0xd)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		
 		#ifdef DEBUGEMU
 		printf("ADD SP:%x, +#%d (5.13) ",(unsigned int)exRegs[(0xd)],(signed int)dbyte_tmp);
@@ -1558,7 +1553,7 @@ switch(thumbinstr>>7){
 		exRegs[(0xd)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		
 		#ifdef DEBUGEMU
 		printf("ADD SP:%x, -#%d (5.13) ",(unsigned int)exRegs[(0xd)], (signed int) dbyte_tmp);
@@ -1588,7 +1583,7 @@ switch(thumbinstr>>6){
 		exRegs[(thumbinstr&0x7)]=destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}	
@@ -1611,7 +1606,7 @@ switch(thumbinstr>>6){
 		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
@@ -1635,7 +1630,7 @@ switch(thumbinstr>>6){
 		#endif
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
@@ -1658,7 +1653,7 @@ switch(thumbinstr>>6){
 		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
@@ -1681,7 +1676,7 @@ switch(thumbinstr>>6){
 		#endif
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
@@ -1704,7 +1699,7 @@ switch(thumbinstr>>6){
 		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
@@ -1727,7 +1722,7 @@ switch(thumbinstr>>6){
 		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
@@ -1750,7 +1745,7 @@ switch(thumbinstr>>6){
 		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
@@ -1770,7 +1765,7 @@ switch(thumbinstr>>6){
 		u32 destroyableRegister = tstasm(exRegs[(thumbinstr&0x7)], exRegs[((thumbinstr>>3)&0x7)]); 	//opcode rd,rs
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}	
@@ -1793,7 +1788,7 @@ switch(thumbinstr>>6){
 		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
@@ -1813,7 +1808,7 @@ switch(thumbinstr>>6){
 		u32 destroyableRegister = cmpasm(exRegs[(thumbinstr&0x7)], exRegs[((thumbinstr>>3)&0x7)]); 	//opcode rd,rs
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
@@ -1833,7 +1828,7 @@ switch(thumbinstr>>6){
 		u32 destroyableRegister = cmnasm(exRegs[(thumbinstr&0x7)], exRegs[((thumbinstr>>3)&0x7)]); 	//opcode rd,rs
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
@@ -1854,7 +1849,7 @@ switch(thumbinstr>>6){
 		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
@@ -1875,7 +1870,7 @@ switch(thumbinstr>>6){
 		u32 destroyableRegister = mulasm(exRegs[(thumbinstr&0x7)], exRegs[((thumbinstr>>3)&0x7)]);
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		//printf("CPSR:%x ",exRegs[0x10]);
 		
 		//done? update desired reg content
@@ -1900,7 +1895,7 @@ switch(thumbinstr>>6){
 		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
 	}
@@ -1924,7 +1919,7 @@ switch(thumbinstr>>6){
 		exRegs[(thumbinstr&0x7)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		//printf("CPSR:%x ",exRegs[0x10]);
 		
 		return 0;
@@ -2012,7 +2007,7 @@ switch(thumbinstr>>6){
 		u32 destroyableRegister = cmpasm(exRegs[(thumbinstr&0x7)], exRegs[(((thumbinstr>>3)&0x7)+0x8)]);
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		//printf("CPSR:%x ",exRegs[0x10]);	
 		return 0;
 	}
@@ -2032,7 +2027,7 @@ switch(thumbinstr>>6){
 		u32 destroyableRegister = cmpasm(exRegs[((thumbinstr&0x7)+0x8)], exRegs[((thumbinstr>>3)&0x7)]);
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		
 		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
@@ -2053,7 +2048,7 @@ switch(thumbinstr>>6){
 		u32 destroyableRegister = cmpasm(exRegs[((thumbinstr&0x7)+0x8)], exRegs[(((thumbinstr>>3)&0x7)+0x8)]);
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		
 		//printf("CPSR:%x ",exRegs[0x10]);
 		return 0;
@@ -2076,7 +2071,7 @@ switch(thumbinstr>>6){
 		exRegs[(thumbinstr&0x7)] = movasm(exRegs[(((thumbinstr>>3)&0x7)+0x8)]);
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		return 0;
 	}
 	break;
@@ -2097,7 +2092,7 @@ switch(thumbinstr>>6){
 		exRegs[((thumbinstr&0x7)+0x8)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		return 0;
 	}
 	break;
@@ -2118,7 +2113,7 @@ switch(thumbinstr>>6){
 		exRegs[((thumbinstr&0x7)+0x8)] = destroyableRegister;
 		
 		//update processor flags
-		updatecpuflags(0,cpsrasm,0x0);
+		updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 		return 0;
 	}
 	break;
@@ -2139,7 +2134,7 @@ switch(thumbinstr>>6){
 		temppsr|=((exRegs[((thumbinstr>>0x3)&0x7)]&0x1)<<5);		//set bit[0] from rn
 		
 		//set CPU <mode> (included bit[5])
-		updatecpuflags(1, temppsr, temppsr&0x1f);
+		updatecpuflags(CPUFLAG_UPDATE_CPSR, temppsr, temppsr&0x1f);
 	
 		exRegs[0xf]=(u32)(exRegs[((thumbinstr>>0x3)&0x7)]&0xfffffffe);
 	
@@ -2165,7 +2160,7 @@ switch(thumbinstr>>6){
 		temppsr|=((exRegs[((thumbinstr>>0x3)&0x7)+0x8]&0x1)<<5);		//set bit[0] from rn
 		
 		//set CPU <mode> (included bit[5])
-		updatecpuflags(1,temppsr,temppsr&0x1f);
+		updatecpuflags(CPUFLAG_UPDATE_CPSR,temppsr,temppsr&0x1f);
 		
 		exRegs[0xf]=(u32)((exRegs[((thumbinstr>>0x3)&0x7)+0x8]&0xfffffffe)-0x2); //prefetch & align 2-boundary
 	
@@ -2800,7 +2795,7 @@ switch(((arminstr) & 0x012fff10)){
 	exRegs[0xf]-=(0x4);
 	
 	//set CPU <mode> (included bit[5])
-	updatecpuflags(1,temppsr,temppsr&0x1f);
+	updatecpuflags(CPUFLAG_UPDATE_CPSR,temppsr,temppsr&0x1f);
 	
 	#ifdef DEBUGEMU
 	printf("BX rn(%d)[%x]! set_psr:%x",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)temppsr);
@@ -2994,7 +2989,7 @@ if(isalu==1){
 		
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1){
-				updatecpuflags(0,cpsrasm,0x0);
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			return 0;
 		}
@@ -3130,7 +3125,7 @@ if(isalu==1){
 		
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1){
-				updatecpuflags(0,cpsrasm,0x0);
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			return 0;
 		}
@@ -3266,7 +3261,7 @@ if(isalu==1){
 			
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1){
-				updatecpuflags(0,cpsrasm,0x0);
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			return 0;
 		}
@@ -3405,7 +3400,7 @@ if(isalu==1){
 		
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1){
-				updatecpuflags(0,cpsrasm,0x0);
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			return 0;
 		}
@@ -3545,7 +3540,7 @@ if(isalu==1){
 				
 				//check for S bit here and update (virt<-asm) processor flags
 				if(setcond_arm==1){
-					updatecpuflags(0,cpsrasm,0x0);
+					updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 				}
 				
 				#ifdef DEBUGEMU
@@ -3690,7 +3685,7 @@ if(isalu==1){
 		
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1){
-				updatecpuflags(0,cpsrasm,0x0);
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			return 0;
 		}
@@ -3827,7 +3822,7 @@ if(isalu==1){
 		
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1){
-				updatecpuflags(0,cpsrasm,0x0);
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			return 0;
 		}
@@ -3965,7 +3960,7 @@ if(isalu==1){
 		
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1){
-				updatecpuflags(0,cpsrasm,0x0);
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			return 0;
 		}
@@ -4105,7 +4100,7 @@ if(isalu==1){
 				if(((arminstr>>12)&0xf) == 0xf){
 					exRegs[0x10] = exRegs[0x11];
 				}
-				updatecpuflags(0,cpsrasm,0x0);
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			return 0;
 		}
@@ -4243,7 +4238,7 @@ if(isalu==1){
 				if(((arminstr>>12)&0xf) == 0xf){
 					exRegs[0x10] = exRegs[0x11];
 				}
-				updatecpuflags(0,cpsrasm,0x0);
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			return 0;
 		}
@@ -4381,7 +4376,7 @@ if(isalu==1){
 				if(((arminstr>>12)&0xf) == 0xf){
 					exRegs[0x10] = exRegs[0x11];
 				}
-				updatecpuflags(0,cpsrasm,0x0);
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			return 0;
 		}
@@ -4521,7 +4516,7 @@ if(isalu==1){
 				if(((arminstr>>12)&0xf) == 0xf){
 					exRegs[0x10] = exRegs[0x11];
 				}
-				updatecpuflags(0,cpsrasm,0x0);
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			return 0;
 		}
@@ -4660,7 +4655,7 @@ if(isalu==1){
 		
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1){
-				updatecpuflags(0,cpsrasm,0x0);
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			return 0;
 		}
@@ -4798,7 +4793,7 @@ if(isalu==1){
 				#endif
 				//check for S bit here and update (virt<-asm) processor flags
 				if(setcond_arm==1){
-					updatecpuflags(0,cpsrasm,0x0);
+					updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 				}
 			}
 			return 0;
@@ -4938,7 +4933,7 @@ if(isalu==1){
 		
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1){
-				updatecpuflags(0,cpsrasm,0x0);
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			return 0;
 		}
@@ -5072,7 +5067,7 @@ if(isalu==1){
 		
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1){
-				updatecpuflags(0,cpsrasm,0x0);
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			return 0;
 		}
@@ -5124,7 +5119,7 @@ switch((arminstr>>16)&0x3f){
 			//exRegs[0x10]=DestroyableRegister2;
 			
 			//modified (cpu state id updated)
-			updatecpuflags(1,exRegs[0x10],DestroyableRegister2&0x1f);
+			updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10],DestroyableRegister2&0x1f);
 		}
 		//SPSR
 		else{
@@ -5259,7 +5254,7 @@ switch( ((arminstr>>22)&0x3f) + ((arminstr>>4)&0xf) ){
 				exRegs[((arminstr>>16)&0xf)] = mulasm(exRegs[(arminstr&0xf)], exRegs[((arminstr>>8)&0xf)]);
 				
 				//update cpu flags
-				updatecpuflags(0,cpsrasm,0x0);
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 				
 			break;
 			
@@ -5312,7 +5307,7 @@ switch( ((arminstr>>22)&0x3f) + ((arminstr>>4)&0xf) ){
 				exRegs[((arminstr>>16)&0xf)]=mlaasm(exRegs[(arminstr&0xf)], exRegs[((arminstr>>8)&0xf)], exRegs[((arminstr>>12)&0xf)]);
 				
 				//update cpu flags
-				updatecpuflags(0,cpsrasm,0x0);
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			break;
 		}
 	return 0;
@@ -5392,7 +5387,7 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 					DestroyableRegister5=rorasm(exRegs[((arminstr)&0xf)],(destroyableRegister&0xff));
 				}
 				//compatibility: refresh CPU flags when barrel shifter is used
-				updatecpuflags(0,cpsrasm,0x0);
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			//#Imm ammount shift & opcode to Rm
 			else{
@@ -5432,7 +5427,7 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 					#endif
 				}
 				//compatibility: refresh CPU flags when barrel shifter is used
-				updatecpuflags(0,cpsrasm,0x0);
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 		}
 		
@@ -5652,7 +5647,7 @@ switch( ( (DestroyableRegister6=((arminstr>>20)&0xff)) & 0x80)  ){
 		//1a)force 0x10 usr mode
 		if( ((DestroyableRegister6&0x4)==0x4) && ((exRegs[0x10]&0x1f)!=0x10)){
 			savedcpsr=exRegs[0x10];
-			updatecpuflags(1,exRegs[0x10],0x10);
+			updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10],0x10);
 			#ifdef DEBUGEMU
 			printf("FORCED TO USERMODE!CPSR: %x",(unsigned int)exRegs[0x10]);
 			#endif
@@ -5834,7 +5829,7 @@ switch( ( (DestroyableRegister6=((arminstr>>20)&0xff)) & 0x80)  ){
 			#ifdef DEBUGEMU
 			printf("RESTORED MODE:CPSR %x",(unsigned int)savedcpsr);
 			#endif
-			updatecpuflags(1,exRegs[0x10],savedcpsr&0x1f);
+			updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10],savedcpsr&0x1f);
 			writeback=0;
 		}
 		
@@ -5895,7 +5890,7 @@ switch( (arminstr) & 0xf000000 ){
 		armstate = 0;
 		armIrqEnable=false;
 		
-		updatecpuflags(1,exRegs[0x10],0x13);
+		updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10],0x13);
 		
 		//printf("CPSR(entrymode):%x ",exRegs[0x10]&0x1f);
 		
@@ -5915,7 +5910,7 @@ switch( (arminstr) & 0xf000000 ){
 		
 		//we let SWI bios decide when to go back from SWI mode
 		//Restore CPU<mode>
-		updatecpuflags(1,exRegs[0x10],exRegs[0x11]&0x1F);
+		updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10],exRegs[0x11]&0x1F);
 		
 	}
 }

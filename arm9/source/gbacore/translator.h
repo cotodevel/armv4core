@@ -34,6 +34,8 @@ USA
 #define CPUSTATE_ARM (u8)(0)
 #define CPUSTATE_THUMB (u8)(1)
 
+#define CPUFLAG_UPDATE_ZNCV_FLAGS	(u8)(0)
+#define CPUFLAG_UPDATE_CPSR 		(u8)(1)
 
 #endif
 
