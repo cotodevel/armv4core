@@ -5386,8 +5386,6 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 					//least signif byte (rs) uses: opcode rm,rs
 					DestroyableRegister5=rorasm(exRegs[((arminstr)&0xf)],(destroyableRegister&0xff));
 				}
-				//compatibility: refresh CPU flags when barrel shifter is used
-				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			//#Imm ammount shift & opcode to Rm
 			else{
@@ -5426,8 +5424,6 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 					printf("ROR rm(%d)[%x],#imm[%x] ",(int)((arminstr)&0xf),(unsigned int)exRegs[((arminstr)&0xf)],(unsigned int)((destroyableRegister4>>3)&0x1f));
 					#endif
 				}
-				//compatibility: refresh CPU flags when barrel shifter is used
-				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 		}
 		
@@ -5442,7 +5438,6 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 		
 		//pre indexing bit 	(add offset before transfer)
 		if((DestroyableRegister6&0x10)==0x10){
-			
 			//up / increase  (Rn+=Rm)
 			if((DestroyableRegister6&0x8)==0x8){
 				DestroyableRegister3+=DestroyableRegister5;
@@ -5595,7 +5590,6 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 			}
 		}
 		
-		
 		//3)post indexing bit (add offset after transfer)
 		if((DestroyableRegister6&0x10)==0x0){
 			#ifdef DEBUGEMU
@@ -5609,7 +5603,6 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 		//write-back new address into base (updated offset from base +index read) Rn
 		// (ALWAYS (if specified) except when R15)
 		if( ((DestroyableRegister6&0x2)==0x2) && (((arminstr>>16)&0xf)!=0xf) ){
-			
 			//up / increase  (Rn+=Rm)
 			if((DestroyableRegister6&0x8)==0x8){
 				DestroyableRegister3+=DestroyableRegister5;
