@@ -1,4 +1,3 @@
-#include "opcode.h"
 #include "gba.arm.core.h"
 #include "translator.h"
 #include "ipcfifoTGDSUser.h"

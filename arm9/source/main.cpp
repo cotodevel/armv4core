@@ -20,11 +20,10 @@ USA
 
 #include "main.h"
 #include "translator.h"
-#include "opcode.h"
 #include "keypadTGDS.h"
 #include "biosTGDS.h"
 #include "dldi.h"
-#include "buffer.h"
+#include "Util.h"
 #include "fileBrowse.h"
 #include "dswnifi_lib.h"
 #include "ipcfifoTGDSUser.h"
@@ -35,9 +34,6 @@ USA
 #include "armstorm/common.h" //THUMB DISASSEMBLER
 #include "armstorm/thumb.h" //THUMB DISASSEMBLER
 #include "armstorm/thumb_db.h" //THUMB DISASSEMBLER
-//PU and stack managmt
-#include "pu/pu.h"
-#include "pu/supervisor.h"
 #include "gba.arm.core.h"
 #include "bios.h"
 #include "TGDSLogoLZSSCompressed.h"

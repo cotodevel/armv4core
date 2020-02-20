@@ -3,7 +3,7 @@
 #include "dsregs.h"
 #include "dsregs_asm.h"
 #include "dldi.h"
-#include "buffer.h"
+#include "Util.h"
 #include "ipcfifoTGDSUSer.h"
 
 #ifdef ROMTEST

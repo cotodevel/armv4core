@@ -32,6 +32,7 @@
 #include "InterruptsARMCores_h.h"
 #include "ipcfifoTGDSUser.h"
 #include "ff.h"
+#include "Util.h"
 #include "reent.h"
 #include "sys/types.h"
 #include "consoleTGDS.h"
@@ -40,18 +41,10 @@
 #include "posixHandleTGDS.h"
 #include "xenofunzip.h"
 #include "gbaemu4ds_fat_ext.h"
-
-
 #include <stdio.h> 
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-
-#ifndef NULL
-#define NULL 0
-#endif
-
-//extern void log(const char *,...);
 
 #define SYSTEM_SAVE_UPDATED 30
 #define SYSTEM_SAVE_NOT_UPDATED 0
@@ -75,9 +68,6 @@ extern void systemGbPrint(u8 * a,int,int,int,int);
 extern void systemScreenCapture(int);
 extern void systemDrawScreen();
 // updates the joystick data
-extern bool systemReadJoypads();
-// return information about the given joystick, -1 for default joystick
-extern u32 systemReadJoypad(int);
 extern u32 systemGetClock();
 extern void systemMessage(int, const char *, ...);
 extern void systemSetTitle(const char *);
@@ -114,12 +104,9 @@ extern int systemVerbose;
 extern int systemFrameSkip;
 extern int systemSaveUpdateCounter;
 extern int systemSpeed;
-
 extern int len;
 
 #endif
-
-extern u8 dmaexchange_buf[0x100];
 
 #ifdef __cplusplus
 }

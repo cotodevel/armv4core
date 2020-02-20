@@ -13,9 +13,6 @@
 #include <ctype.h>
 #include <time.h> 
 #include "RTC.h"
-#include "supervisor.h"
-#include "pu.h"
-#include "opcode.h"
 #include "Util.h"
 #include "translator.h"
 #include "bios.h"
@@ -36,7 +33,6 @@
 #include "Flash.h"
 #include "Sram.h"
 #include "System.h"
-#include "buffer.h"
 #include "keypadTGDS.h"
 
 u16 GBADISPCNT = 0;
@@ -551,8 +547,7 @@ __attribute__ ((hot)) u32 cpu_calculate(){	//todo
 	//not this one
 	
 	if(GBADISPSTAT & 2) { //HBLANK period
-		//draw
-		//gbavideorender((u32)vram, (u32)hblankdelta);
+		//draw happens directly through CPU decoding into target VRAM memory
 	
 		// if in H-Blank, leave it and move to drawing mode (deadzone ticks even while hblank is 0)
 		lcdTicks += 1008;
@@ -724,184 +719,6 @@ u32 cpuirq(u32 cpumode){
 	updatecpuflags(1,exRegs[0x10],exRegs[0x11]&0x1F);
 
 	return 0;
-}
-
-//(CPUinterrupts)
-//software interrupts service (GBA BIOS calls!)
-u32 __attribute__ ((hot)) swi_virt(u32 swinum){
-    switch(swinum) {
-        case 0x00:
-            bios_cpureset();
-		break;
-        case 0x01:
-            bios_registerramreset(exRegs[0]);
-		break;
-        case 0x02:
-        {
-            #ifdef DEV_VERSION
-                printf("Halt: GBAIE %x",(unsigned int)GBAIE);
-            #endif
-            //holdState = true;
-            //holdType = -1;
-            //cpuNextEvent = cpuTotalTicks;
-            
-            //GBA game ended all tasks, CPU is idle now.
-            //gba4ds_swiHalt();
-		}
-		break;
-        case 0x03:
-        {
-            #ifdef DEV_VERSION
-                printf("Stop");
-            #endif
-			//holdState = true;
-			//holdType = -1;
-			//stopState = true;
-			//cpuNextEvent = cpuTotalTicks;
-			
-            //ori
-            //gba4ds_swiIntrWait(1,(GBAIE & 0x6080));
-            
-		}
-        break;
-        case 0x04:
-        {
-            #ifdef DEV_VERSION
-            printf("IntrWait: 0x%08x,0x%08x",(unsigned int)R[0],(unsigned int)R[1]);      
-            #endif
-            
-            //gba4ds_swiIntrWait(R[0],R[1]);
-            //CPUSoftwareInterrupt();
-        
-		}
-        break;    
-        case 0x05:
-        {
-            #ifdef DEV_VERSION
-                //printf("VBlankIntrWait: 0x%08X 0x%08X",REG_IE,anytimejmpfilter);
-                //VblankHandler(); //todo
-            #endif
-            //if((REG_DISPSTAT & DISP_IN_VBLANK)) while((REG_DISPSTAT & DISP_IN_VBLANK)); //workaround
-            //while(!(REG_DISPSTAT & DISP_IN_VBLANK));
-            
-            //send cmd
-            ////execute_arm7_command(0xc0700100,0x1FFFFFFB,0x0);
-            //gba4ds_swiWaitForVBlank();
-            
-            //gba4ds_swiWaitForVBlank();
-            ////execute_arm7_command(0xc3730100,0x0,0x0);
-            
-            //asm("mov r0,#1");
-            //asm("mov r1,#1");
-            //HALTCNT_ARM9OPT();
-            //VblankHandler();
-        }
-		break;
-        case 0x06:
-            bios_div();
-		break;
-        case 0x07:
-            bios_divarm();
-		break;
-        case 0x08:
-            bios_sqrt();
-		break;
-        case 0x09:
-            bios_arctan();
-		break;
-        case 0x0A:
-            bios_arctan2();
-		break;
-        case 0x0B:
-            bios_cpuset();
-		break;
-        case 0x0C:
-            bios_cpufastset();
-		break;
-        case 0x0D:
-            bios_getbioschecksum();
-		break;
-        case 0x0E:
-            bios_bgaffineset();
-		break;
-        case 0x0F:
-            bios_objaffineset();
-		break;
-        case 0x10:
-            bios_bitunpack();
-		break;
-        case 0x11:
-            bios_lz77uncompwram();
-		break;
-        case 0x12:
-            bios_lz77uncompvram();
-		break;
-        case 0x13:
-            bios_huffuncomp();
-		break;
-        case 0x14:
-            bios_rluncompwram();
-		break;
-        case 0x15:
-            bios_rluncompvram();
-		break;
-        case 0x16:
-            bios_diff8bitunfilterwram();
-		break;
-        case 0x17:
-            bios_diff8bitunfiltervram();
-		break;
-        case 0x18:
-            bios_diff16bitunfilter();
-		break;
-        
-        case 0x19:
-        {
-            //#ifdef DEV_VERSION
-            printf("SoundBiasSet: 0x%08x ",(unsigned int)exRegs[0]);
-            //#endif    
-            //if(reg[0].I) //ichfly sound todo
-            //systemSoundPause(); //ichfly sound todo
-            //else //ichfly sound todo
-            //systemSoundResume(); //ichfly sound todo
-            
-            //SWI 19h (GBA) or SWI 08h (NDS7/DSi7) - SoundBias
-            //r0   BIAS level (0=Level 000h, any other value=Level 200h)
-            //r1   Delay Count (NDS/DSi only) (GBA uses a fixed delay count of 8)
-            ////execute_arm7_command(0xc0700104,(u32)R[0],(u32)0x00000008);
-            
-		}
-        break;
-        case 0x1F:
-           bios_midikey2freq();
-		break;
-        case 0x2A:
-            bios_snddriverjmptablecopy();
-		break;
-		// let it go, because we don't really emulate this function
-        case 0x2D: 
-            
-		break;
-        case 0x2F: 
-        {
-            //REG_IME = IME_DISABLE;
-            //while(1);
-		}
-        break;
-        default:
-            if((swinum & 0x30) >= 0x30)
-            {
-                printf("r%x ",(unsigned int)(swinum));
-            }
-            else
-            {
-                printf("Unsupported BIOS function %02x. A BIOS file is needed in order to get correct behaviour.",(unsigned int)swinum);
-                
-            }
-		break;
-    }
-    
-return 0;
 }
 
 //GBA CPU mode registers:
@@ -1256,7 +1073,7 @@ void  CPUUpdateRegister(u32 address, u16 value){
 			}
 			else {
 				layerEnable = layerSettings & value;
-				cpuupdateticks();	// CPUUpdateTicks();
+				CPUUpdateTicks();
 			}
 
 			windowOn = (layerEnable & 0x6000) ? true : false;
@@ -1716,20 +1533,6 @@ void  CPUUpdateRegister(u32 address, u16 value){
 		break;
 	  }
 
-}
-
-
-//debug!
-u32 debuggeroutput(){
-u32 lnk_ptr;
-	__asm__ volatile (
-		"mov %[lnk_ptr],#0;" "\n\t"
-		"add %[lnk_ptr],%[lnk_ptr], lr" "\n\t"//"sub lr, lr, #8;" "\n\t"
-		"sub %[lnk_ptr],%[lnk_ptr],#0x8" 
-		:[lnk_ptr] "=r" (lnk_ptr)
-	);
-	printf(" LR callback trace at %x ", (unsigned int)lnk_ptr);
-	return 0;
 }
 
 

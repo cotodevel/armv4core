@@ -17,8 +17,6 @@
 // Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 
-//#define gzFile void* //ichfly
-
 #include "typedefsTGDS.h"
 #include "dsregs.h"
 #include "dsregs_asm.h"
@@ -41,7 +39,6 @@
 #include "EEprom.h"
 #include "System.h"
 #include "Flash.h"
-#include "opcode.h"
 
 int eepromMode = EEPROM_IDLE;
 int eepromByte = 0;

@@ -33,6 +33,8 @@ USA
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))	
 #define alignw(n)(CHECK_BIT(n,0)==1?n+1:n)
 
+#include "gbaemu4ds_fat_ext.h"
+
 /*
  GBA Memory Map
 
@@ -196,6 +198,54 @@ extern u32 gba_setup();
 extern u32 UPDATE_REG(u32 address, u32 value);
 extern struct gbaheader_t gbaheader;
 extern void printGBACPU();
+
+extern u8 * gbawram;	//[256*1024]; //genuine reference - wram that is 32bit per chunk
+extern u8 * palram;	//[0x400];
+extern u8 * gbabios;	//[0x4000];
+extern u8 * gbaintram;	//[0x8000];
+extern u8 * gbaoam;	//[0x400];
+extern u8 * saveram;	//[128*1024]; //128K
+extern u8 * iomem[0x400];
+extern volatile u32 disk_buf[chucksize];
+extern u8 first32krom[32*1024];
+
+//C vector exceptions
+extern u32 exceptswi(u32); 		//swi vector
+extern u32 exceptundef(u32 undef);	//undefined vector
+extern u32 exceptirq(u32 nds_iemask,u32 nds_ifmask,u32 sp_ptr);
+extern u32 swicaller(u32 arg);
+extern void exception_dump(char * cause);
+extern u32 gbacpu_refreshvcount();	//CPUCompareVCOUNT(gba);
+
+extern u32 armfetchpc(u32 address);
+extern int CPUUpdateTicks();
+extern u32 cpuloop(int ticks);
+
+//GBA stacks
+extern u8 gbastck_usr[0x200];
+extern u8 gbastck_fiq[0x200];
+extern u8 gbastck_irq[0x200];
+extern u8 gbastck_svc[0x200];
+extern u8 gbastck_abt[0x200];
+extern u8 gbastck_und[0x200];
+//extern u8 gbastck_sys[0x200]; //shared with usr
+//and cpu<mode> all the other backup registers when restoring from FIQ r8-r12
+extern u32  exRegs_cpubup[0x5];
+
+//fetch
+extern u32 armnextpc(u32 address);
+
+//todo: remove these because armnextpc() should toggle between ARM or THUMB fetch
+extern u32 armfetchpc_arm(u32 address);
+extern u16 armfetchpc_thumb(u32 address);
+
+extern void vblank_thread();
+extern void hblank_thread();
+extern void vcount_thread();
+
+extern u32 swi_virt(u32 swinum);
+
+extern u32 debuggeroutput();
 
 #ifdef __cplusplus
 }

@@ -80,43 +80,26 @@ inline VBA::Window * GUI()
 }
 */
 
-
-__attribute__((section(".ewram")))
-u8 dmaexchange_buf[0x100];
-
-
 int len=0;
-
-void systemMessage(int _iId, const char * _csFormat, ...)
-{
+void systemMessage(int _iId, const char * _csFormat, ...){
 	va_list args;
 
 	va_start(args, _csFormat);
 	len=vsnprintf(__outstr,__DOUTBUFSIZE,_csFormat,args);
 	va_end(args);
 
-  printf(__outstr);//GUI()->vPopupErrorV(_(_csFormat), args);
+	printf(__outstr);//GUI()->vPopupErrorV(_(_csFormat), args);
 
-  va_end(args);
-  
-  
-}
-void systemUpdateMotionSensor()
-{
+	va_end(args);
 }
 
-int systemGetSensorX()
-{
+void systemUpdateMotionSensor(){
+}
+
+int systemGetSensorX(){
   return 0;
 }
 
-int systemGetSensorY()
-{
+int systemGetSensorY(){
   return 0;
 }
-
-void debuggerOutput(char * chr, u32 val)
-{
-}
-
-void (*dbgOutput)(char *, u32) = debuggerOutput;

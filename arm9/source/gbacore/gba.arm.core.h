@@ -214,13 +214,6 @@ extern u8 biosProtected[4];
 //input
 extern u32 systemreadjoypad(int which);
 
-//fetch
-extern u32 armnextpc(u32 address);
-extern u32 armfetchpc_arm(u32 address);
-extern u16 armfetchpc_thumb(u32 address);
-
-//swi
-extern u32 swi_virt(u32 swinum);
 extern u8 cpuBitsSet[256];
 extern u8 cpuLowestBitSet[256];
 

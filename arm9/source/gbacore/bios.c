@@ -40,11 +40,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <unistd.h>
-#include "supervisor.h"
-#include "pu.h"
-#include "opcode.h"
 #include "Util.h"
-#include "buffer.h"
 #include "translator.h"
 #include "gba.arm.core.h"
 

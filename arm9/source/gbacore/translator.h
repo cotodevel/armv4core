@@ -29,9 +29,6 @@ USA
 #include <stdlib.h>
 #include <unistd.h>
 #include "Util.h"
-#include "opcode.h"
-#include "pu.h"
-#include "supervisor.h"
 #include "fatfslayerTGDS.h"
 
 #define CPUSTATE_ARM (u8)(0)

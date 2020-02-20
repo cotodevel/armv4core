@@ -20,8 +20,6 @@
 #include "dsregs.h"
 #include "dsregs_asm.h"
 
-#include "opcode.h"
-
 //filesystem
 #include "fatfslayerTGDS.h"
 #include "InterruptsARMCores_h.h"

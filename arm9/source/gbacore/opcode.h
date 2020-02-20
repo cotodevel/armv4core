@@ -5,8 +5,6 @@
 #include "dsregs.h"
 #include "dsregs_asm.h"
 
-#define gzFile void*
-
 #endif
 
 #ifdef __cplusplus

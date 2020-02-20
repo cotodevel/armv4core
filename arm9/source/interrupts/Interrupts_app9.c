@@ -24,7 +24,6 @@ USA
 #include "dsregs_asm.h"
 #include "main.h"
 #include "keypadTGDS.h"
-#include "supervisor.h"
 #include "interrupts.h"
 #include "utilsTGDS.h"
 #include "spifwTGDS.h"

@@ -1,10 +1,7 @@
 //coto: this translator is mostly mine work. (except gbareads[ichfly] & cpuread_data from VBA)
 
 #include "translator.h"
-#include "opcode.h"
 #include "Util.h"
-#include "pu.h"
-#include "supervisor.h"
 #include "ipcfifoTGDSUser.h"
 #include "main.h"
 #include "fatfslayerTGDS.h"
