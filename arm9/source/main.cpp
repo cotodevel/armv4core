@@ -122,7 +122,7 @@ u32 emulatorgba(){
 
 int main(int _argc, sint8 **_argv) {
 	/*			TGDS 1.5 Standard ARM9 Init code start	*/
-	bool project_specific_console = true;	//set default console or custom console: custom console
+	bool project_specific_console = false;	//set default console or custom console: default console
 	GUI_init(project_specific_console);
 	GUI_clear();
 
@@ -150,8 +150,11 @@ int main(int _argc, sint8 **_argv) {
 	
 	printf("Available heap memory: %d", getMaxRam());
 	
-	//render TGDSLogo from a LZSS compressed file
-	RenderTGDSLogoSubEngine((uint8*)&TGDSLogoLZSSCompressed[0], TGDSLogoLZSSCompressed_size);
+	//Show logo
+	RenderTGDSLogoMainEngine((uint8*)&TGDSLogoLZSSCompressed[0], TGDSLogoLZSSCompressed_size);
+	
+	//Remove logo and restore Main Engine registers
+	//restoreFBModeMainEngine();
 	
 	biospath[0] = 0;
 	savepath[0] = 0;
