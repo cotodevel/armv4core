@@ -256,6 +256,46 @@ u32 __attribute__ ((hot)) disthumbcode(u32 thumbinstr){
 debuggeroutput();
 #endif
 
+//5.17 SWI software interrupt changes into ARM mode and uses SVC mode/stack (SWI 14)
+switch(thumbinstr>>8){
+	case(0xdf):{
+		//coto: todo fix/re-add the SPSR per PSR mode.
+		
+		//SWI #Value8 (5.17)
+		u32 stack2svc=exRegs[0xe];	//ARM has r13,r14 per CPU <mode> but this is shared on gba
+		updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10],0x13);
+		exRegs[0xe]=stack2svc;		//ARM has r13,r14 per CPU <mode> but this is shared on gba
+		
+		//we force ARM mode directly regardless cpsr
+		armstate=CPUSTATE_ARM; //1 thmb / 0 ARM
+		
+		swi_virt((thumbinstr&0xff));
+		
+		//if we don't use the BIOS handling, restore CPU mode inmediately
+		#ifndef BIOSHANDLER
+			//Restore CPU<mode> / SPSR (exRegs[0x11]) keeps SVC && restore SPSR T bit (THUMB/ARM mode)
+				//note exRegs[0x10] is required because we validate always if come from same PSR mode or a different. (so stack swaps make sense)
+			updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10] | (((exRegs[0x11]>>5)&1)),exRegs[0x11]&0x1F);
+		#endif
+		
+		//-0x2 because PC THUMB (exRegs[0xf]) alignment / -0x2 because prefetch
+		#ifdef BIOSHANDLER
+			exRegs[0xf]  = (u32)(0x08-0x2-0x2);
+		#else
+			//otherwise executes a possibly BX LR (callback ret addr) -> PC increases correctly later
+			//exRegs[0xf] = (u32)((exRegs[0xe])-0x2-0x2);
+		#endif
+		
+		armIrqEnable=true;
+		
+		#ifdef DEBUGEMU
+		printf("[thumb] SWI #0x%x / CPSR: %x(5.17)",(thumbinstr&0xff),exRegs[0x10]);
+		#endif
+		return 0;
+	}
+	break;
+}
+
 //Low regs
 switch(thumbinstr>>11){
 	////////////////////////5.1
@@ -1478,51 +1518,6 @@ switch(thumbinstr>>8){
 			printf("THUMB: BLE not met! ");
 			#endif
 		}
-	return 0;	
-	}
-	break;
-	
-	
-	//5.17 SWI software interrupt changes into ARM mode and uses SVC mode/stack (SWI 14)
-	//SWI #Value8 (5.17)
-	case(0xDF):{
-		
-		//printf("[thumb 1/2] SWI #(%x)",(unsigned int)exRegs[0x10]);
-		armIrqEnable=false;
-		
-		u32 stack2svc=exRegs[0xe];	//ARM has r13,r14 per CPU <mode> but this is shared on gba
-		
-		updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10],0x13);
-		
-		exRegs[0xe]=stack2svc;		//ARM has r13,r14 per CPU <mode> but this is shared on gba
-		
-		//we force ARM mode directly regardless cpsr
-		armstate=0x0; //1 thmb / 0 ARM
-		
-		//printf("[thumb] SWI #0x%x / CPSR: %x(5.17)",(thumbinstr&0xff),exRegs[0x10]);
-		swi_virt((thumbinstr&0xff));
-		
-		//if we don't use the BIOS handling, restore CPU mode inmediately
-		#ifndef BIOSHANDLER
-			//Restore CPU<mode> / SPSR (exRegs[0x11]) keeps SVC && restore SPSR T bit (THUMB/ARM mode)
-				//note exRegs[0x10] is required because we validate always if come from same PSR mode or a different. (so stack swaps make sense)
-			updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10] | (((exRegs[0x11]>>5)&1)),exRegs[0x11]&0x1F);
-		#endif
-		
-		//-0x2 because PC THUMB (exRegs[0xf]) alignment / -0x2 because prefetch
-		#ifdef BIOSHANDLER
-			exRegs[0xf]  = (u32)(0x08-0x2-0x2);
-		#else
-			//otherwise executes a possibly BX LR (callback ret addr) -> PC increases correctly later
-			//exRegs[0xf] = (u32)((exRegs[0xe])-0x2-0x2);
-		#endif
-		
-		armIrqEnable=true;
-		
-		//printf("[thumb 2/2] SWI #(%x)",(unsigned int)exRegs[0x10]);
-		
-		//swi 0x13 (ARM docs)
-		
 	return 0;	
 	}
 	break;
