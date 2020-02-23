@@ -29,10 +29,6 @@ extern u32 PATCH_HOOK_START();
 extern u32 NDS7_RTC_PROCESS();
 extern u32 PATCH_ENTRYPOINT[4];
 
-//r0: new_instruction / r1: cpsr
-//arg1 is cpsr <new mode> inter from branch calls, execute then send curr_cpsr back
-extern u32 emulatorgba();	
-
 extern char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH+1];
 extern char biospath[MAX_TGDSFILENAME_LENGTH+1];
 extern char savepath[MAX_TGDSFILENAME_LENGTH+1];

@@ -216,10 +216,7 @@ extern u32 exceptirq(u32 nds_iemask,u32 nds_ifmask,u32 sp_ptr);
 extern u32 swicaller(u32 arg);
 extern void exception_dump(char * cause);
 extern u32 gbacpu_refreshvcount();	//CPUCompareVCOUNT(gba);
-
-extern u32 armfetchpc(u32 address);
 extern int CPUUpdateTicks();
-extern u32 cpuloop(int ticks);
 
 //GBA stacks
 extern u8 gbastck_usr[0x200];

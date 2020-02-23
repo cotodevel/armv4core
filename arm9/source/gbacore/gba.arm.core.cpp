@@ -655,42 +655,43 @@ __attribute__ ((hot)) u32 cpu_calculate(){	//todo
 }
 
 __attribute__ ((hot)) void cpu_fdexecute(){
-
 	//1) read GBAROM entrypoint
 	//2) reserve registers r0-r15, stack pointer , LR, PC and stack (for USR, AND SYS MODES)
 	//3) get pointers from all reserved memory areas (allocated)
 	//4) use this function to fetch addresses from GBAROM, patch swi calls (own BIOS calls), patch interrupts (by calling correct vblank draw, sound)
 	//patch IO access , REDIRECT VIDEO WRITES TO ALLOCATED VRAM & VRAMIO [use switch and intercalls for asm]
 	
-	if(armstate == CPUSTATE_ARM){
-		//Fetch Decode & Execute ARM
-		//Word alignment for opcode fetch. (doesn't ignore opcode's bit[0] globally, bc fetch will carry whatever Word is)
-		u32 new_instr=armfetchpc_arm(exRegs[0xf]&0xfffffffe); 
-		#ifdef DEBUGEMU
-			printf("/******ARM******/");
-			printf(" rom:%x [%x]",(unsigned int)exRegs[0xf]&0xfffffffe,(unsigned int)new_instr);
-		#endif
-		disarmcode(new_instr);
-	}
-	else if(armstate == CPUSTATE_THUMB){
-		//Fetch Decode & Execute THUMB
-		//Half Word alignment for opcode fetch. (doesn't ignore opcode's bit[0] globally, bc fetch will carry whatever HalfWord is)
-		u16 new_instr=armfetchpc_thumb((exRegs[0xf])&0xfffffffe);
-		#ifdef DEBUGEMU
-			printf("/******THUMB******/");
-			printf(" rom:%x [%x]",(unsigned int)exRegs[0xf]&0xfffffffe,(unsigned int)new_instr);
-		#endif
-		disthumbcode(new_instr);
-		
-	}
-	//HBLANK Handles CPU_EMULATE(); //checks and interrupts all the emulator kind of requests (IRQ,DMA)
+	if(cpuStart == true){
+		if(armstate == CPUSTATE_ARM){
+			//Fetch Decode & Execute ARM
+			//Word alignment for opcode fetch. (doesn't ignore opcode's bit[0] globally, bc fetch will carry whatever Word is)
+			u32 new_instr=armfetchpc_arm(exRegs[0xf]&0xfffffffc);	//word-aligned 
+			#ifdef DEBUGEMU
+				printf("/******ARM******/");
+				printf(" rom:%x [%x]",(unsigned int)exRegs[0xf]&0xfffffffc,(unsigned int)new_instr);
+			#endif
+			disarmcode(new_instr);
+		}
+		else if(armstate == CPUSTATE_THUMB){
+			//Fetch Decode & Execute THUMB
+			//Half Word alignment for opcode fetch. (doesn't ignore opcode's bit[0] globally, bc fetch will carry whatever HalfWord is)
+			u16 new_instr=armfetchpc_thumb(exRegs[0xf]);
+			#ifdef DEBUGEMU
+				printf("/******THUMB******/");
+				printf(" rom:%x [%x]",(unsigned int)exRegs[0xf],(unsigned int)new_instr);
+			#endif
+			disthumbcode(new_instr);
+			
+		}
+		//HBLANK Handles CPU_EMULATE(); //checks and interrupts all the emulator kind of requests (IRQ,DMA)
 
-	//increase PC depending on CPUmode
-	if (armstate == CPUSTATE_ARM){
-		exRegs[0xf]+=4;
-	}
-	else if(armstate == CPUSTATE_THUMB){
-		exRegs[0xf]+=2;
+		//increase PC depending on CPUmode
+		if (armstate == CPUSTATE_ARM){
+			exRegs[0xf]+=4;
+		}
+		else if(armstate == CPUSTATE_THUMB){
+			exRegs[0xf]+=2;
+		}
 	}
 }
 
