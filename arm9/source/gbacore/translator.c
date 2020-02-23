@@ -2865,22 +2865,21 @@ if(isalu==1){
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
-				//#Imm (operand 2)		 bit[11]---bit[0]
-				//rotate field:
-				//#imm value is zero extended to 32bit, then subject
-				//to rotate right by twice the value in rotate field:
-				u32 DestroyableRegister2 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
+				//#Imm (operand 2)		bit[7]---bit[0]
+				//Rotate field:			bit[11]---bit[8]
+				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
+				u32 DestroyableRegister2=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				u32 DestroyableRegister3=andasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2);
 				
 				//rd destination reg	 bit[15]---bit[12]
 				exRegs[((arminstr>>12)&0xf)] = DestroyableRegister3;
 				
 				#ifdef DEBUGEMU
-				printf("AND rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) ",
+				printf("AND rd%d[%x]<-rn%d[%x],#Imm[%x](ror:[%x])/CPSR:%x (5.4) ",
 				(int)(arminstr>>12)&0xf,(unsigned int)DestroyableRegister3,
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
-				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)),(unsigned int)DestroyableRegister2,
+				(unsigned int)DestroyableRegister2,
 				(unsigned int)exRegs[0x10]);
 				#endif
 			}
@@ -3001,20 +3000,19 @@ if(isalu==1){
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 			
-				//#Imm (operand 2)		 bit[11]---bit[0]
-				//rotate field:
-				//#imm value is zero extended to 32bit, then subject
-				//to rotate right by twice the value in rotate field:
-				u32 DestroyableRegister2 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
+				//#Imm (operand 2)		bit[7]---bit[0]
+				//Rotate field:			bit[11]---bit[8]
+				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
+				u32 DestroyableRegister2=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				u32 DestroyableRegister3 = eorasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2);
 				//rd destination reg	 bit[15]---bit[12]
 				exRegs[((arminstr>>12)&0xf)] = DestroyableRegister3;
 				#ifdef DEBUGEMU
-				printf("EOR rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) ",
+				printf("EOR rd%d[%x]<-rn%d[%x],#Imm[%x](ror:[%x])/CPSR:%x (5.4) ",
 				(int)(arminstr>>12)&0xf,(unsigned int)DestroyableRegister3,
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
-				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)),(unsigned int)DestroyableRegister2,
+				(unsigned int)DestroyableRegister2,
 				(unsigned int)exRegs[0x10]);
 				#endif
 			}
@@ -3137,20 +3135,19 @@ if(isalu==1){
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 			
-				//#Imm (operand 2)		 bit[11]---bit[0]
-				//rotate field:
-				//#imm value is zero extended to 32bit, then subject
-				//to rotate right by twice the value in rotate field:
-				u32 DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
+				//#Imm (operand 2)		bit[7]---bit[0]
+				//Rotate field:			bit[11]---bit[8]
+				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
+				u32 DestroyableRegister1=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				u32 DestroyableRegister2 = subasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister1);
 				//rd destination reg	 bit[15]---bit[12]
 				exRegs[((arminstr>>12)&0xf)] = DestroyableRegister2;
 				#ifdef DEBUGEMU
-				printf("SUB rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) ",
+				printf("SUB rd%d[%x]<-rn%d[%x],#Imm[%x](ror:[%x])/CPSR:%x (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)DestroyableRegister2,
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
-				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)), (unsigned int)DestroyableRegister1,
+				(unsigned int)DestroyableRegister1,
 				(unsigned int)exRegs[0x10]);
 				#endif
 			}
@@ -3273,21 +3270,20 @@ if(isalu==1){
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
-				//#Imm (operand 2)		 bit[11]---bit[0]
-				//rotate field:
-				//#imm value is zero extended to 32bit, then subject
-				//to rotate right by twice the value in rotate field:
-				u32 DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
+				//#Imm (operand 2)		bit[7]---bit[0]
+				//Rotate field:			bit[11]---bit[8]
+				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
+				u32 DestroyableRegister1=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				u32 DestroyableRegister2=rsbasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister1);
 				//rd destination reg	 bit[15]---bit[12]
 				exRegs[((arminstr>>12)&0xf)] = DestroyableRegister2;
 				
 				#ifdef DEBUGEMU
-				printf("RSB rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x])/CPSR:%x (5.4) ",
+				printf("RSB rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:[%x])/CPSR:%x (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)DestroyableRegister2,
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
-				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)), (unsigned int)DestroyableRegister1,
+				(unsigned int)DestroyableRegister1,
 				(unsigned int)exRegs[0x10]);
 				#endif
 			}
@@ -3412,11 +3408,10 @@ if(isalu==1){
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
-				//#Imm (operand 2)		 bit[11]---bit[0]
-				//rotate field:
-				//#imm value is zero extended to 32bit, then subject
-				//to rotate right by twice the value in rotate field:
-				u32 DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
+				//#Imm (operand 2)		bit[7]---bit[0]
+				//Rotate field:			bit[11]---bit[8]
+				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
+				u32 DestroyableRegister1=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				
 				//PC directive (+0x8 prefetch)
 				if (((arminstr>>16)&0xf)==0xf){
@@ -3561,21 +3556,20 @@ if(isalu==1){
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
-				//#Imm (operand 2)		 bit[11]---bit[0]
-				//rotate field:
-				//#imm value is zero extended to 32bit, then subject
-				//to rotate right by twice the value in rotate field:
-				u32 DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
+				//#Imm (operand 2)		bit[7]---bit[0]
+				//Rotate field:			bit[11]---bit[8]
+				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
+				u32 DestroyableRegister1=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				
 				//rd destination reg	 bit[15]---bit[12]
 				exRegs[((arminstr>>12)&0xf)]=adcasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister1);
 				
 				#ifdef DEBUGEMU
-				printf("ADC rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
+				printf("ADC rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:[%x]) (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)],
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
-				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)), (unsigned int)DestroyableRegister1
+				(unsigned int)DestroyableRegister1
 				);
 				#endif
 			}
@@ -3697,21 +3691,20 @@ if(isalu==1){
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
-				//#Imm (operand 2)		 bit[11]---bit[0]
-				//rotate field:
-				//#imm value is zero extended to 32bit, then subject
-				//to rotate right by twice the value in rotate field:
-				u32 DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
+				//#Imm (operand 2)		bit[7]---bit[0]
+				//Rotate field:			bit[11]---bit[8]
+				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
+				u32 DestroyableRegister1=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				
 				//rd destination reg	 bit[15]---bit[12]
 				exRegs[((arminstr>>12)&0xf)]=sbcasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister1);
 				
 				#ifdef DEBUGEMU
-				printf("SBC rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
+				printf("SBC rd%d[%x]<-rn%d[%x],#Imm[%x](ror:[%x]) (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)],
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
-				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)), (unsigned int)DestroyableRegister1
+				(unsigned int)DestroyableRegister1
 				);
 				#endif
 			}
@@ -3834,21 +3827,20 @@ if(isalu==1){
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
-				//#Imm (operand 2)		 bit[11]---bit[0]
-				//rotate field:
-				//#imm value is zero extended to 32bit, then subject
-				//to rotate right by twice the value in rotate field:
-				u32 DestroyableRegister2 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
+				//#Imm (operand 2)		bit[7]---bit[0]
+				//Rotate field:			bit[11]---bit[8]
+				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
+				u32 DestroyableRegister2=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				
 				//rd destination reg	 bit[15]---bit[12]
 				exRegs[((arminstr>>12)&0xf)]=rscasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2);
 				
 				#ifdef DEBUGEMU
-				printf("RSC rd%d[%x]<-rn%d[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
+				printf("RSC rd%d[%x]<-rn%d[%x],#Imm[%x](ror:[%x]) (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)],
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
-				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)),(unsigned int)DestroyableRegister2
+				(unsigned int)DestroyableRegister2
 				);
 				#endif
 			}
@@ -3975,18 +3967,17 @@ if(isalu==1){
 				//rn (1st op reg) 		 bit[19]---bit[16]
 				//exRegs[((arminstr>>16)&0xf)]
 				
-				//#Imm (operand 2)		 bit[11]---bit[0]
-				//rotate field:
-				//#imm value is zero extended to 32bit, then subject
-				//to rotate right by twice the value in rotate field:
-				u32 DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
+				//#Imm (operand 2)		bit[7]---bit[0]
+				//Rotate field:			bit[11]---bit[8]
+				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
+				u32 DestroyableRegister1=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				tstasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister1);
 				
 				#ifdef DEBUGEMU
-				printf("TST [and] rn%d[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
+				printf("TST [and] rn%d[%x],#Imm[%x](ror:[%x]) (5.4) ",
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
-				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)), (unsigned int)DestroyableRegister1
+				(unsigned int)DestroyableRegister1
 				);
 				#endif
 			}
@@ -4115,18 +4106,16 @@ if(isalu==1){
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
-				//#Imm (operand 2)		 bit[11]---bit[0]
-				//rotate field:
-				//#imm value is zero extended to 32bit, then subject
-				//to rotate right by twice the value in rotate field:
-				u32 DestroyableRegister2 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
-				
+				//#Imm (operand 2)		bit[7]---bit[0]
+				//Rotate field:			bit[11]---bit[8]
+				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
+				u32 DestroyableRegister2=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				DestroyableRegister2 = teqasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister2);
 				#ifdef DEBUGEMU
-				printf("TEQ rn%d[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
+				printf("TEQ rn%d[%x],#Imm[%x](ror:[%x]) (5.4) ",
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
-				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)),(unsigned int)DestroyableRegister2
+				(unsigned int)DestroyableRegister2
 				);
 				#endif
 			}
@@ -4253,18 +4242,16 @@ if(isalu==1){
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
-				//#Imm (operand 2)		 bit[11]---bit[0]
-				//rotate field:
-				//#imm value is zero extended to 32bit, then subject
-				//to rotate right by twice the value in rotate field:
-				u32 DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
-				
+				//#Imm (operand 2)		bit[7]---bit[0]
+				//Rotate field:			bit[11]---bit[8]
+				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
+				u32 DestroyableRegister1=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				cmpasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister1);
 				#ifdef DEBUGEMU
-				printf("CMP rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
+				printf("CMP rn(%d)[%x],#Imm[%x](ror:[%x]) (5.4) ",
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
-				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)), (unsigned int)DestroyableRegister1
+				(unsigned int)DestroyableRegister1
 				);
 				#endif
 			}
@@ -4391,18 +4378,16 @@ if(isalu==1){
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
-				//#Imm (operand 2)		 bit[11]---bit[0]
-				//rotate field:
-				//#imm value is zero extended to 32bit, then subject
-				//to rotate right by twice the value in rotate field:
-				u32 DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
-				
+				//#Imm (operand 2)		bit[7]---bit[0]
+				//Rotate field:			bit[11]---bit[8]
+				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
+				u32 DestroyableRegister1=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				cmnasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister1);
 				#ifdef DEBUGEMU
-				printf("CMN rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
+				printf("CMN rn(%d)[%x],#Imm[%x](ror:[%x]) (5.4) ",
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
-				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)),(unsigned int)DestroyableRegister1
+				(unsigned int)DestroyableRegister1
 				);
 				#endif
 			}
@@ -4528,21 +4513,19 @@ if(isalu==1){
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
-				//#Imm (operand 2)		 bit[11]---bit[0]
-				//rotate field:
-				//#imm value is zero extended to 32bit, then subject
-				//to rotate right by twice the value in rotate field:
-				u32 DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
-				
+				//#Imm (operand 2)		bit[7]---bit[0]
+				//Rotate field:			bit[11]---bit[8]
+				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
+				u32 DestroyableRegister1=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				//rd destination reg	 bit[15]---bit[12]
 				exRegs[((arminstr>>12)&0xf)]=orrasm(exRegs[((arminstr>>16)&0xf)], DestroyableRegister1);
 				
 				#ifdef DEBUGEMU
-				printf("ORR rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
+				printf("ORR rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:[%x]) (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)],
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
-				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)), (unsigned int)DestroyableRegister1
+				(unsigned int)DestroyableRegister1
 				);
 				#endif
 			}
@@ -4667,17 +4650,16 @@ if(isalu==1){
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
-				//#Imm (operand 2)		 bit[11]---bit[0]
-				//rotate field:
-				//#imm value is zero extended to 32bit, then subject
-				//to rotate right by twice the value in rotate field:
-				u32 DestroyableRegister1=rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
+				//#Imm (operand 2)		bit[7]---bit[0]
+				//Rotate field:			bit[11]---bit[8]
+				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
+				u32 DestroyableRegister1=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				u32 DestroyableRegister4=movasm(DestroyableRegister1);
 				#ifdef DEBUGEMU
-				printf("MOV rn(%d)[%x],#Imm[%x] (ror:%x[%x])(5.4) ",
+				printf("MOV rn(%d)[%x],#Imm[%x] (ror:[%x])(5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)DestroyableRegister4,
 				(unsigned int)(arminstr&0xff),
-				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)), (unsigned int)DestroyableRegister1
+				(unsigned int)DestroyableRegister1
 				);
 				#endif
 				//rd (1st op reg) 		 bit[19]---bit[16] 
@@ -4806,21 +4788,20 @@ if(isalu==1){
 				//rn (1st op reg) 		 bit[19]---bit[16] 
 				//exRegs[((arminstr>>16)&0xf)]
 				
-				//#Imm (operand 2)		 bit[11]---bit[0]
-				//rotate field:
-				//#imm value is zero extended to 32bit, then subject
-				//to rotate right by twice the value in rotate field:
-				u32 DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
+				//#Imm (operand 2)		bit[7]---bit[0]
+				//Rotate field:			bit[11]---bit[8]
+				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
+				u32 DestroyableRegister1=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				
 				//rd destination reg	 bit[15]---bit[12]
 				exRegs[((arminstr>>12)&0xf)]=bicasm(exRegs[((arminstr>>16)&0xf)],DestroyableRegister1);
 				
 				#ifdef DEBUGEMU
-				printf("BIC rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:%x[%x]) (5.4) ",
+				printf("BIC rd(%d)[%x]<-rn(%d)[%x],#Imm[%x](ror:[%x]) (5.4) ",
 				(int)((arminstr>>12)&0xf),(unsigned int)exRegs[((arminstr>>12)&0xf)],
 				(int)((arminstr>>16)&0xf),(unsigned int)exRegs[((arminstr>>16)&0xf)],
 				(unsigned int)(arminstr&0xff),
-				(unsigned int)rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)), (unsigned int)DestroyableRegister1
+				(unsigned int)DestroyableRegister1
 				);
 				#endif
 			}
@@ -4945,11 +4926,10 @@ if(isalu==1){
 				//rn (1st op reg) 		 bit[19]---bit[16] / unused because of #Imm 
 				//exRegs[((arminstr>>16)&0xf)]
 				
-				//#Imm (operand 2)		 bit[11]---bit[0]
-				//rotate field:
-				//#imm value is zero extended to 32bit, then subject
-				//to rotate right by twice the value in rotate field:
-				u32 DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
+				//#Imm (operand 2)		bit[7]---bit[0]
+				//Rotate field:			bit[11]---bit[8]
+				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
+				u32 DestroyableRegister1=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				exRegs[((arminstr>>12)&0xf)]=mvnasm(DestroyableRegister1);
 				#ifdef DEBUGEMU
 				printf("MVN rn(%d)[%x],#Imm[%x] (ror:%x)(5.4) ",
@@ -5152,11 +5132,10 @@ switch((arminstr>>16)&0x3f){
 			}
 			//#imm
 			else{
-				//#Imm (operand)		 bit[11]---bit[0]
-				//rotate field:
-				//#imm value is zero extended to 32bit, then subject	//so far
-				//to rotate right by twice the value in rotate field:
-				DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2));
+				//#Imm (operand 2)		bit[7]---bit[0]
+				//Rotate field:			bit[11]---bit[8]
+				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
+				DestroyableRegister1=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				//printf("CPSR restore from #imm!:%x ", DestroyableRegister1);
 				exRegs[0x10]=DestroyableRegister1;
 			}
@@ -5176,11 +5155,10 @@ switch((arminstr>>16)&0x3f){
 			}
 			//#imm
 			else{
-				//#Imm (operand)		 bit[11]---bit[0]
-				//rotate field:
-				//#imm value is zero extended to 32bit, then subject
-				//to rotate right by twice the value in rotate field:
-				DestroyableRegister1 = rorasm(((arminstr&0xfff) << 0x14), ((arminstr&0xfff) * 2)); 
+				//#Imm (operand 2)		bit[7]---bit[0]
+				//Rotate field:			bit[11]---bit[8]
+				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
+				DestroyableRegister1=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				#ifdef DEBUGEMU
 				printf("SPSR restore from #imm!:%x ",(unsigned int)DestroyableRegister1);
 				#endif
