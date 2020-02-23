@@ -371,7 +371,7 @@ switch(thumbinstr>>11){
 	//5.6
 	//PC relative load WORD 10-bit Imm
 	case 0x9:{
-		u32 destroyableRegister = CPUReadMemory(((exRegs[0xf]&0xfffffffe)+0x4)+((thumbinstr&0xff)<<2)); //[PC+0x4,#(8<<2)Imm] / because prefetch and alignment
+		u32 destroyableRegister = CPUReadMemory(((exRegs[0xf])+0x4)+((thumbinstr&0xff)<<2)); //[PC+0x4,#(8<<2)Imm] / because prefetch and alignment
 		#ifdef DEBUGEMU
 		printf("(WORD) LDR r%d[%x], [PC:%x,#%x] (5.6) ",(int)((thumbinstr>>8)&0x7),(unsigned int)destroyableRegister,(unsigned int)exRegs[0xf],(unsigned int)(thumbinstr&0xff));
 		#endif
@@ -705,7 +705,7 @@ switch(thumbinstr>>11){
 	
 			exRegs[0xf]=(CPUReadMemory((thumbinstr&0x3ff)<<1)+0x4&0xfffffffe); //bit[11] but word-aligned so assembler puts 0>>1
 			#ifdef DEBUGEMU
-			printf("[BAL] label[%x] THUMB mode / CPSR:%x (5.18) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
+			printf("[BAL] label[%x] THUMB mode / CPSR:%x (5.18) ",(unsigned int)(exRegs[0xf]),(unsigned int)exRegs[0x10]); 
 			#endif
 	return 0;	
 	}
@@ -737,9 +737,9 @@ switch(thumbinstr>>11){
 	
 		u32 u32read=0;
 		//if only a gbarom area read..
-		if( (((uint32)(exRegs[0xf]&0xfffffffe)>>24) == 0x8) || (((uint32)(exRegs[0xf]&0xfffffffe)>>24) == 0x9) ){
+		if( (((uint32)(exRegs[0xf])>>24) == 0x8) || (((uint32)(exRegs[0xf])>>24) == 0x9) ){
 			//new read method (reads from gba cpu core)
-			u32read=CPUReadMemory((uint32)(exRegs[0xf]&0xfffffffe));
+			u32read=CPUReadMemory((uint32)(exRegs[0xf]));
 			#ifndef ROMTEST //gbareads (stream) are byte swapped, we swap bytes here if streamed data
 				printf("byteswap gbaread! ");
 				u32read=rorasm(u32read,0x10);
@@ -747,27 +747,32 @@ switch(thumbinstr>>11){
 		}
 		else{
 			//new read method (reads from gba cpu core)
-			u32read=CPUReadMemory(( ((uint32)(exRegs[0xf]&0xfffffffe) >>2) )<<2);
+			u32read=CPUReadMemory(( ((uint32)(exRegs[0xf]) >>2) )<<2);
 		}
 		
-		printf("BL rom @(%x):[%x] ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)u32read);
+		printf("BL rom @(%x):[%x] ",(unsigned int)(exRegs[0xf]),(unsigned int)u32read);
 		
 		//original PC
-		u32 oldpc=(exRegs[0xf]&0xfffffffe);
+		u32 oldpc=(exRegs[0xf]);
 		
 		//H = 0 (high ofst)
-		u32 part1=(exRegs[0xf]&0xfffffffe)+((((u32read>>16)&0xffff)&0x7ff)<<12);
+		u32 part1=(exRegs[0xf])+((((u32read>>16)&0xffff)&0x7ff)<<12);
 		exRegs[0xe]=part1;
 		
 		//H = 1 (low ofst)
 		u32 part2=((((((u32read))&0xffff)&0x7ff) << 1) + exRegs[0xe] );
 		exRegs[0xf] = (part2+(0x4)-0x2)&0xfffffffe; //prefetch - emulator alignment
 		
-		exRegs[0xe]= ((oldpc+(0x4)) | 1) &0xfffffffe; //+0x4 for prefetch
-		
+		//read CPSR and set T bit in LR
+		if(exRegs[0x10]&(1<<5)){
+			exRegs[0xe] = ((oldpc+(0x4)) | 1); //+0x4 for prefetch
+		}
+		else{
+			exRegs[0xe] = (oldpc+(0x4)); //+0x4 for prefetch
+		}
 		#ifdef DEBUGEMU
 			printf("LONG BRANCH WITH LINK: PC:[%x],LR[%x] (5.19) ",
-			(unsigned int)((exRegs[0xf]&0xfffffffe)+0x2),(unsigned int)exRegs[0xe]); //+0x2 (pc++ fixup)
+			(unsigned int)((exRegs[0xf])+0x2),(unsigned int)exRegs[0xe]); //+0x2 (pc++ fixup)
 		#endif
 		
 		return 0;
@@ -1216,10 +1221,10 @@ switch(thumbinstr>>8){
 	
 	case(0xd0):{
 		if (z_flag==1){	
-			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
-			printf("[BEQ] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
+			printf("[BEQ] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]),(unsigned int)exRegs[0x10]); 
 			#endif
 		}
 		else {
@@ -1235,10 +1240,10 @@ switch(thumbinstr>>8){
 	//BNE label (5.16)
 	case(0xd1):{
 		if (z_flag==0){
-			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
-			printf("[BNE] label[%x] THUMB mode (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe)); 
+			printf("[BNE] label[%x] THUMB mode (5.16) ",(unsigned int)(exRegs[0xf])); 
 			#endif
 			
 		}
@@ -1255,10 +1260,10 @@ switch(thumbinstr>>8){
 	//BCS label (5.16)
 	case(0xd2):{
 		if (c_flag==1){
-			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
-			printf("[BCS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
+			printf("[BCS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]),(unsigned int)exRegs[0x10]); 
 			#endif
 			
 		}
@@ -1274,10 +1279,10 @@ switch(thumbinstr>>8){
 	//b: 1101 0011 / BCC / Branch if C unset (lower)
 	case(0xd3):{
 		if (c_flag==0){
-			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
-			printf("[BCC] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
+			printf("[BCC] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]),(unsigned int)exRegs[0x10]); 
 			#endif
 		
 		}
@@ -1293,10 +1298,10 @@ switch(thumbinstr>>8){
 	//b: 1101 0100 / BMI / Branch if N set (negative)
 	case(0xd4):{
 		if (n_flag==1){
-			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
-			printf("[BMI] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
+			printf("[BMI] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]),(unsigned int)exRegs[0x10]); 
 			#endif
 	
 		}
@@ -1312,10 +1317,10 @@ switch(thumbinstr>>8){
 	//b: 1101 0101 / BPL / Branch if N clear (positive or zero)
 	case(0xd5):{
 		if (n_flag==0){
-			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
-			printf("[BPL] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
+			printf("[BPL] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]),(unsigned int)exRegs[0x10]); 
 			#endif
 			
 		}
@@ -1331,10 +1336,10 @@ switch(thumbinstr>>8){
 	//b: 1101 0110 / BVS / Branch if V set (overflow)
 	case(0xd6):{
 		if (v_flag==1){
-			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
-			printf("[BVS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
+			printf("[BVS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]),(unsigned int)exRegs[0x10]); 
 			#endif
 			
 		}
@@ -1350,10 +1355,10 @@ switch(thumbinstr>>8){
 	//b: 1101 0111 / BVC / Branch if V unset (no overflow)
 	case(0xd7):{
 		if (v_flag==0){
-			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
-			printf("[BVC] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
+			printf("[BVC] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]),(unsigned int)exRegs[0x10]); 
 			#endif
 			
 		}
@@ -1369,10 +1374,10 @@ switch(thumbinstr>>8){
 	//b: 1101 1000 / BHI / Branch if C set and Z clear (unsigned higher)
 	case(0xd8):{
 		if ((c_flag==1)&&(z_flag==0)){
-			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
-			printf("[BHI] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
+			printf("[BHI] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]),(unsigned int)exRegs[0x10]); 
 			#endif
 			
 		}
@@ -1388,10 +1393,10 @@ switch(thumbinstr>>8){
 	//b: 1101 1001 / BLS / Branch if C clr or Z Set (lower or same [zero included])
 	case(0xd9):{
 		if ((c_flag==0)||(z_flag==1)){
-			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);	
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));	
 			
 			#ifdef DEBUGEMU
-			printf("[BLS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
+			printf("[BLS] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]),(unsigned int)exRegs[0x10]); 
 			#endif
 			
 		}
@@ -1407,10 +1412,10 @@ switch(thumbinstr>>8){
 	//b: 1101 1010 / BGE / Branch if N set and V set, or N clear and V clear
 	case(0xda):{
 		if ( ((n_flag==1)&&(v_flag==1)) || ((n_flag==0)&&(v_flag==0)) ){
-			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
-			printf("[BGE] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
+			printf("[BGE] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]),(unsigned int)exRegs[0x10]); 
 			#endif
 		
 		}
@@ -1426,10 +1431,10 @@ switch(thumbinstr>>8){
 	//b: 1101 1011 / BLT / Branch if N set and V clear, or N clear and V set
 	case(0xdb):{
 		if ( ((n_flag==1)&&(v_flag==0)) || ((n_flag==0)&&(v_flag==1)) ){ 
-			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
-			printf("[BLT] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
+			printf("[BLT] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]),(unsigned int)exRegs[0x10]); 
 			#endif
 		}
 		else {
@@ -1444,10 +1449,10 @@ switch(thumbinstr>>8){
 	//b: 1101 1100 / BGT / Branch if Z clear, and either N set and V set or N clear and V clear
 	case(0xdc):{
 		if ( (z_flag==0) && ( ((n_flag==1)&&(v_flag==1)) || ((n_flag==0)&&(v_flag==0)) ) ){
-			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
-			printf("[BGT] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
+			printf("[BGT] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]),(unsigned int)exRegs[0x10]); 
 			#endif
 		}
 		else {
@@ -1462,10 +1467,10 @@ switch(thumbinstr>>8){
 	//b: 1101 1101 / BLE / Branch if Z set, or N set and V clear, or N clear and V set (less than or equal)
 	case(0xdd):{	
 		if ( ((z_flag==1) || (n_flag==1)) && ((v_flag==0) || ((n_flag==0) && (v_flag==1)) )  ){ 
-			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4)&0xfffffffe);
+			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
-			printf("[BLE] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]&0xfffffffe),(unsigned int)exRegs[0x10]); 
+			printf("[BLE] label[%x] THUMB mode / CPSR:%x (5.16) ",(unsigned int)(exRegs[0xf]),(unsigned int)exRegs[0x10]); 
 			#endif
 		}
 		else {
@@ -1504,12 +1509,12 @@ switch(thumbinstr>>8){
 			updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10] | (((exRegs[0x11]>>5)&1)),exRegs[0x11]&0x1F);
 		#endif
 		
-		//-0x2 because PC THUMB (exRegs[0xf]&0xfffffffe) alignment / -0x2 because prefetch
+		//-0x2 because PC THUMB (exRegs[0xf]) alignment / -0x2 because prefetch
 		#ifdef BIOSHANDLER
-			exRegs[0xf]  = (u32)(0x08-0x2-0x2)&0xfffffffe;
+			exRegs[0xf]  = (u32)(0x08-0x2-0x2);
 		#else
 			//otherwise executes a possibly BX LR (callback ret addr) -> PC increases correctly later
-			//exRegs[0xf] = (u32)((exRegs[0xe]&0xfffffffe)-0x2-0x2);
+			//exRegs[0xf] = (u32)((exRegs[0xe])-0x2-0x2);
 		#endif
 		
 		armIrqEnable=true;
@@ -2136,7 +2141,7 @@ switch(thumbinstr>>6){
 		//set CPU <mode> (included bit[5])
 		updatecpuflags(CPUFLAG_UPDATE_CPSR, temppsr, temppsr&0x1f);
 	
-		exRegs[0xf]=(u32)(exRegs[((thumbinstr>>0x3)&0x7)]&0xfffffffe);
+		exRegs[0xf]=(u32)(exRegs[((thumbinstr>>0x3)&0x7)]);
 	
 		#ifdef DEBUGEMU
 			printf("BX rs(%d)[%x] -> PC[%x]! cpsr:%x",(int)((thumbinstr>>0x3)&0x7),(unsigned int)exRegs[((thumbinstr>>0x3)&0x7)], exRegs[0xf], (unsigned int)temppsr);
@@ -2162,7 +2167,7 @@ switch(thumbinstr>>6){
 		//set CPU <mode> (included bit[5])
 		updatecpuflags(CPUFLAG_UPDATE_CPSR,temppsr,temppsr&0x1f);
 		
-		exRegs[0xf]=(u32)((exRegs[((thumbinstr>>0x3)&0x7)+0x8]&0xfffffffe)-0x2); //prefetch & align 2-boundary
+		exRegs[0xf]=(u32)((exRegs[((thumbinstr>>0x3)&0x7)+0x8])-0x2); //prefetch & align 2-boundary
 	
 		#ifdef DEBUGEMU
 		printf("BX hs(%d)[%x]! cpsr:%x",(int)((thumbinstr>>0x3)&0x7),(unsigned int)(exRegs[((thumbinstr>>0x3)&0x7)+0x8]&0xfffffffe), (unsigned int)temppsr);

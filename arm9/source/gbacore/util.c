@@ -1072,7 +1072,6 @@ int ram2file_nds(char * fname,u8 * buffer,int size){
 void printGBACPU(){
 	int cntr=0;
 	printf("Hardware Registers: ");
-	
 	//Base sp cpu <mode>
 	if ((exRegs[0x10]&0x1f) == (0x10) || (exRegs[0x10]&0x1f) == (0x1f))
 		printf(" USR/SYS STACK ");
@@ -1088,8 +1087,6 @@ void printGBACPU(){
 		printf(" UND STACK");
 	else
 		printf(" STACK LOAD ERROR CPSR: %x",(unsigned int)exRegs[0x10]);
-		
-	printf(" ////////////CPU Registers////////////: ");
 	
 	for(cntr=0;cntr<15;cntr=cntr+3){
 		printf(" r%d :[0x%x] r%d :[0x%x] r%d :[0x%x] ", 0 + cntr, (unsigned int)exRegs[0 + cntr], 1 + cntr, (unsigned int)exRegs[1 + cntr], 2 + cntr, (unsigned int)exRegs[2 + cntr]);
