@@ -64,7 +64,7 @@ u32 updatecpuflags(u8 mode ,u32 cpsr, u32 cpumode){
 		case (CPUFLAG_UPDATE_CPSR):{
 			//1)check if cpu<mode> swap does not come from the same mode
 			if((cpsr&0x1f)!=cpumode){
-				exRegs[0x11]=exRegs[0x10];	//save SPSR
+				
 				//2a)save stack/frame pointer before loading new cpsr&0x1f mode while storing PC into LR (mode)
 				if( ((exRegs[0x10]&0x1f) == (0x10)) || ((exRegs[0x10]&0x1f) == (0x1f)) ){ //detect usr/sys (0x10 || 0x1f)
 					exRegs_r13usr[0x0]=exRegs[0xd]; //user/sys is the same stacks
@@ -246,6 +246,66 @@ u32 updatecpuflags(u8 mode ,u32 cpsr, u32 cpumode){
 	return 0;
 }
 
+u32 getSPSRFromCPSR(u32 cpumode){	//cpumode == cpsr
+	u32 SPSRMode = 0;
+	//user/sys has no SPSR
+	/*
+	if ( ((cpumode&0x1f) == (0x10)) || ((cpumode&0x1f) == (0x1f)) ){
+		
+	}
+	*/
+	//fiq
+	if((cpumode&0x1f)==0x11){
+		SPSRMode=SPSR_fiq[0];
+	}
+	//irq
+	else if((cpumode&0x1f)==0x12){
+		SPSRMode=SPSR_irq[0];
+	}
+	//svc
+	else if((cpumode&0x1f)==0x13){
+		SPSRMode=SPSR_svc[0];
+	}
+	//abort
+	else if((cpumode&0x1f)==0x17){
+		SPSRMode=SPSR_abt[0];
+	}
+	//undef
+	else if((cpumode&0x1f)==0x1b){
+		SPSRMode=SPSR_und[0];
+	}
+	return SPSRMode;
+}
+
+void saveCPSRIntoSPSR(u32 cpumode){	//cpumode == cpsr
+	//user/sys has no SPSR
+	/*
+	if ( ((cpumode&0x1f) == (0x10)) || ((cpumode&0x1f) == (0x1f)) ){
+		
+	}
+	*/
+	//fiq
+	if((cpumode&0x1f)==0x11){
+		SPSR_fiq[0] = cpumode;
+	}
+	//irq
+	else if((cpumode&0x1f)==0x12){
+		SPSR_irq[0] = cpumode;
+	}
+	//svc
+	else if((cpumode&0x1f)==0x13){
+		SPSR_svc[0] = cpumode;
+	}
+	//abort
+	else if((cpumode&0x1f)==0x17){
+		SPSR_abt[0] = cpumode;
+	}
+	//undef
+	else if((cpumode&0x1f)==0x1b){
+		SPSR_und[0] = cpumode;
+	}
+}
+
 ///////////////////////////////////////THUMB virt/////////////////////////////////////////
 
 u32 __attribute__ ((hot)) disthumbcode(u32 thumbinstr){
@@ -259,32 +319,19 @@ debuggeroutput();
 //5.17 SWI software interrupt changes into ARM mode and uses SVC mode/stack (SWI 14)
 switch(thumbinstr>>8){
 	case(0xdf):{
-		//coto: todo fix/re-add the SPSR per PSR mode.
-		
+	
 		//SWI #Value8 (5.17)
 		u32 stack2svc=exRegs[0xe];	//ARM has r13,r14 per CPU <mode> but this is shared on gba
 		updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10],0x13);
 		exRegs[0xe]=stack2svc;		//ARM has r13,r14 per CPU <mode> but this is shared on gba
 		
 		//we force ARM mode directly regardless cpsr
-		armstate=CPUSTATE_ARM; //1 thmb / 0 ARM
+		armstate=CPUSTATE_ARM;
 		
-		swi_virt((thumbinstr&0xff));
-		
-		//if we don't use the BIOS handling, restore CPU mode inmediately
-		#ifndef BIOSHANDLER
-			//Restore CPU<mode> / SPSR (exRegs[0x11]) keeps SVC && restore SPSR T bit (THUMB/ARM mode)
-				//note exRegs[0x10] is required because we validate always if come from same PSR mode or a different. (so stack swaps make sense)
-			updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10] | (((exRegs[0x11]>>5)&1)),exRegs[0x11]&0x1F);
-		#endif
+		//swi_virt((thumbinstr&0xff));	//real bios should execute instead
 		
 		//-0x2 because PC THUMB (exRegs[0xf]) alignment / -0x2 because prefetch
-		#ifdef BIOSHANDLER
-			exRegs[0xf]  = (u32)(0x08-0x2-0x2);
-		#else
-			//otherwise executes a possibly BX LR (callback ret addr) -> PC increases correctly later
-			//exRegs[0xf] = (u32)((exRegs[0xe])-0x2-0x2);
-		#endif
+		exRegs[0xf]  = (u32)((0x08-0x2-0x2)&0xfffffffc);	//word-aligned
 		
 		armIrqEnable=true;
 		
@@ -4087,11 +4134,11 @@ if(isalu==1){
 		
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1){
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 				//Restore SPSR into CPSR if(S = 1 && rd = 0xf/PC )
 				if(((arminstr>>12)&0xf) == 0xf){
-					exRegs[0x10] = exRegs[0x11];
+					updatecpuflags(CPUFLAG_UPDATE_CPSR, getSPSRFromCPSR(exRegs[0x10]), getSPSRFromCPSR(exRegs[0x10])&0x1f);	//CPSR=SPSR
 				}
-				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			return 0;
 		}
@@ -4223,11 +4270,11 @@ if(isalu==1){
 		
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1){
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 				//Restore SPSR into CPSR if(S = 1 && rd = 0xf/PC )
 				if(((arminstr>>12)&0xf) == 0xf){
-					exRegs[0x10] = exRegs[0x11];
+					updatecpuflags(CPUFLAG_UPDATE_CPSR, getSPSRFromCPSR(exRegs[0x10]), getSPSRFromCPSR(exRegs[0x10])&0x1f);	//CPSR=SPSR
 				}
-				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			return 0;
 		}
@@ -4359,11 +4406,11 @@ if(isalu==1){
 		
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1){
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 				//Restore SPSR into CPSR if(S = 1 && rd = 0xf/PC )
 				if(((arminstr>>12)&0xf) == 0xf){
-					exRegs[0x10] = exRegs[0x11];
+					updatecpuflags(CPUFLAG_UPDATE_CPSR, getSPSRFromCPSR(exRegs[0x10]), getSPSRFromCPSR(exRegs[0x10])&0x1f);	//CPSR=SPSR
 				}
-				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			return 0;
 		}
@@ -4497,11 +4544,11 @@ if(isalu==1){
 			
 			//check for S bit here and update (virt<-asm) processor flags
 			if(setcond_arm==1){
+				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 				//Restore SPSR into CPSR if(S = 1 && rd = 0xf/PC )
 				if(((arminstr>>12)&0xf) == 0xf){
-					exRegs[0x10] = exRegs[0x11];
+					updatecpuflags(CPUFLAG_UPDATE_CPSR, getSPSRFromCPSR(exRegs[0x10]), getSPSRFromCPSR(exRegs[0x10])&0x1f);	//CPSR=SPSR
 				}
-				updatecpuflags(CPUFLAG_UPDATE_ZNCV_FLAGS,cpsrasm,0x0);
 			}
 			return 0;
 		}
@@ -5080,8 +5127,10 @@ switch((arminstr>>16)&0x3f){
 		}
 		//source PSR is: SPSR<mode> & save cond flags
 		else{
-			//printf("SPSR save!:%x",exRegs[0x11]);
-			exRegs[((arminstr>>12)&0xf)]=exRegs[0x11];
+			#ifdef DEBUGEMU
+			printf("SPSR save!:%x",getSPSRFromCPSR(exRegs[0x10]));
+			#endif
+			exRegs[((arminstr>>12)&0xf)]=getSPSRFromCPSR(exRegs[0x10]);
 		}
 		return 0;
 	}
@@ -5096,10 +5145,9 @@ switch((arminstr>>16)&0x3f){
 			#ifdef DEBUGEMU
 			printf("CPSR restore!:%x",(unsigned int)DestroyableRegister2);
 			#endif
-			//exRegs[0x10]=DestroyableRegister2;
 			
 			//modified (cpu state id updated)
-			updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10],DestroyableRegister2&0x1f);
+			updatecpuflags(CPUFLAG_UPDATE_CPSR, DestroyableRegister2, DestroyableRegister2&0x1f);
 		}
 		//SPSR
 		else{
@@ -5108,14 +5156,15 @@ switch((arminstr>>16)&0x3f){
 			#ifdef DEBUGEMU
 			printf("SPSR restore!:%x",(unsigned int)DestroyableRegister2);
 			#endif
-			exRegs[0x11]=DestroyableRegister2;
+			saveCPSRIntoSPSR(DestroyableRegister2);
 		}
 		return 0;
 	}
 	break;
 	
+	//bug: possibly duplicate from the above case
 	case(0x28):{ 	//MSR (transfer reg content or #imm to PSR flag bits)
-		//printf("MRS (transf reg or #imm to PSR flag bits!) ");
+		//printf("MSR (transf reg or #imm to PSR flag bits!) ");
 		
 		//CPSR
 		u32 DestroyableRegister1 = 0;
@@ -5128,7 +5177,7 @@ switch((arminstr>>16)&0x3f){
 				#ifdef DEBUGEMU
 				printf("CPSR restore from rd(%d)!:%x ",(int)(arminstr&0xf),(unsigned int)DestroyableRegister2);
 				#endif
-				exRegs[0x10]=DestroyableRegister2;
+				updatecpuflags(CPUFLAG_UPDATE_CPSR, DestroyableRegister2, DestroyableRegister2&0x1f);
 			}
 			//#imm
 			else{
@@ -5137,7 +5186,7 @@ switch((arminstr>>16)&0x3f){
 				//#Imm value is zero extended to 32bit, then subject to rotate right by twice the value in rotate field.
 				DestroyableRegister1=rorasm((arminstr&0xfff), (((arminstr>>8)&0xf) * 2));
 				//printf("CPSR restore from #imm!:%x ", DestroyableRegister1);
-				exRegs[0x10]=DestroyableRegister1;
+				updatecpuflags(CPUFLAG_UPDATE_CPSR, DestroyableRegister1, DestroyableRegister1&0x1f);
 			}
 		
 		}
@@ -5151,7 +5200,7 @@ switch((arminstr>>16)&0x3f){
 				#ifdef DEBUGEMU
 				printf("SPSR restore from rd(%d)!:%x  ",(int)(arminstr&0xf),(unsigned int)DestroyableRegister2);
 				#endif
-				exRegs[0x11]=DestroyableRegister2;
+				saveCPSRIntoSPSR(DestroyableRegister2);
 			}
 			//#imm
 			else{
@@ -5162,7 +5211,7 @@ switch((arminstr>>16)&0x3f){
 				#ifdef DEBUGEMU
 				printf("SPSR restore from #imm!:%x ",(unsigned int)DestroyableRegister1);
 				#endif
-				exRegs[0x11]=DestroyableRegister1;
+				saveCPSRIntoSPSR(DestroyableRegister1);
 			}
 		}
 	return 0;
@@ -5854,35 +5903,19 @@ switch( ( (DestroyableRegister6=(arminstr)) & 0x1000090)  ){
 //5.10 software interrupt
 switch( (arminstr) & 0xf000000 ){
 	case(0xf000000):{
+		armstate = CPUSTATE_ARM;
+		updatecpuflags(CPUFLAG_UPDATE_CPSR, exRegs[0x10], 0x13);
+		//swi_virt(arminstr&0xffffff);	//real bios should execute instead
+		
+		exRegs[0xe] = (exRegs[0xf]&0xfffffffe) - (armstate ? 4 : 2);
+		exRegs[0xf] = (u32)(0x08-0x4);
+		
+		//Restore CPU<mode>
+		//updatecpuflags(CPUFLAG_UPDATE_CPSR, getSPSRFromCPSR(exRegs[0x10]), getSPSRFromCPSR(exRegs[0x10])&0x1F);	//real bios should execute instead
+		
 		#ifdef DEBUGEMU
 		printf("[ARM] swi call #0x%x! (5.10)",(unsigned int)(arminstr&0xffffff));
 		#endif
-		
-		armstate = 0;
-		armIrqEnable=false;
-		
-		updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10],0x13);
-		
-		//printf("CPSR(entrymode):%x ",exRegs[0x10]&0x1f);
-		
-		//printf("SWI #0x%x / CPSR: %x(5.17)",(thumbinstr&0xff),exRegs[0x10]);
-		swi_virt(arminstr&0xffffff);
-		
-		exRegs[0xe] = (exRegs[0xf]&0xfffffffe) - (armstate ? 4 : 2);
-		
-		#ifdef BIOSHANDLER
-			exRegs[0xf] = (u32)(0x08-0x4);
-		#else
-			//exRegs[0xf] = (u32)(exRegs[0xe]-0x4);
-			//continue til BX LR (ret address cback)
-		#endif
-		
-		//printf("swi%x",(unsigned int)(arminstr&0xff));
-		
-		//we let SWI bios decide when to go back from SWI mode
-		//Restore CPU<mode>
-		updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10],exRegs[0x11]&0x1F);
-		
 	}
 }
 

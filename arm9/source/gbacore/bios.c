@@ -124,7 +124,7 @@ u32 bios_cpureset(){
 	
 	u32 startCPSR = (u32)((n_flag << 31) | (z_flag << 30) | (c_flag << 29) | (v_flag << 28) | (CPUSTATE_ARM << 5) | (0x10));	//ARM Mode default + USR mode
 	updatecpuflags(CPUFLAG_UPDATE_CPSR, startCPSR, 0x10);
-	exRegs[0x11] = exRegs[0x10];	//SPSR=CPSR
+	saveCPSRIntoSPSR(exRegs[0x10]);	//SPSR=CPSR
 	
 	//IRQ
 	exRegs[13] = 0x03007FA0;

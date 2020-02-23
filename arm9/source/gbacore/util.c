@@ -1093,7 +1093,33 @@ void printGBACPU(){
 	}
 	printf(" r%d Addr[0x%x]: [0x%x] ", 0xf, (unsigned int)exRegs[0xf], CPUReadMemory(exRegs[0xf]));
 	
-	printf("CPSR[%x] / SPSR:[%x] ",(unsigned int)exRegs[0x10],(unsigned int)exRegs[0x11]);
+	
+	//user/sys has no SPSR
+	/*
+	if ( ((exRegs[0x10]&0x1f) == (0x10)) || ((exRegs[0x10]&0x1f) == (0x1f)) ){
+		
+	}
+	*/
+	//fiq
+	if((exRegs[0x10]&0x1f)==0x11){
+		printf("CPSR[%x] / SPSR_fiq:[%x] ",(unsigned int)exRegs[0x10],(unsigned int)getSPSRFromCPSR(exRegs[0x10]));
+	}
+	//irq
+	else if((exRegs[0x10]&0x1f)==0x12){
+		printf("CPSR[%x] / SPSR_irq:[%x] ",(unsigned int)exRegs[0x10],(unsigned int)getSPSRFromCPSR(exRegs[0x10]));
+	}
+	//svc
+	else if((exRegs[0x10]&0x1f)==0x13){
+		printf("CPSR[%x] / SPSR_svc:[%x] ",(unsigned int)exRegs[0x10],(unsigned int)getSPSRFromCPSR(exRegs[0x10]));
+	}
+	//abort
+	else if((exRegs[0x10]&0x1f)==0x17){
+		printf("CPSR[%x] / SPSR_abt:[%x] ",(unsigned int)exRegs[0x10],(unsigned int)getSPSRFromCPSR(exRegs[0x10]));
+	}
+	//undef
+	else if((exRegs[0x10]&0x1f)==0x1b){
+		printf("CPSR[%x] / SPSR_und:[%x] ",(unsigned int)exRegs[0x10],(unsigned int)getSPSRFromCPSR(exRegs[0x10]));
+	}
 	if(armstate == CPUSTATE_ARM){
 		printf("CPU Model: %s - Running: %d - CPUMode: %s", ARMModel, cpuStart, "ARM");
 	}

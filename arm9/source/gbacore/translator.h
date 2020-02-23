@@ -84,13 +84,17 @@ extern u8 immop_arm;
 	
 //set/alter condition codes for ARM opcode (5.4 ARM)
 extern u8 setcond_arm;
-	
-//SPSR == the last mode Interrupt, Fast interrupt, the old CPU flags (old stack [mode] && old CPU [mode]) 
 
 extern u8 armstate;	//0 arm / 1 thumb
 extern u8 armirqstate;//0 disabled / 1 enabled
 extern u8 armswistate;//0 disabled / 1 enabled
-extern u32 updatecpuflags(u8 mode, u32 cpsr, u32 cpumode); //updatecpuflags(mode,cpsr,cpumode); mode: 0 = hardware asm cpsr update / 1 = virtual CPU mode change,  CPSR , change to CPU mode
+
+//updatecpuflags(mode, cpsr, cpumode); mode: 0 = hardware asm cpsr update / 1 = virtual CPU mode change,  CPSR , change to CPU mode
+extern u32 updatecpuflags(u8 mode, u32 cpsr, u32 cpumode);
+
+//SPSR
+extern void saveCPSRIntoSPSR(u32 cpumode);
+extern u32 getSPSRFromCPSR(u32 cpumode);
 
 //disassemblers
 extern u32 disthumbcode(u32 thumbinstr);

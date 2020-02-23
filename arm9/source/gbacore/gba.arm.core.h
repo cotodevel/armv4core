@@ -73,8 +73,7 @@ extern u32 ndsvcounter();
 //GBA CPU mode registers:
 //r0 - r15 	-- 	0x0 - 0xf
 //CPSR 		--	0x10
-//SPSR 		--	0x11
-extern u32  exRegs[16 + 2];
+extern u32  exRegs[16 + 1];
 
 //each sp,lr for cpu<mode>
 extern u32  exRegs_r13usr[0x1];
@@ -93,17 +92,14 @@ extern u32  exRegs_r14und[0x1];
 //extern u32  exRegs_r14sys[0x1];
 
 //original registers used by any PSR_MODE that do belong to FIQ r8-r12
-extern u32  exRegs_fiq[0x5];
+extern u32  exRegs_fiq[0x5];	//+2 fiq regs from above
 
-//extern'd addresses for virtualizer calls
-// [(u32)&disthumbcode	] 
-// [(u32)&disasmcode	]
-// [					]
-// [					]
-// [					]
-// [					]
-// [					]
-// [					]
+//"banked" SPSR register for every PSR mode, except the USR/SYS psr, which has NOT a SPSR and read/writes to it everywhere (from/to CPSR directly or through opcodes) are ignored
+extern u32  SPSR_fiq[0x1];
+extern u32  SPSR_svc[0x1];
+extern u32  SPSR_abt[0x1];
+extern u32  SPSR_irq[0x1];
+extern u32  SPSR_und[0x1];
 
 //GBA Interrupts
 //4000200h - IE - Interrupt Enable Register (R/W)

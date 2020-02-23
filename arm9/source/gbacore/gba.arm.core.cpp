@@ -716,7 +716,7 @@ u32 cpuirq(u32 cpumode){
 	exRegs[0xf]=(u32)0x18;
 	
 	//Restore CPU<mode>
-	updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10],exRegs[0x11]&0x1F);
+	updatecpuflags(CPUFLAG_UPDATE_CPSR, exRegs[0x10], getSPSRFromCPSR(exRegs[0x10])&0x1F);
 
 	return 0;
 }
@@ -724,8 +724,7 @@ u32 cpuirq(u32 cpumode){
 //GBA CPU mode registers:
 //r0 - r15 	-- 	0x0 - 0xf
 //CPSR 		--	0x10
-//SPSR 		--	0x11
-u32	exRegs[16 + 2];
+u32	exRegs[16 + 1];
 
 //r13, r14 for each mode (sp and lr)
 u32 exRegs_r13usr[0x1];
@@ -746,11 +745,14 @@ u32 exRegs_r13und[0x1];
 //original registers used by any PSR_MODE that do belong to FIQ r8-r12
 u32  exRegs_fiq[0x5];
 
-//original registers used by any PSR_MODE that do not belong to FIQ r8-r12
-//exRegs[nn]
+//"banked" SPSR register for every PSR mode, except the USR/SYS psr, which has NOT a SPSR and read/writes to it everywhere (from/to CPSR directly or through opcodes) are ignored
+u32  SPSR_fiq[0x1];
+u32  SPSR_svc[0x1];
+u32  SPSR_abt[0x1];
+u32  SPSR_irq[0x1];
+u32  SPSR_und[0x1];
 
-void doDMA(u32 &s, u32 &d, u32 si, u32 di, u32 c, int transfer32) 
-{
+void doDMA(u32 &s, u32 &d, u32 si, u32 di, u32 c, int transfer32){
 
 	cpuDmaCount = c;
   if(transfer32) {
