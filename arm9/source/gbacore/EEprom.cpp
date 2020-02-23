@@ -33,7 +33,7 @@
 #include "devoptab_devices.h"
 #include "posixHandleTGDS.h"
 #include "xenofunzip.h"
-#include "gbaemu4ds_fat_ext.h"
+#include "armv4coreFS.h"
 
 #include "gba.arm.core.h"
 #include "EEprom.h"

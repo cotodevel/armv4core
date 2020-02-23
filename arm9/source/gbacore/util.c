@@ -15,7 +15,7 @@
 #include "posixHandleTGDS.h"
 #include "zlib.h"
 #include "xenofunzip.h"
-#include "gbaemu4ds_fat_ext.h"
+#include "armv4coreFS.h"
 #include "translator.h"
 #include "gba.arm.core.h"
 #include "EEprom.h"
@@ -28,7 +28,7 @@
 #include "rom_pl.h"
 #endif
 
-#include "gbaemu4ds_fat_ext.h"
+#include "armv4coreFS.h"
 
 /* exception vector abort handlers
 arm variables		status
@@ -270,11 +270,6 @@ u8 * gbaoam = NULL;	//[0x400];
 u8 * saveram = NULL;	//[128*1024]; //128K
 u8 * iomem[0x400];
 
-//disk buffer
-volatile u32 disk_buf[chucksize]; 
-
-u8 first32krom[32*1024];
-
 int i=0;
 struct gbaheader_t gbaheader;
 
@@ -406,10 +401,6 @@ const bool isInRom [16]=
   { false, false, false, false, false, false, false, false,
     true, true, true, true, true, true, false, false };
 
-
-u32 dummycall(u32 arg){
-	return arg;
-}
 
 // swaps a 16-bit value
 u16 swap16(u16 v){
@@ -576,41 +567,6 @@ void initmemory(){
 void initemu(){
 	sound_clock_ticks = 167772; // 1/100 second
 	
-	//refresh jump opcode in biosProtected vector
-	biosProtected[0] = 0x00;
-	biosProtected[1] = 0xf0;
-	biosProtected[2] = 0x29;
-	biosProtected[3] = 0xe1;
-	
-	/*				 allocate segments
-	 GBA Memory Map
-
-	General Internal Memory
-	  00000000-00003FFF   BIOS - System ROM         (16 KBytes)
-	  00004000-01FFFFFF   Not used
-	  02000000-0203FFFF   WRAM - On-board Work RAM  (256 KBytes) 2 Wait
-	  02040000-02FFFFFF   Not used
-	  03000000-03007FFF   WRAM - On-chip Work RAM   (32 KBytes)
-	  03008000-03FFFFFF   Not used
-	  04000000-040003FE   I/O Registers
-	  04000400-04FFFFFF   Not used
-	Internal Display Memory
-	  05000000-050003FF   BG/OBJ Palette RAM        (1 Kbyte)
-	  05000400-05FFFFFF   Not used
-	  06000000-06017FFF   VRAM - Video RAM          (96 KBytes)
-	  06018000-06FFFFFF   Not used
-	  07000000-070003FF   OAM - OBJ Attributes      (1 Kbyte)
-	  07000400-07FFFFFF   Not used
-	External Memory (Game Pak)
-	  08000000-09FFFFFF   Game Pak ROM/FlashROM (max 32MB) - Wait State 0
-	  0A000000-0BFFFFFF   Game Pak ROM/FlashROM (max 32MB) - Wait State 1
-	  0C000000-0DFFFFFF   Game Pak ROM/FlashROM (max 32MB) - Wait State 2
-	  0E000000-0E00FFFF   Game Pak SRAM    (max 64 KBytes) - 8bit Bus width
-	  0E010000-0FFFFFFF   Not used
-	*/
-
-	initmemory();
-
 	//GBA address MAP setup
 	for(i = 0; i < 256; i++){
 		map[i].address = (u8 *)(u32)0;
@@ -782,7 +738,6 @@ void initemu(){
 	saveType = 0;
 	layerEnable = GBADISPCNT & layerSettings;
 
-	//OK so far
 	map[0].address = bios;
 	map[0].mask = 0x3FFF;
 	map[2].address = workRAM;
@@ -892,8 +847,7 @@ int executeuntil_pc(u32 target_pc){
 	return opcodes_executed;
 }
 
-void CPUInit(const char *biosFileName, bool useBiosFile,bool extram)
-{
+void CPUInit(const char *biosFileName, bool useBiosFile,bool extram){
 	initemu();
 	
 #ifdef WORDS_BIGENDIAN
@@ -920,11 +874,6 @@ void CPUInit(const char *biosFileName, bool useBiosFile,bool extram)
 	}
 
 	int i = 0;
-	biosProtected[0] = 0x00;
-	biosProtected[1] = 0xf0;
-	biosProtected[2] = 0x29;
-	biosProtected[3] = 0xe1;
-
 	for(i = 0; i < 256; i++) {
 		int count = 0;
 		int j;
@@ -990,46 +939,33 @@ int CPULoadRom(const char *szFile, bool extram){
 	systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
 	romSize = 0x40000;
 	
-	#ifndef ROMTEST
-	#ifdef BIOSHANDLER
-		//bios copy to biosram
-		FILE *f = fopen("0:/bios.bin", "r");
-		if(!f){ 
-			printf("there is no bios.bin in root!"); while(1);
-		}
-		int fileSize=fread((void*)(u8*)bios, 1, 0x4000,f);
-		fclose(f);
-		if(fileSize!=0x4000){
-			printf("failed bios copy @ %x! so far:%d bytes",(unsigned int)bios,fileSize);
-			while(1);
-		}
-	#else
-		int fileSize=0;
-		FILE *f;
-	#endif
-	//gbarom setup
-	f = fopen(szFile, "r");
-	if(!f) {
-		printf("Error opening image %s",szFile);
-		return 0;
+#ifndef ROMTEST
+	FILE *f = fopen("0:/bios.bin", "r");
+	if(!f){ 
+		printf("Missing GBA BIOS (SD:/bios.bin)"); 
+		while(1);
 	}
-
-	//copy first32krom/ because gba4ds's first 32k sector is bugged (returns 0 reads)
-	fread((u8*)&first32krom[0],sizeof(first32krom),1,f);
-	fseek(f,0,SEEK_END);
-	fileSize = ftell(f);
-	fseek(f,0,SEEK_SET);
-	generatefilemap(f,fileSize);
-	romSize=fileSize;	//size readjusted for final alloc'd rom	
+	int fileSize = fread((void*)(u8*)bios, 1, 0x4000,f);
+	fclose(f);
+	if(fileSize != 0x4000){
+		printf("GBA BIOS isn't 0x4000, but %d bytes.",(unsigned int)fileSize);
+		while(1);
+	}
+	fileSize=0;
+	f = NULL;
+	//gbarom setup
+	f = opengbarom((const char *)szFile);
+	if(f == NULL) {
+		printf("Couldn't open GBA File %s",szFile);
+		while(1);
+	}
+	fread((u8*)&gbaheader,sizeof(gbaheader),1,f);
+	globalfileHandle = f;
+	globalfileSize=romSize=fileSize=getfilesizegbarom();	//size readjusted for final alloc'd rom	
 	
 	//gba rom entrypoint from header
-	memcpy((u8*)&gbaheader,(u8*)&first32krom[0], sizeof(gbaheader));
 	exRegs[0xe]=exRegs[0xf]=(u8*)(u32*)(0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
 	printf("FS:entrypoint @ %x! ",(unsigned int)(u32*)exRegs[0xf]);
-	
-	ichflyfilestream = f; //pass the filestreampointer and make it global
-	ichflyfilestreamsize = fileSize;
-	printf("generated filemap! OK:");
 #endif
 
 #ifdef ROMTEST
@@ -1038,8 +974,7 @@ int CPULoadRom(const char *szFile, bool extram){
 	//gba rom entrypoint from header
 	memcpy((u8*)&gbaheader,(u8*)&rom_pl[0], sizeof(gbaheader));
 	exRegs[0xe]=exRegs[0xf]=(u8*)(u32*)(0x08000000 + ((&gbaheader)->entryPoint & 0x00FFFFFF)*4 + 8);
-	printf("ROMTEST:entrypoint @ %x! ",(unsigned int)(u32*)exRegs[0xf]);
-	
+	printf("ROMTEST:entrypoint @ %x! ",(unsigned int)(u32*)exRegs[0xf]);	
 #endif
 	
 	flashInit();
@@ -1366,10 +1301,10 @@ u32 swi_virt(u32 swinum){
             //#ifdef DEV_VERSION
             printf("SoundBiasSet: 0x%08x ",(unsigned int)exRegs[0]);
             //#endif    
-            //if(reg[0].I) //ichfly sound todo
-            //systemSoundPause(); //ichfly sound todo
-            //else //ichfly sound todo
-            //systemSoundResume(); //ichfly sound todo
+            //if(reg[0].I) 
+            //systemSoundPause(); 
+            //else 
+            //systemSoundResume(); 
             
             //SWI 19h (GBA) or SWI 08h (NDS7/DSi7) - SoundBias
             //r0   BIAS level (0=Level 000h, any other value=Level 200h)

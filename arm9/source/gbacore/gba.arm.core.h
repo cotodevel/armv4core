@@ -205,7 +205,6 @@ extern void (*cpuSaveGameFunc)(u32,u8);
 extern bool windowOn;
 extern int frameCount ;
 extern char buffer[1024];
-extern u8 biosProtected[4];
 
 //input
 extern u32 systemreadjoypad(int which);

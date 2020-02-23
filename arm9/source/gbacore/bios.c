@@ -82,11 +82,6 @@ s16 sinetable[256] = {
 
 //swi 0
 u32 bios_cpureset(){
-	//refresh jump opcode in biosProtected vector
-	biosProtected[0] = 0x00;
-	biosProtected[1] = 0xf0;
-	biosProtected[2] = 0x29;
-	biosProtected[3] = 0xe1;
 	
 	//flush working CPU registers except GBA PC 15 since the entrypoint was written by the GBA header
 	for(i=0;i<0x10;i++){

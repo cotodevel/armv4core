@@ -70,9 +70,6 @@ struct sIPCSharedTGDSSpecific{
 						
 #define DEBUGEMU	//Enables LR tracing / debugging by printf
 
-//#define BIOSHANDLER		//Activate this to jump to BIOS and do handling there (can cause problems if bad bios or corrupted) / require a bios at root
-							//Deactivating this will BX LR as soon as swi code is executed
-
 //#define PREFETCH_ENABLED //Enables prefetch for the emulator. (cpu_emulate()) //if debugging or jumping to unknown areas disable this
 //#define SPINLOCK_CODE //Enables own SPINLOCK library
 

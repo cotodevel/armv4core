@@ -254,8 +254,6 @@ u8 memoryWaitSeq32[16] =
 //const u8 videoMemoryWait[16] =
 //  {0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-u8 biosProtected[4];
-
 u32 myROM[173] = {
 0xEA000006,
 0xEA000093,
@@ -707,12 +705,6 @@ u32 cpuirq(u32 cpumode){
 	armstate = CPUSTATE_ARM;
 	armIrqEnable = false;
 	
-	//refresh jump opcode in biosprotected vector
-	biosProtected[0] = 0x02;
-	biosProtected[1] = 0xc0;
-	biosProtected[2] = 0x5e;
-	biosProtected[3] = 0xe5;
-
 	//set PC
 	exRegs[0xf]=(u32)0x18;
 	
@@ -845,7 +837,7 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
         GBAIF |= 0x0100;
         UPDATE_REG(0x202, GBAIF);
         cpuNextEvent = cpuTotalTicks;
-      }*/ //ichfly todo
+      }*/
       
       if(((GBADM0CNT_H >> 5) & 3) == 3) {
         dma0Dest = GBADM0DAD_L | (GBADM0DAD_H << 16);
@@ -914,7 +906,7 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
         GBAIF |= 0x0200;
         UPDATE_REG(0x202, GBAIF);
         cpuNextEvent = cpuTotalTicks;
-      }*/ //ichfly todo
+      }*/ 
       
       if(((GBADM1CNT_H >> 5) & 3) == 3) {
         dma1Dest = GBADM1DAD_L | (GBADM1DAD_H << 16);
@@ -984,7 +976,7 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
         GBAIF |= 0x0400;
         UPDATE_REG(0x202, GBAIF);
         cpuNextEvent = cpuTotalTicks;
-      }*/ //ichfly todo
+      }*/ 
 
       if(((GBADM2CNT_H >> 5) & 3) == 3) {
         dma2Dest = GBADM2DAD_L | (GBADM2DAD_H << 16);
@@ -1039,7 +1031,7 @@ void  __attribute__ ((hot)) CPUCheckDMA(int reason, int dmamask)
         GBAIF |= 0x0800;
         UPDATE_REG(0x202, GBAIF);
         cpuNextEvent = cpuTotalTicks;
-      }*/ //ichfly todo
+      }*/ 
 
       if(((GBADM3CNT_H >> 5) & 3) == 3) {
         dma3Dest = GBADM3DAD_L | (GBADM3DAD_H << 16);
@@ -1621,7 +1613,7 @@ void updateVC()
 		//u16 help3;
 		GBAVCOUNT = temp;
 		GBADISPSTAT &= 0xFFF8; //reset h-blanc and V-Blanc and V-Count Setting
-		//if(help3 == GBAVCOUNT) //else it is a extra long V-Line // ichfly todo it is to slow
+		//if(help3 == GBAVCOUNT) //else it is a extra long V-Line 
 		//{
 			GBADISPSTAT |= (temp2 & 0x3); //temporary patch get original settings
 		//}
@@ -1656,11 +1648,7 @@ u32 CPUReadMemory(u32 address)
   switch(address >> 24) {
   case 0:
 			if(address < 0x4000) {
-				#ifdef require_gbabios
-					value = READ32LE(((u8 *)&bios[address & 0x3FFC]));
-				#else
-					value = READ32LE(((u8 *)&biosProtected));
-				#endif
+				value = *(u32*)((u8*)bios + (address & 0x3FFC)); //READ32LE(((u8 *)&bios[address & 0x3FFC]));
 			}
 			else 
 				goto unreadable;
@@ -1686,14 +1674,14 @@ u32 CPUReadMemory(u32 address)
 		break;
 	}
     
-	if(address == 0x4000202 || address == 0x4000200)//ichfly update
+	if(address == 0x4000202 || address == 0x4000200)
 	{
 		GBAIF = *(vuint16*)0x04000214; //VBlanc
 		UPDATE_REG(0x202, GBAIF);
 	}
 	
 	
-	if(address > 0x4000003 && address < 0x4000008)//ichfly update
+	if(address > 0x4000003 && address < 0x4000008)
 	{
 		//oriupdateVC();
         ////vcounthandler(); //shouldnt do this but helps the vcounter
@@ -1859,7 +1847,7 @@ u32 CPUReadMemory(u32 address)
 
 __attribute__ ((aligned (4)))
 __attribute__((section(".itcm")))
-u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is smaler
+u16 CPUReadHalfWord(u32 address) 
 {
 #ifdef printreads
 	printf("r16 %08x",address);
@@ -1878,11 +1866,7 @@ u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is sma
   switch(address >> 24) {
   case 0:
 			if(address < 0x4000) {
-			#ifdef require_gbabios
-				value = READ16LE(((u8 *)&bios[address & 0x3FFE]));
-			#else
-				value = READ16LE(((u8 *)&biosProtected[address&2]));
-			#endif	
+				value = *(u16*)((u8*)bios + (address & 0x3FFE));	//READ16LE(((u8 *)&bios[address & 0x3FFE]));
 			}
 			else 
 				goto unreadable;
@@ -1920,7 +1904,7 @@ u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is sma
 	}
 	
 	
-	if(address > 0x4000003 && address < 0x4000008)//ichfly update
+	if(address > 0x4000003 && address < 0x4000008)
 	{
 		//ori:updateVC();
         //vcounthandler();
@@ -1933,7 +1917,7 @@ u16 CPUReadHalfWord(u32 address) //ichfly not inline is faster because it is sma
 	
 	
     
-	if(address == 0x4000202)//ichfly update
+	if(address == 0x4000202)
 	{
 		GBAIF = *(vuint16*)0x04000214;
 		UPDATE_REG(0x202, GBAIF);
@@ -2108,11 +2092,7 @@ printf("r8 %02x",address);
   switch(address >> 24) {
   case 0:
 			if(address < 0x4000) {
-				#ifdef require_gbabios
-					return bios[address & 0x3FFF];
-				#else
-					return biosProtected[address & 3];
-				#endif
+				return *(u8*)((u8*)bios + (address & 0x3FFF));	//return bios[address & 0x3FFF];
 			} 
 			else 
 				goto unreadable;
@@ -2136,7 +2116,7 @@ printf("r8 %02x",address);
 		return *(u8 *)(address);
 	}
 	
-	if(address > 0x4000003 && address < 0x4000008)//ichfly update
+	if(address > 0x4000003 && address < 0x4000008)
 	{
 		//ori: updateVC();
         //vcounthandler();
@@ -2149,7 +2129,7 @@ printf("r8 %02x",address);
 	}
 	
     
-	if(address == 0x4000202 || address == 0x4000203)//ichfly update
+	if(address == 0x4000202 || address == 0x4000203)
 	{
 		GBAIF = *(vuint16*)0x04000214; //VBlanc
 		UPDATE_REG(0x202, GBAIF);
@@ -2271,7 +2251,7 @@ printf("r8 %02x",address);
 
 __attribute__ ((aligned (4)))
 __attribute__((section(".itcm")))
-void CPUWriteMemory(u32 address, u32 value) //ichfly not inline is faster because it is smaler
+void CPUWriteMemory(u32 address, u32 value) 
 {
 #ifdef printreads
     printf("w32 %08x to %08x",value,address);

@@ -1,5 +1,3 @@
-//coto: this translator is mostly mine work. (except gbareads[ichfly] & cpuread_data from VBA)
-
 #include "translator.h"
 #include "Util.h"
 #include "ipcfifoTGDSUser.h"

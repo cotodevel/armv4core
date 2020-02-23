@@ -28,12 +28,11 @@ USA
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include "armv4coreFS.h"
 
 #define BIT(n) (1 << (n))
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))	
 #define alignw(n)(CHECK_BIT(n,0)==1?n+1:n)
-
-#include "gbaemu4ds_fat_ext.h"
 
 /*
  GBA Memory Map
@@ -166,7 +165,6 @@ extern int unzip(char *, void *, uLong);
 extern int setregbasesize(u32, u8);
 extern u16 swap16(u16 value);
 extern void initmemory(); //test memory & init
-extern u32 dummycall(u32 arg);
 extern void __libnds_mpu_setup();
 extern u8 lutu16bitcnt(u16 x);
 extern u8 lutu32bitcnt(u32 x);
@@ -206,8 +204,6 @@ extern u8 * gbaintram;	//[0x8000];
 extern u8 * gbaoam;	//[0x400];
 extern u8 * saveram;	//[128*1024]; //128K
 extern u8 * iomem[0x400];
-extern volatile u32 disk_buf[chucksize];
-extern u8 first32krom[32*1024];
 
 //C vector exceptions
 extern u32 exceptswi(u32); 		//swi vector
