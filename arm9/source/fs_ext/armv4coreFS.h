@@ -17,7 +17,7 @@ extern u16 stream_readu16(u32 pos);
 extern u32 stream_readu32(u32 pos);
 extern FILE * globalfileHandle;
 extern int globalfileSize;
-extern FILE * opengbarom(const char * filename);
+extern FILE * opengbarom(const char * filename, char * fopenArg);
 extern u32 closegbarom();
 extern u32 readu32gbarom(u32 offset);
 extern u16 readu16gbarom(u32 offset);

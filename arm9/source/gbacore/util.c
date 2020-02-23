@@ -954,7 +954,7 @@ int CPULoadRom(const char *szFile, bool extram){
 	fileSize=0;
 	f = NULL;
 	//gbarom setup
-	f = opengbarom((const char *)szFile);
+	f = opengbarom((const char *)szFile, "r");
 	if(f == NULL) {
 		printf("Couldn't open GBA File %s",szFile);
 		while(1);

@@ -40,8 +40,8 @@ u32 stream_readu32(u32 pos){
 	#endif
 }
 
-FILE * opengbarom(const char * filename){
-	FILE *fh = fopen(filename, "r");
+FILE * opengbarom(const char * filename, char * fopenArg){
+	FILE *fh = fopen(filename, fopenArg);
 	if(fh != NULL){
 		fseek(fh, 0, SEEK_SET);
 	}

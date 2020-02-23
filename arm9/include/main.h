@@ -6,10 +6,6 @@
 #include "dsregs_asm.h"
 #include "fatfslayerTGDS.h"
 
-#define CLUSTER_FREE	0x00000000
-#define	CLUSTER_EOF		0x0FFFFFFF
-#define CLUSTER_FIRST	0x00000002
-
 #endif
 
 #ifdef __cplusplus
