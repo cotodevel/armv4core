@@ -93,7 +93,7 @@ extern u8 armswistate;//0 disabled / 1 enabled
 extern u32 updatecpuflags(u8 mode, u32 cpsr, u32 cpumode);
 
 //SPSR
-extern void saveCPSRIntoSPSR(u32 cpumode);
+extern void saveCPSRIntoSPSR(u32 cpsr, u32 cpumode);
 extern u32 getSPSRFromCPSR(u32 cpumode);
 
 //disassemblers

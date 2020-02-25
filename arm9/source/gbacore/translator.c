@@ -275,7 +275,7 @@ u32 getSPSRFromCPSR(u32 cpumode){	//cpumode == cpsr
 	return SPSRMode;
 }
 
-void saveCPSRIntoSPSR(u32 cpumode){	//cpumode == cpsr
+void saveCPSRIntoSPSR(u32 cpsr, u32 cpumode){	//cpumode == cpsr
 	//user/sys has no SPSR
 	/*
 	if ( ((cpumode&0x1f) == (0x10)) || ((cpumode&0x1f) == (0x1f)) ){
@@ -284,23 +284,23 @@ void saveCPSRIntoSPSR(u32 cpumode){	//cpumode == cpsr
 	*/
 	//fiq
 	if((cpumode&0x1f)==0x11){
-		SPSR_fiq[0] = cpumode;
+		SPSR_fiq[0] = cpsr;
 	}
 	//irq
 	else if((cpumode&0x1f)==0x12){
-		SPSR_irq[0] = cpumode;
+		SPSR_irq[0] = cpsr;
 	}
 	//svc
 	else if((cpumode&0x1f)==0x13){
-		SPSR_svc[0] = cpumode;
+		SPSR_svc[0] = cpsr;
 	}
 	//abort
 	else if((cpumode&0x1f)==0x17){
-		SPSR_abt[0] = cpumode;
+		SPSR_abt[0] = cpsr;
 	}
 	//undef
 	else if((cpumode&0x1f)==0x1b){
-		SPSR_und[0] = cpumode;
+		SPSR_und[0] = cpsr;
 	}
 }
 
@@ -319,19 +319,23 @@ switch(thumbinstr>>8){
 	case(0xdf):{
 	
 		//SWI #Value8 (5.17)
-		u32 stack2svc=exRegs[0xe];	//ARM has r13,r14 per CPU <mode> but this is shared on gba
-		updatecpuflags(CPUFLAG_UPDATE_CPSR,exRegs[0x10],0x13);
-		exRegs[0xe]=stack2svc;		//ARM has r13,r14 per CPU <mode> but this is shared on gba
 		
-		//we force ARM mode directly regardless cpsr
+		//save CPSR into svc SPSR 
+		saveCPSRIntoSPSR(exRegs[0x10], 0x13);
+		updatecpuflags(CPUFLAG_UPDATE_CPSR, exRegs[0x10], 0x13);
+		
+		//And disable IRQ Interrupts
+		exRegs[0x10]|=(1<<7);
+		armIrqEnable=false;
+		
+		//ARM mode
+		exRegs[0x10]&= ~(1<<5);
 		armstate=CPUSTATE_ARM;
 		
 		//swi_virt((thumbinstr&0xff));	//real bios should execute instead
 		
 		//-0x2 because PC THUMB (exRegs[0xf]) alignment / -0x2 because prefetch
 		exRegs[0xf]  = (u32)((0x08-0x2-0x2)&0xfffffffc);	//word-aligned
-		
-		armIrqEnable=true;
 		
 		#ifdef DEBUGEMU
 		printf("[thumb] SWI #0x%x / CPSR: %x(5.17)",(thumbinstr&0xff),exRegs[0x10]);
@@ -5154,7 +5158,7 @@ switch((arminstr>>16)&0x3f){
 			#ifdef DEBUGEMU
 			printf("SPSR restore!:%x",(unsigned int)DestroyableRegister2);
 			#endif
-			saveCPSRIntoSPSR(DestroyableRegister2);
+			saveCPSRIntoSPSR(DestroyableRegister2, exRegs[0x10]&0x1F);	//Use actual CPU PSR mode to save value to SPSR
 		}
 		return 0;
 	}
@@ -5198,7 +5202,7 @@ switch((arminstr>>16)&0x3f){
 				#ifdef DEBUGEMU
 				printf("SPSR restore from rd(%d)!:%x  ",(int)(arminstr&0xf),(unsigned int)DestroyableRegister2);
 				#endif
-				saveCPSRIntoSPSR(DestroyableRegister2);
+				saveCPSRIntoSPSR(DestroyableRegister2, exRegs[0x10]&0x1F);	//Use actual CPU PSR mode to save value to SPSR
 			}
 			//#imm
 			else{
@@ -5209,7 +5213,7 @@ switch((arminstr>>16)&0x3f){
 				#ifdef DEBUGEMU
 				printf("SPSR restore from #imm!:%x ",(unsigned int)DestroyableRegister1);
 				#endif
-				saveCPSRIntoSPSR(DestroyableRegister1);
+				saveCPSRIntoSPSR(DestroyableRegister1, exRegs[0x10]&0x1F);	//Use actual CPU PSR mode to save value to SPSR
 			}
 		}
 	return 0;

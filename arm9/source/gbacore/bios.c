@@ -119,22 +119,27 @@ u32 bios_cpureset(){
 	
 	u32 startCPSR = (u32)((n_flag << 31) | (z_flag << 30) | (c_flag << 29) | (v_flag << 28) | (CPUSTATE_ARM << 5) | (0x10));	//ARM Mode default + USR mode
 	updatecpuflags(CPUFLAG_UPDATE_CPSR, startCPSR, 0x10);
-	saveCPSRIntoSPSR(exRegs[0x10]);	//SPSR=CPSR
 	
+																//Proper stack setup (repeat for the other modes)
 	//IRQ
-	exRegs[13] = 0x03007FA0;
-	updatecpuflags(CPUFLAG_UPDATE_CPSR, exRegs[0x10], 0x12);
+	updatecpuflags(CPUFLAG_UPDATE_CPSR, exRegs[0x10], 0x12);	//1: Change mode
+	exRegs[13] = 0x03007FA0;									//2: Set stack
+	saveCPSRIntoSPSR(exRegs[0x10], (u32)0x12);	//SPSRirq=CPSR	//3: Update SPSR
 	
 	//SVC
-	exRegs[13] = 0x03007FE0;
 	updatecpuflags(CPUFLAG_UPDATE_CPSR, exRegs[0x10], 0x13);
+	exRegs[13] = 0x03007FE0;
+	saveCPSRIntoSPSR(exRegs[0x10], (u32)0x13);	//SPSRsvc=CPSR
 	
 	//USR/SYS (where CPU defaults to sys mode)
-	exRegs[13] = 0x03007F00;
 	updatecpuflags(CPUFLAG_UPDATE_CPSR, exRegs[0x10], 0x10);
-	
 	exRegs[13] = 0x03007F00;
+	//saveCPSRIntoSPSR(exRegs[0x10], (u32)0x10);	//SPSRirq=CPSR
+	
 	updatecpuflags(CPUFLAG_UPDATE_CPSR, exRegs[0x10], 0x1F);
+	exRegs[13] = 0x03007F00;
+	//saveCPSRIntoSPSR(exRegs[0x10], (u32)0x10);	//SPSRirq=CPSR
+	
 	
 	//gbamap reset
 	for(i = 0; i < 256; i++) {
