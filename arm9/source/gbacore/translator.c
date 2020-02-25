@@ -2407,7 +2407,7 @@ switch(arminstr & 0xff000000){
 			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("(5.3) BEQ ");
+			printf("(5.3) BEQ Opcode: PC:%X", exRegs[0xf]);
 			#endif
 			//link bit
 			if( ((arminstr>>24)&1) == 1){
@@ -2433,7 +2433,7 @@ switch(arminstr & 0xff000000){
 			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("(5.3) BNE ");
+			printf("(5.3) BNE Opcode: PC:%X", exRegs[0xf]);
 			#endif
 			
 			//link bit
@@ -2459,7 +2459,7 @@ switch(arminstr & 0xff000000){
 			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("(5.3) BCS ");
+			printf("(5.3) BCS Opcode: PC:%X", exRegs[0xf]);
 			#endif
 			
 			//link bit
@@ -2485,7 +2485,7 @@ switch(arminstr & 0xff000000){
 			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("(5.3) BCC ");
+			printf("(5.3) BCC Opcode: PC:%X", exRegs[0xf]);
 			#endif
 			
 			//link bit
@@ -2511,7 +2511,7 @@ switch(arminstr & 0xff000000){
 			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("(5.3) BMI ");
+			printf("(5.3) BMI Opcode: PC:%X", exRegs[0xf]);
 			#endif
 			
 			//link bit
@@ -2537,7 +2537,7 @@ switch(arminstr & 0xff000000){
 			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("(5.3) BPL ");
+			printf("(5.3) BPL Opcode: PC:%X", exRegs[0xf]);
 			#endif
 			
 			//link bit
@@ -2563,7 +2563,7 @@ switch(arminstr & 0xff000000){
 			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("(5.3) BVS ");
+			printf("(5.3) BVS Opcode: PC:%X", exRegs[0xf]);
 			#endif
 			
 			//link bit
@@ -2589,7 +2589,7 @@ switch(arminstr & 0xff000000){
 			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("(5.3) BVC ");
+			printf("(5.3) BVC Opcode: PC:%X", exRegs[0xf]);
 			#endif
 			
 			//link bit
@@ -2615,7 +2615,7 @@ switch(arminstr & 0xff000000){
 			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("(5.3) BHI ");
+			printf("(5.3) BHI Opcode: PC:%X", exRegs[0xf]);
 			#endif
 			
 			//link bit
@@ -2641,7 +2641,7 @@ switch(arminstr & 0xff000000){
 			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("(5.3) BLS ");
+			printf("(5.3) BLS Opcode: PC:%X", exRegs[0xf]);
 			#endif
 			
 			//link bit
@@ -2667,7 +2667,7 @@ switch(arminstr & 0xff000000){
 			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("(5.3) BGE ");
+			printf("(5.3) BGE Opcode: PC:%X", exRegs[0xf]);
 			#endif
 			
 			//link bit
@@ -2693,7 +2693,7 @@ switch(arminstr & 0xff000000){
 			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("(5.3) BLT ");
+			printf("(5.3) BLT Opcode: PC:%X", exRegs[0xf]);
 			#endif
 			
 			//link bit
@@ -2719,7 +2719,7 @@ switch(arminstr & 0xff000000){
 			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("(5.3) BGT ");
+			printf("(5.3) BGT Opcode: PC:%X", exRegs[0xf]);
 			#endif
 			
 			//link bit
@@ -2748,7 +2748,7 @@ switch(arminstr & 0xff000000){
 			exRegs[0xf]=(u32)(s_word&0xfffffffe);
 			
 			#ifdef DEBUGEMU
-			printf("(5.3) BLE ");
+			printf("(5.3) BLE Opcode: PC:%X", exRegs[0xf]);
 			#endif
 			
 			//link bit
@@ -2775,7 +2775,7 @@ switch(arminstr & 0xff000000){
 		
 		
 		#ifdef DEBUGEMU
-		printf("(5.3) BAL ");
+		printf("(5.3) BAL Opcode: PC:%X", exRegs[0xf]);
 		#endif
 			
 			//link bit
@@ -2794,7 +2794,7 @@ switch(arminstr & 0xff000000){
 	case(0xf):
 	
 	#ifdef DEBUGEMU
-	printf("(5.3) BNV ");
+	printf("(5.3) BNV Opcode: PC:%X", exRegs[0xf]);
 	#endif
 			
 			//link bit
