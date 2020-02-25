@@ -5485,8 +5485,18 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 				DestroyableRegister3-=DestroyableRegister5;
 			}
 			
-			//pre indexed says base is updated [!] (writeback = 1)
-			DestroyableRegister6 |= (1<<1);
+			//if Writeback bit == 1, update base address 
+			if( ((arminstr>>21)&0x1) == 1){
+				DestroyableRegister6 |= (1<<1);
+				#ifdef DEBUGEMU
+				printf("Writeback to base address! ");
+				#endif
+			}
+			else{
+				#ifdef DEBUGEMU
+				printf("Skip Writeback to base address! ");
+				#endif
+			}
 			
 			#ifdef DEBUGEMU
 			printf("pre-indexed bit! ");
@@ -5499,8 +5509,6 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 		
 		//decode = DestroyableRegister6 / rd = exRegs[((arminstr>>12)&0xf)] / rn = DestroyableRegister3 / 
 		//DestroyableRegister5 = either #Imm OR register offset
-		
-		//BEGIN MODIFIED
 		
 		//2a) If register opcode?
 		if((DestroyableRegister6&0x20)==0x20){
@@ -5554,8 +5562,6 @@ switch( ((DestroyableRegister6=((arminstr>>20)&0xff)) &0x40) ){
 				}
 			}
 		}//end if register/shift opcode
-		
-		// END MODIFIED
 		
 		//2b) it's #Imm, (label) Rn or other inmediate value for STR/LDR
 		else{
