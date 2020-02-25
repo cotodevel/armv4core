@@ -142,7 +142,7 @@ u32 updatecpuflags(u8 mode ,u32 cpsr, u32 cpumode){
 				//user/sys
 				if ( ((cpumode&0x1f) == (0x10)) || ((cpumode&0x1f) == (0x1f)) ){
 					exRegs[0xd]=exRegs_r13usr[0x0]; //user SP/LR registers for cpu<mode> (user/sys is the same stacks)
-					exRegs[0xe]=exRegs_r14usr[0x0];
+					//exRegs[0xe]=exRegs_r14usr[0x0];	//LR is kept because user code -> exception -> user code
 					#ifdef DEBUGEMU
 						printf("| stacks swap to usr_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
@@ -150,7 +150,7 @@ u32 updatecpuflags(u8 mode ,u32 cpsr, u32 cpumode){
 			
 				else if((cpumode&0x1f)==0x11){
 					exRegs[0xd]=exRegs_r13fiq[0x0]; //fiq SP/LR registers for cpu<mode>
-					exRegs[0xe]=exRegs_r14fiq[0x0];
+					//exRegs[0xe]=exRegs_r14fiq[0x0];	//LR is kept because user code -> exception -> user code
 					
 					//save register r8-r12 subset before entering fiq
 					exRegs_cpubup[0x0]=exRegs[0x0 + 8];
@@ -172,7 +172,7 @@ u32 updatecpuflags(u8 mode ,u32 cpsr, u32 cpumode){
 				//irq
 				else if((cpumode&0x1f)==0x12){
 					exRegs[0xd]=exRegs_r13irq[0x0]; //irq SP/LR registers for cpu<mode>
-					exRegs[0xe]=exRegs_r14irq[0x0];
+					//exRegs[0xe]=exRegs_r14irq[0x0];	//LR is kept because user code -> exception -> user code
 					#ifdef DEBUGEMU
 						printf("| stacks swap to irq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
@@ -180,7 +180,7 @@ u32 updatecpuflags(u8 mode ,u32 cpsr, u32 cpumode){
 				//svc
 				else if((cpumode&0x1f)==0x13){
 					exRegs[0xd]=exRegs_r13svc[0x0]; //svc SP/LR registers for cpu<mode> (user/sys is the same stacks)
-					exRegs[0xe]=exRegs_r14svc[0x0];
+					//exRegs[0xe]=exRegs_r14svc[0x0];	//LR is kept because user code -> exception -> user code
 					#ifdef DEBUGEMU
 						printf("| stacks swap to svc_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
@@ -188,7 +188,7 @@ u32 updatecpuflags(u8 mode ,u32 cpsr, u32 cpumode){
 				//abort
 				else if((cpumode&0x1f)==0x17){
 					exRegs[0xd]=exRegs_r13abt[0x0]; //abt SP/LR registers for cpu<mode>
-					exRegs[0xe]=exRegs_r14abt[0x0];
+					//exRegs[0xe]=exRegs_r14abt[0x0];	//LR is kept because user code -> exception -> user code
 					#ifdef DEBUGEMU
 						printf("| stacks swap to abt_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
@@ -196,7 +196,7 @@ u32 updatecpuflags(u8 mode ,u32 cpsr, u32 cpumode){
 				//undef
 				else if((cpumode&0x1f)==0x1b){
 					exRegs[0xd]=exRegs_r13und[0x0]; //und SP/LR registers for cpu<mode>
-					exRegs[0xe]=exRegs_r14und[0x0];
+					//exRegs[0xe]=exRegs_r14und[0x0];	//LR is kept because user code -> exception -> user code
 					#ifdef DEBUGEMU
 						printf("| stacks swap to und_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs[0xd]);
 					#endif
@@ -319,6 +319,14 @@ switch(thumbinstr>>8){
 	case(0xdf):{
 	
 		//SWI #Value8 (5.17)
+		
+		//Save PC into R14, depending if THUMB or ARM mode
+		if(exRegs[0x10] & (1<<5)){
+			exRegs[0xe] = exRegs[0xf] + 2;
+		}
+		else{
+			exRegs[0xe] = exRegs[0xf] + 4;
+		}
 		
 		//save CPSR into svc SPSR 
 		saveCPSRIntoSPSR(exRegs[0x10], 0x13);
