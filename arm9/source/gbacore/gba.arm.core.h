@@ -232,7 +232,6 @@ extern int hblank_ticks;
 extern void  CPUUpdateRegister(u32 address, u16 value);
 extern void  CPUCheckDMA(int reason, int dmamask);
 extern void  doDMA(u32 * s, u32 * d, u32 si, u32 di, u32 c, int transfer32);
-extern u32 myROM[173];
 extern int romSize;
 extern int   sound_clock_ticks;
 extern int   soundtTicks;

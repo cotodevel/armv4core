@@ -850,29 +850,11 @@ int executeuntil_pc(u32 target_pc){
 void CPUInit(const char *biosFileName, bool useBiosFile,bool extram){
 	initemu();
 	
-#ifdef WORDS_BIGENDIAN
-	if(!cpuBiosSwapped) {
-		for(unsigned int i = 0; i < sizeof(myROM)/4; i++) {
-			WRITE32LE((u8*)&myROM[i], myROM[i]);
-		}
-		cpuBiosSwapped = true;
-	}
-#endif
 	gbaSaveType = 0;
 	eepromInUse = 0;
 	saveType = 0;
 	useBios = false;
   
-	/*
-	if(useBiosFile) {
-		//literally load the bios into u8* bios buffer
-	}
-	*/
-	
-	if(!useBios){
-		memcpy(bios, myROM, sizeof(myROM));
-	}
-
 	int i = 0;
 	for(i = 0; i < 256; i++) {
 		int count = 0;
