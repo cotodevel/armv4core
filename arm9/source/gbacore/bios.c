@@ -109,15 +109,11 @@ u32 bios_cpureset(){
 	exRegs_fiq[0x5] = 0;
 
 	//Set CPSR virtualized bits & perform USR/SYS CPU mode change and set stacks
-	z_flag = 0;
-	n_flag = 0;
-	v_flag = 0;
-	c_flag = 0;
 	
 	//Host  sp_svc    sp_irq    sp_sys    zerofilled area       return address
 	//GBA   3007FE0h  3007FA0h  3007F00h  [3007E00h..3007FFFh]  Flag[3007FFAh]
 	
-	u32 startCPSR = (u32)((n_flag << 31) | (z_flag << 30) | (c_flag << 29) | (v_flag << 28) | (CPUSTATE_ARM << 5) | (0x10));	//ARM Mode default + USR mode
+	u32 startCPSR = (u32)((getN_FromCPSR(exRegs[0x10]) << 31) | (getZ_FromCPSR(exRegs[0x10]) << 30) | (getC_FromCPSR(exRegs[0x10]) << 29) | (getV_FromCPSR(exRegs[0x10]) << 28) | (CPUSTATE_ARM << 5) | (0x10));	//ARM Mode default + USR mode
 	updatecpuflags(CPUFLAG_UPDATE_CPSR, startCPSR, 0x10);
 	
 																//Proper stack setup (repeat for the other modes)

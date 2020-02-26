@@ -11,14 +11,14 @@ ALU Opcodes (The ones that use the hardware barrel shifter): 75%
 	RSB/TST/CMP/etc
 
 //other conditional
-//z_flag=0;
+//getZ_FromCPSR(exRegs[0x10])=0;
 //disarmcode(0x00810002); //addeq r0,r1,r2
 //disarmcode(0x10810002); //addne r0,r1,r2
 //disarmcode(0x05910000); //ldreq r0,[r1]
 //disarmcode(0x05810000); //streq r0,[r1]
 
 //5.2 BRANCH CONDITIONAL
-//z_flag=1;
+//getZ_FromCPSR(exRegs[0x10])=1;
 //disarmcode(0x0afffffe); //beq label
 //disarmcode(0x1afffffd); //bne label
 //disarmcode(0x2afffffc); //bcs label
@@ -36,7 +36,7 @@ ALU Opcodes (The ones that use the hardware barrel shifter): 75%
 //disarmcode(0xeafffff0); //b label
 
 //5.3 BRANCH WITH LINK
-//z_flag=1;
+//getZ_FromCPSR(exRegs[0x10])=1;
 //disarmcode(0x012fff31); //blxeq r1
 //disarmcode(0x112fff31); //blxne r1
 //disarmcode(0xe12fff31); //blx r1
@@ -389,8 +389,8 @@ disarmcode(0xe93d0007);		//pop {r0,r1,r2} (writeback enabled and pre-bit enabled
 //disarmcode(0x01010090);	//swpeq r0,r0,[r1]
 
 //5.10 swi / svc call
-//z_flag=1;
-//c_flag=0;
+//getZ_FromCPSR(exRegs[0x10])=1;
+//getC_FromCPSR(exRegs[0x10])=0;
 //disarmcode(0xef000010);	    //swi 0x10
 
 //5.15 undefined

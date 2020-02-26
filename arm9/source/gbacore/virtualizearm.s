@@ -615,30 +615,6 @@ bx lr
 	
 @---------------------- CPU flags / CPSR / SPSRs -------------------------
 
-.global z_flag
-z_flag:
-	.word 0x00000000
-
-.global n_flag
-n_flag:
-	.word 0x00000000
-
-.global c_flag
-c_flag:
-	.word 0x00000000
-
-.global v_flag
-v_flag:
-	.word 0x00000000
-
-.global i_flag			@todo: I: when set, disables IRQ interrupts
-i_flag:
-	.word 0x00000000
-
-.global f_flag			@kept: F: when set, disables FIQ interrupts, but unused.
-f_flag:
-	.word 0x00000000
-	
 .global immop_arm
 immop_arm:
 	.word 0x00000000

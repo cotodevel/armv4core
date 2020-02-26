@@ -1295,7 +1295,7 @@ void  CPUUpdateRegister(u32 address, u16 value){
 		case 0x200:
 			GBAIE = (value & 0x3FFF);
 			UPDATE_REG(0x200 , GBAIE);
-			if ((GBAIME & 1) && (GBAIF & GBAIE) && (i_flag==true))
+			if ((GBAIME & 1) && (GBAIF & GBAIE) && (getI_FromCPSR(exRegs[0x10])==true))
 				cpuNextEvent = cpuTotalTicks;	//ori: cpuNextEvent = cpuTotalTicks; //acknowledge cycle & program flow
 		break;
 		case 0x202:
@@ -1340,7 +1340,7 @@ void  CPUUpdateRegister(u32 address, u16 value){
 		case 0x208:
 			GBAIME = value & 1;
 			UPDATE_REG(0x208 , GBAIME);
-			if ((GBAIME & 1) && (GBAIF & GBAIE) && (i_flag==true))
+			if ((GBAIME & 1) && (GBAIF & GBAIE) && (getI_FromCPSR(exRegs[0x10])==true))
 				cpuNextEvent = cpuTotalTicks;	//ori: cpuNextEvent = cpuTotalTicks;
 		break;
 		case 0x300:

@@ -48,15 +48,11 @@ u32 updatecpuflags(u8 mode ,u32 cpsr, u32 cpumode){
 	switch(mode){
 		case (CPUFLAG_UPDATE_ZNCV_FLAGS):
 			//1) if invoked from hardware asm function, update flags to virtual environment
-			z_flag=(lsrasm(cpsr,0x1e))&0x1;
-			n_flag=(lsrasm(cpsr,0x1f))&0x1;
-			c_flag=(lsrasm(cpsr,0x1d))&0x1;
-			v_flag=(lsrasm(cpsr,0x1c))&0x1;
-			exRegs[0x10]&=~0xF0000000;
-			exRegs[0x10]|=(n_flag<<31|z_flag<<30|c_flag<<29|v_flag<<28);
+			exRegs[0x10] &= ~( (1 << CPUFLAG_N) | (1 << CPUFLAG_Z) | (1 << CPUFLAG_C) | (1 << CPUFLAG_V) );
+			exRegs[0x10] |=( (getN_FromCPSR(cpsr) << CPUFLAG_N) | (getZ_FromCPSR(cpsr) << CPUFLAG_Z) | (getC_FromCPSR(cpsr) << CPUFLAG_C) | (getV_FromCPSR(cpsr) << CPUFLAG_V) );
 			//cpsr = latest cpsrasm from virtual asm opcode
 			//printf("(0)CPSR output: %x ",cpsr);
-			//printf("(0)cpu flags: Z[%x] N[%x] C[%x] V[%x] ",z_flag,n_flag,c_flag,v_flag);
+			//printf("(0)cpu flags: Z[%x] N[%x] C[%x] V[%x] ", getZ_FromCPSR(exRegs[0x10]), getN_FromCPSR(exRegs[0x10]), getC_FromCPSR(exRegs[0x10]), getV_FromCPSR(exRegs[0x10]));
 		break;
 		
 		case (CPUFLAG_UPDATE_CPSR):{
@@ -1317,7 +1313,7 @@ switch(thumbinstr>>8){
 	//these read NZCV VIRT FLAGS (this means opcodes like this must be called post updatecpuregs(0);
 	
 	case(0xd0):{
-		if (z_flag==1){	
+		if (getZ_FromCPSR(exRegs[0x10])==1){	
 			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
@@ -1336,7 +1332,7 @@ switch(thumbinstr>>8){
 	//b: 1101 0001 / BNE / Branch if Z clear (not equal)
 	//BNE label (5.16)
 	case(0xd1):{
-		if (z_flag==0){
+		if (getZ_FromCPSR(exRegs[0x10])==0){
 			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
@@ -1356,7 +1352,7 @@ switch(thumbinstr>>8){
 	//b: 1101 0010 / BCS / Branch if C set (unsigned higher or same)
 	//BCS label (5.16)
 	case(0xd2):{
-		if (c_flag==1){
+		if (getC_FromCPSR(exRegs[0x10])==1){
 			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
@@ -1375,7 +1371,7 @@ switch(thumbinstr>>8){
 	
 	//b: 1101 0011 / BCC / Branch if C unset (lower)
 	case(0xd3):{
-		if (c_flag==0){
+		if (getC_FromCPSR(exRegs[0x10])==0){
 			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
@@ -1394,7 +1390,7 @@ switch(thumbinstr>>8){
 	
 	//b: 1101 0100 / BMI / Branch if N set (negative)
 	case(0xd4):{
-		if (n_flag==1){
+		if (getN_FromCPSR(exRegs[0x10])==1){
 			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
@@ -1413,7 +1409,7 @@ switch(thumbinstr>>8){
 	
 	//b: 1101 0101 / BPL / Branch if N clear (positive or zero)
 	case(0xd5):{
-		if (n_flag==0){
+		if (getN_FromCPSR(exRegs[0x10])==0){
 			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
@@ -1432,7 +1428,7 @@ switch(thumbinstr>>8){
 	
 	//b: 1101 0110 / BVS / Branch if V set (overflow)
 	case(0xd6):{
-		if (v_flag==1){
+		if (getV_FromCPSR(exRegs[0x10])==1){
 			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
@@ -1451,7 +1447,7 @@ switch(thumbinstr>>8){
 	
 	//b: 1101 0111 / BVC / Branch if V unset (no overflow)
 	case(0xd7):{
-		if (v_flag==0){
+		if (getV_FromCPSR(exRegs[0x10])==0){
 			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
@@ -1470,7 +1466,7 @@ switch(thumbinstr>>8){
 	
 	//b: 1101 1000 / BHI / Branch if C set and Z clear (unsigned higher)
 	case(0xd8):{
-		if ((c_flag==1)&&(z_flag==0)){
+		if ((getC_FromCPSR(exRegs[0x10])==1)&&(getZ_FromCPSR(exRegs[0x10])==0)){
 			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
@@ -1489,7 +1485,7 @@ switch(thumbinstr>>8){
 	
 	//b: 1101 1001 / BLS / Branch if C clr or Z Set (lower or same [zero included])
 	case(0xd9):{
-		if ((c_flag==0)||(z_flag==1)){
+		if ((getC_FromCPSR(exRegs[0x10])==0)||(getZ_FromCPSR(exRegs[0x10])==1)){
 			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));	
 			
 			#ifdef DEBUGEMU
@@ -1508,7 +1504,7 @@ switch(thumbinstr>>8){
 	
 	//b: 1101 1010 / BGE / Branch if N set and V set, or N clear and V clear
 	case(0xda):{
-		if ( ((n_flag==1)&&(v_flag==1)) || ((n_flag==0)&&(v_flag==0)) ){
+		if ( ((getN_FromCPSR(exRegs[0x10])==1)&&(getV_FromCPSR(exRegs[0x10])==1)) || ((getN_FromCPSR(exRegs[0x10])==0)&&(getV_FromCPSR(exRegs[0x10])==0)) ){
 			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
@@ -1527,7 +1523,7 @@ switch(thumbinstr>>8){
 	
 	//b: 1101 1011 / BLT / Branch if N set and V clear, or N clear and V set
 	case(0xdb):{
-		if ( ((n_flag==1)&&(v_flag==0)) || ((n_flag==0)&&(v_flag==1)) ){ 
+		if ( ((getN_FromCPSR(exRegs[0x10])==1)&&(getV_FromCPSR(exRegs[0x10])==0)) || ((getN_FromCPSR(exRegs[0x10])==0)&&(getV_FromCPSR(exRegs[0x10])==1)) ){ 
 			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
@@ -1545,7 +1541,7 @@ switch(thumbinstr>>8){
 	
 	//b: 1101 1100 / BGT / Branch if Z clear, and either N set and V set or N clear and V clear
 	case(0xdc):{
-		if ( (z_flag==0) && ( ((n_flag==1)&&(v_flag==1)) || ((n_flag==0)&&(v_flag==0)) ) ){
+		if ( (getZ_FromCPSR(exRegs[0x10])==0) && ( ((getN_FromCPSR(exRegs[0x10])==1)&&(getV_FromCPSR(exRegs[0x10])==1)) || ((getN_FromCPSR(exRegs[0x10])==0)&&(getV_FromCPSR(exRegs[0x10])==0)) ) ){
 			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
@@ -1563,7 +1559,7 @@ switch(thumbinstr>>8){
 	
 	//b: 1101 1101 / BLE / Branch if Z set, or N set and V clear, or N clear and V set (less than or equal)
 	case(0xdd):{	
-		if ( ((z_flag==1) || (n_flag==1)) && ((v_flag==0) || ((n_flag==0) && (v_flag==1)) )  ){ 
+		if ( ((getZ_FromCPSR(exRegs[0x10])==1) || (getN_FromCPSR(exRegs[0x10])==1)) && ((getV_FromCPSR(exRegs[0x10])==0) || ((getN_FromCPSR(exRegs[0x10])==0) && (getV_FromCPSR(exRegs[0x10])==1)) )  ){ 
 			exRegs[0xf]=((CPUReadMemory((thumbinstr&0xff)<<1)+0x4));
 			
 			#ifdef DEBUGEMU
@@ -2251,7 +2247,7 @@ debuggeroutput();
 switch((arminstr>>28)&0xf){
 case(0):
 	//z set EQ (equ)
-	if(z_flag!=1){ //already cond_mode == negate current status (wrong)
+	if(getZ_FromCPSR(exRegs[0x10])!=1){ //already cond_mode == negate current status (wrong)
 		#ifdef DEBUGEMU
 		printf("EQ not met! ");
 		#endif
@@ -2262,7 +2258,7 @@ break;
 
 case(1):
 //z clear NE (not equ)
-	if(z_flag!=0){
+	if(getZ_FromCPSR(exRegs[0x10])!=0){
 		#ifdef DEBUGEMU
 		printf("NE not met!");
 		#endif
@@ -2272,7 +2268,7 @@ break;
 
 case(2):
 //c set CS (unsigned higher)
-	if(c_flag!=1) {
+	if(getC_FromCPSR(exRegs[0x10])!=1) {
 		#ifdef DEBUGEMU
 		printf("CS not met!");
 		#endif
@@ -2282,7 +2278,7 @@ break;
 
 case(3):
 //c clear CC (unsigned lower)
-	if(c_flag!=0){
+	if(getC_FromCPSR(exRegs[0x10])!=0){
 		#ifdef DEBUGEMU
 		printf("CC not met!");
 		#endif
@@ -2292,7 +2288,7 @@ break;
 
 case(4):
 //n set MI (negative)
-	if(n_flag!=1){
+	if(getN_FromCPSR(exRegs[0x10])!=1){
 		#ifdef DEBUGEMU
 		printf("MI not met!");
 		#endif
@@ -2302,7 +2298,7 @@ break;
 
 case(5):
 //n clear PL (positive or zero)
-	if(n_flag!=0) {
+	if(getN_FromCPSR(exRegs[0x10])!=0) {
 		#ifdef DEBUGEMU
 		printf("PL not met!");
 		#endif
@@ -2312,7 +2308,7 @@ break;
 
 case(6):
 //v set VS (overflow)
-	if(v_flag!=1) {
+	if(getV_FromCPSR(exRegs[0x10])!=1) {
 		#ifdef DEBUGEMU
 		printf("VS not met!");
 		#endif
@@ -2322,7 +2318,7 @@ break;
 
 case(7):
 //v clear VC (no overflow)
-	if(v_flag!=0){
+	if(getV_FromCPSR(exRegs[0x10])!=0){
 		#ifdef DEBUGEMU
 		printf("VC not met!");
 		#endif
@@ -2332,7 +2328,7 @@ break;
 
 case(8):
 //c set and z clear HI (unsigned higher)
-	if((c_flag!=1)&&(z_flag!=0)){
+	if((getC_FromCPSR(exRegs[0x10])!=1)&&(getZ_FromCPSR(exRegs[0x10])!=0)){
 		#ifdef DEBUGEMU
 		printf("HI not met!");
 		#endif
@@ -2342,7 +2338,7 @@ break;
 
 case(9):
 //c clear or z set LS (unsigned lower or same)
-	if((c_flag!=0)||(z_flag!=1)){
+	if((getC_FromCPSR(exRegs[0x10])!=0)||(getZ_FromCPSR(exRegs[0x10])!=1)){
 		#ifdef DEBUGEMU
 		printf("LS not met!");
 		#endif
@@ -2352,7 +2348,7 @@ break;
 
 case(0xa):
 //(n set && v set) || (n clr && v clr) GE (greater or equal)
-	if( ((n_flag!=1) && (v_flag!=1)) || ((n_flag!=0) && (v_flag!=0)) ) {
+	if( ((getN_FromCPSR(exRegs[0x10])!=1) && (getV_FromCPSR(exRegs[0x10])!=1)) || ((getN_FromCPSR(exRegs[0x10])!=0) && (getV_FromCPSR(exRegs[0x10])!=0)) ) {
 		#ifdef DEBUGEMU
 		printf("GE not met!");
 		#endif
@@ -2362,7 +2358,7 @@ break;
 
 case(0xb):
 //(n set && v clr) || (n clr && v set) LT (less than)
-	if( ((n_flag!=1) && (v_flag!=0)) || ((n_flag!=0) && (v_flag!=1)) ){
+	if( ((getN_FromCPSR(exRegs[0x10])!=1) && (getV_FromCPSR(exRegs[0x10])!=0)) || ((getN_FromCPSR(exRegs[0x10])!=0) && (getV_FromCPSR(exRegs[0x10])!=1)) ){
 		#ifdef DEBUGEMU
 		printf("LT not met!");
 		#endif
@@ -2372,7 +2368,7 @@ break;
 
 case(0xc):
 // (z clr) && ((n set && v set) || (n clr && v clr)) GT (greater than)
-if( (z_flag!=0) && ( ((n_flag!=1) && (v_flag!=1))  || ((n_flag!=0) && (v_flag!=0)) ) ) {
+if( (getZ_FromCPSR(exRegs[0x10])!=0) && ( ((getN_FromCPSR(exRegs[0x10])!=1) && (getV_FromCPSR(exRegs[0x10])!=1))  || ((getN_FromCPSR(exRegs[0x10])!=0) && (getV_FromCPSR(exRegs[0x10])!=0)) ) ) {
 	#ifdef DEBUGEMU
 	printf("CS not met!");
 	#endif
@@ -2382,7 +2378,7 @@ break;
 
 case(0xd):
 //(z set) || ((n set && v clear) || (n clr && v set)) LT (less than or equ)
-if( (z_flag!=1) || ( ((n_flag!=1) && (v_flag!=0)) || ((n_flag!=0) && (v_flag!=1)) ) ) {
+if( (getZ_FromCPSR(exRegs[0x10])!=1) || ( ((getN_FromCPSR(exRegs[0x10])!=1) && (getV_FromCPSR(exRegs[0x10])!=0)) || ((getN_FromCPSR(exRegs[0x10])!=0) && (getV_FromCPSR(exRegs[0x10])!=1)) ) ) {
 	#ifdef DEBUGEMU
 	printf("CS not met!");
 	#endif
@@ -2410,7 +2406,7 @@ switch(arminstr & 0xff000000){
 
 	//EQ equal
 	case(0x0a000000):{
-		if (z_flag==1){ 
+		if (getZ_FromCPSR(exRegs[0x10])==1){ 
 			
 			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
@@ -2436,7 +2432,7 @@ switch(arminstr & 0xff000000){
 	
 	//NE not equal
 	case(0x1a000000):
-		if (z_flag==0){ 
+		if (getZ_FromCPSR(exRegs[0x10])==0){ 
 			
 			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
@@ -2462,7 +2458,7 @@ switch(arminstr & 0xff000000){
 	
 	//CS unsigned higher or same
 	case(0x2a000000):
-		if (c_flag==1){
+		if (getC_FromCPSR(exRegs[0x10])==1){
 			
 			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
@@ -2488,7 +2484,7 @@ switch(arminstr & 0xff000000){
 	
 	//CC unsigned lower
 	case(0x3a000000):
-		if (c_flag==0){ 
+		if (getC_FromCPSR(exRegs[0x10])==0){ 
 			
 			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
@@ -2514,7 +2510,7 @@ switch(arminstr & 0xff000000){
 	
 	//MI negative
 	case(0x4a000000):
-	if (n_flag==1){ 
+	if (getN_FromCPSR(exRegs[0x10])==1){ 
 			
 			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
@@ -2540,7 +2536,7 @@ switch(arminstr & 0xff000000){
 	
 	//PL Positive or Zero
 	case(0x5a000000):
-		if (n_flag==0){ 
+		if (getN_FromCPSR(exRegs[0x10])==0){ 
 			
 			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
@@ -2566,7 +2562,7 @@ switch(arminstr & 0xff000000){
 	
 	//VS overflow
 	case(0x6a000000):
-		if (v_flag==1){
+		if (getV_FromCPSR(exRegs[0x10])==1){
 			
 			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
@@ -2592,7 +2588,7 @@ switch(arminstr & 0xff000000){
 	
 	//VC no overflow
 	case(0x7a000000):
-		if (v_flag==0){ 
+		if (getV_FromCPSR(exRegs[0x10])==0){ 
 			
 			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
@@ -2618,7 +2614,7 @@ switch(arminstr & 0xff000000){
 	
 	//HI usigned higher
 	case(0x8a000000):
-		if ( (c_flag==1) && (z_flag==0) ){
+		if ( (getC_FromCPSR(exRegs[0x10])==1) && (getZ_FromCPSR(exRegs[0x10])==0) ){
 			
 			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
@@ -2644,7 +2640,7 @@ switch(arminstr & 0xff000000){
 	
 	//LS unsigned lower or same
 	case(0x9a000000):
-		if ( (c_flag==0) || (z_flag==1) ){ 
+		if ( (getC_FromCPSR(exRegs[0x10])==0) || (getZ_FromCPSR(exRegs[0x10])==1) ){ 
 			
 			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
@@ -2670,7 +2666,7 @@ switch(arminstr & 0xff000000){
 	
 	//GE greater or equal
 	case(0xaa000000):
-		if ( ((n_flag==1) && (v_flag==1)) || ((n_flag==0) && (v_flag==0)) ){ 
+		if ( ((getN_FromCPSR(exRegs[0x10])==1) && (getV_FromCPSR(exRegs[0x10])==1)) || ((getN_FromCPSR(exRegs[0x10])==0) && (getV_FromCPSR(exRegs[0x10])==0)) ){ 
 			
 			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
@@ -2696,7 +2692,7 @@ switch(arminstr & 0xff000000){
 	
 	//LT less than
 	case(0xba000000):
-		if ( ((n_flag==1) && (v_flag==0)) || ((n_flag==0) && (v_flag==1)) ){ 
+		if ( ((getN_FromCPSR(exRegs[0x10])==1) && (getV_FromCPSR(exRegs[0x10])==0)) || ((getN_FromCPSR(exRegs[0x10])==0) && (getV_FromCPSR(exRegs[0x10])==1)) ){ 
 			
 			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
@@ -2722,7 +2718,7 @@ switch(arminstr & 0xff000000){
 	
 	//GT greather than
 	case(0xca000000):
-		if ( (z_flag==0) && (((n_flag==1) && (v_flag==1)) || ((n_flag==0) && (v_flag==0))) ){ 
+		if ( (getZ_FromCPSR(exRegs[0x10])==0) && (((getN_FromCPSR(exRegs[0x10])==1) && (getV_FromCPSR(exRegs[0x10])==1)) || ((getN_FromCPSR(exRegs[0x10])==0) && (getV_FromCPSR(exRegs[0x10])==0))) ){ 
 			
 			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 
 			//after that LDR is required (requires to be loaded on a register).
@@ -2748,9 +2744,9 @@ switch(arminstr & 0xff000000){
 	
 	//LE less than or equal
 	case(0xda000000):
-		if ( 	((z_flag==0) || ( (n_flag==1) && (v_flag==0))) 
+		if ( 	((getZ_FromCPSR(exRegs[0x10])==0) || ( (getN_FromCPSR(exRegs[0x10])==1) && (getV_FromCPSR(exRegs[0x10])==0))) 
 				||
-				((n_flag==0) && (v_flag==1) )
+				((getN_FromCPSR(exRegs[0x10])==0) && (getV_FromCPSR(exRegs[0x10])==1) )
 			){ 
 			
 			s32 s_word=(((arminstr&0xffffff)<<2)+(int)(exRegs[0xf]&0xfffffffe)); //+/- 32MB of addressing. 

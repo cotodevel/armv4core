@@ -37,6 +37,40 @@ USA
 #define CPUFLAG_UPDATE_ZNCV_FLAGS	(u8)(0)
 #define CPUFLAG_UPDATE_CPSR 		(u8)(1)
 
+#define CPUFLAG_N 		(u8)(31)
+#define CPUFLAG_Z 		(u8)(30)
+#define CPUFLAG_C 		(u8)(29)
+#define CPUFLAG_V 		(u8)(28)
+#define CPUFLAG_I 		(u8)(7)
+#define CPUFLAG_F 		(u8)(6)
+
+//(u8)(1) == set / (u8)(0) == unset
+static inline u8 getN_FromCPSR(u32 cpsr){
+	return ((cpsr >> CPUFLAG_N)&0x1);
+}
+
+static inline u8 getZ_FromCPSR(u32 cpsr){
+	return ((cpsr >> CPUFLAG_Z)&0x1);
+}
+
+static inline u8 getC_FromCPSR(u32 cpsr){
+	return ((cpsr >> CPUFLAG_C)&0x1);
+}
+
+static inline u8 getV_FromCPSR(u32 cpsr){
+	return ((cpsr >> CPUFLAG_V)&0x1);
+}
+
+//Todo: I: when set, disables IRQ interrupts
+static inline u8 getI_FromCPSR(u32 cpsr){
+	return ((cpsr >> CPUFLAG_I)&0x1);
+}
+
+//kept: F: when set, disables FIQ interrupts, but unused.
+static inline u8 getF_FromCPSR(u32 cpsr){
+	return ((cpsr >> CPUFLAG_F)&0x1);
+}
+
 #endif
 
 #ifdef __cplusplus
@@ -72,12 +106,6 @@ External Memory (Game Pak)
 
 //CPU flags will live on the DTCM , so they're accessible
 extern u32 cpsrasm;	//gba hardware cpsr from asm opcodes
-extern u8 z_flag;
-extern u8 n_flag;
-extern u8 c_flag;
-extern u8 v_flag;
-extern u8 i_flag;
-extern u8 f_flag;
 
 //inmediate flag set for ARM opcode (5.4 ARM)
 extern u8 immop_arm;
