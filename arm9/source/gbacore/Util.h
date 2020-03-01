@@ -222,8 +222,6 @@ extern u8 gbastck_svc[0x200];
 extern u8 gbastck_abt[0x200];
 extern u8 gbastck_und[0x200];
 //extern u8 gbastck_sys[0x200]; //shared with usr
-//and cpu<mode> all the other backup registers when restoring from FIQ r8-r12
-extern u32  exRegs_cpubup[0x5];
 
 //fetch
 extern u32 armnextpc(u32 address);

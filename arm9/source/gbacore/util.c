@@ -1056,9 +1056,6 @@ __attribute__((section(".dtcm"))) u8 gbastck_abt[0x200];
 __attribute__((section(".dtcm"))) u8 gbastck_und[0x200];
 //u8 __attribute__((section(".dtcm"))) gbastck_sys[0x200]; //stack shared with usr
 
-//and cpu<mode> all the other backup registers when restoring from FIQ r8-r12
-__attribute__((section(".dtcm"))) u32  exRegs_cpubup[0x5];
-
 //////////////////////////////////////////////opcodes that must be virtualized, go here.
 
 u32 __attribute__ ((hot)) gbacpu_refreshvcount(){

@@ -79,13 +79,6 @@ u32 updatecpuflags(u8 mode ,u32 cpsr, u32 cpumode){
 					exRegs_fiq[0x2] = exRegs[0x2 + 8];
 					exRegs_fiq[0x3] = exRegs[0x3 + 8];
 					exRegs_fiq[0x4] = exRegs[0x4 + 8];
-					
-					//restore 5 extra reg subset for other modes
-					exRegs[0x0 + 8]=exRegs_cpubup[0x0];
-					exRegs[0x1 + 8]=exRegs_cpubup[0x1];
-					exRegs[0x2 + 8]=exRegs_cpubup[0x2];
-					exRegs[0x3 + 8]=exRegs_cpubup[0x3];
-					exRegs[0x4 + 8]=exRegs_cpubup[0x4];
 					#ifdef DEBUGEMU
 						printf("stacks backup fiq_psr:%x:(%x)",(unsigned int)cpumode&0x1f,(unsigned int)exRegs_r13fiq[0x0]);
 					#endif
@@ -147,13 +140,6 @@ u32 updatecpuflags(u8 mode ,u32 cpsr, u32 cpumode){
 				else if((cpumode&0x1f)==0x11){
 					exRegs[0xd]=exRegs_r13fiq[0x0]; //fiq SP/LR registers for cpu<mode>
 					//exRegs[0xe]=exRegs_r14fiq[0x0];	//LR is kept because user code -> exception -> user code
-					
-					//save register r8-r12 subset before entering fiq
-					exRegs_cpubup[0x0]=exRegs[0x0 + 8];
-					exRegs_cpubup[0x1]=exRegs[0x1 + 8];
-					exRegs_cpubup[0x2]=exRegs[0x2 + 8];
-					exRegs_cpubup[0x3]=exRegs[0x3 + 8];
-					exRegs_cpubup[0x4]=exRegs[0x4 + 8];
 					
 					//restore: 5 extra regs r8-r12 for fiq restore
 					exRegs[0x0 + 8]=exRegs_fiq[0x0];
