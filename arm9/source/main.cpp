@@ -87,8 +87,8 @@ static inline void menuShow(){
 
 int main(int _argc, sint8 **_argv) {
 	/*			TGDS 1.5 Standard ARM9 Init code start	*/
-	bool project_specific_console = false;	//set default console or custom console: default console
-	GUI_init(project_specific_console);
+	bool isTGDSCustomConsole = false;	//set default console or custom console: default console
+	GUI_init(isTGDSCustomConsole);
 	GUI_clear();
 
 	sint32 fwlanguage = (sint32)getLanguage();
