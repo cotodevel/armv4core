@@ -82,6 +82,7 @@ static inline void menuShow(){
 	printf("(Start): Clear screen. ");
 	printf("(A): CPU Info. ");
 	printf("Available heap memory: %d", getMaxRam());
+	printf("ARM7 Status: %s", printf7Buffer);
 }
 
 
