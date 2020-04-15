@@ -27,6 +27,8 @@ USA
 #include "fileBrowse.h"
 #include "dswnifi_lib.h"
 #include "ipcfifoTGDSUser.h"
+#include "posixHandleTGDS.h"
+#include "TGDSMemoryAllocator.h"
 
 //disassembler (thumb)
 #include "armstorm/arm.h" //THUMB DISASSEMBLER
@@ -91,7 +93,7 @@ int main(int _argc, sint8 **_argv) {
 	bool isTGDSCustomConsole = false;	//set default console or custom console: default console
 	GUI_init(isTGDSCustomConsole);
 	GUI_clear();
-
+	setTGDSMemoryAllocator(getProjectSpecificMemoryAllocatorSetup());
 	sint32 fwlanguage = (sint32)getLanguage();
 	
 	clrscr();
