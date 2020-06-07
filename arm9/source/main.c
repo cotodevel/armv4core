@@ -30,6 +30,9 @@ USA
 #include "posixHandleTGDS.h"
 #include "TGDSMemoryAllocator.h"
 
+#include "fatfslayerTGDS.h"
+#include "utilsTGDS.h"
+
 //disassembler (thumb)
 #include "armstorm/arm.h" //THUMB DISASSEMBLER
 #include "armstorm/armstorm.h" //THUMB DISASSEMBLER
@@ -88,7 +91,7 @@ static inline void menuShow(){
 }
 
 
-int main(int _argc, sint8 **_argv) {
+int main(int argc, char argv[argvItems][MAX_TGDSFILENAME_LENGTH]) {
 	/*			TGDS 1.5 Standard ARM9 Init code start	*/
 	bool isTGDSCustomConsole = false;	//set default console or custom console: default console
 	GUI_init(isTGDSCustomConsole);
