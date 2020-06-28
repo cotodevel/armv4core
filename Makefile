@@ -161,3 +161,4 @@ rebase:
 	
 commitChanges:
 	-@git commit -a	-m '$(COMMITMSG)'
+	-@git push origin HEAD
