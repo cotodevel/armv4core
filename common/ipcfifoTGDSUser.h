@@ -22,8 +22,8 @@ USA
 //TGDS required version: IPC Version: 1.3
 
 //IPC FIFO Description: 
-//		TGDSIPC 		= 	Access to TGDS internal IPC FIFO structure. 		(ipcfifoTGDS.h)
-//		TGDSUSERIPC		=	Access to TGDS Project (User) IPC FIFO structure	(ipcfifoTGDSUser.h)
+//		getsIPCSharedTGDS() 		= 	Access to TGDS internal IPC FIFO structure. 		(ipcfifoTGDS.h)
+//		getsIPCSharedTGDSSpecific()	=	Access to TGDS Project (User) IPC FIFO structure	(ipcfifoTGDSUser.h)
 
 #ifndef __ipcfifoTGDSUser_h__
 #define __ipcfifoTGDSUser_h__
@@ -59,7 +59,6 @@ typedef struct sIPCSharedTGDSSpecific{
     int rom_size;   	//rom total size
 }  IPCSharedTGDSSpecific	__attribute__((aligned (4)));
 
-#define TGDSUSERIPC ((IPCSharedTGDSSpecific volatile *)(0x027FF000 + TGDSIPCSize))
 
 //Settings:
 
@@ -75,10 +74,10 @@ typedef struct sIPCSharedTGDSSpecific{
 //#define PREFETCH_ENABLED //Enables prefetch for the emulator. (cpu_emulate()) //if debugging or jumping to unknown areas disable this
 //#define SPINLOCK_CODE //Enables own SPINLOCK library
 
-#ifdef ARM9
-//Used by ARM9. Required internally by ARM7
-#define TGDSDLDI_ARM7_ADDRESS (u32)(0x06000000 + (112*1024))
-#endif
+//TGDS Memory Layout ARM7/ARM9 Cores
+#define TGDS_ARM7_MALLOCSTART (u32)(0x06000000)
+#define TGDS_ARM7_MALLOCSIZE (int)(112*1024)
+#define TGDSDLDI_ARM7_ADDRESS (u32)(TGDSDLDI_ARM7_MALLOCSTART + TGDSDLDI_ARM7_MALLOCSIZE)
 
 #endif
 
@@ -86,10 +85,14 @@ typedef struct sIPCSharedTGDSSpecific{
 extern "C" {
 #endif
 
-extern struct gbaheader_t gbaheader;
+extern struct sIPCSharedTGDSSpecific* getsIPCSharedTGDSSpecific();
 //NOT weak symbols : the implementation of these is project-defined (here)
 extern void HandleFifoNotEmptyWeakRef(uint32 cmd1,uint32 cmd2);
 extern void HandleFifoEmptyWeakRef(uint32 cmd1,uint32 cmd2);
+
+#ifdef ARM9
+extern struct gbaheader_t gbaheader;
+#endif
 
 #ifdef __cplusplus
 }
