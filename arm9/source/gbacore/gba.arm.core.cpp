@@ -1376,7 +1376,7 @@ u32 armnextpc(u32 address){
 
 //readjoypad
 u32 systemreadjoypad(int which){
-	u32 res = keysPressed();
+	u32 res = keysDown();
 		// disallow L+R or U+D of being pressed at the same time
 		if((res & 48) == 48)
 		res &= ~16;

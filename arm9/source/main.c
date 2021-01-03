@@ -260,25 +260,25 @@ int main(int argc, char argv[argvItems][MAX_TGDSFILENAME_LENGTH]) {
 	
 	while (1){
 		scanKeys();
-		if(keysPressed() & KEY_A){
+		if(keysDown() & KEY_A){
 			clrscr();
 			printf("     ");
 			printGBACPU();
 			scanKeys();
-			while(keysPressed() & KEY_A){
+			while(keysDown() & KEY_A){
 				scanKeys();
 			}
 		}
 		
-		if (keysPressed() & KEY_START){
+		if (keysDown() & KEY_START){
 			clrscr();
 			printf("     ");
 		}
 			
-		if(keysPressed() & KEY_SELECT){
+		if(keysDown() & KEY_SELECT){
 			cpu_fdexecute();
 			scanKeys();
-			while(keysPressed() & KEY_SELECT){
+			while(keysDown() & KEY_SELECT){
 				scanKeys();
 			}
 		}
