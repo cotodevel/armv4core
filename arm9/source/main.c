@@ -90,8 +90,15 @@ static inline void menuShow(){
 	printarm7DebugBuffer();
 }
 
+bool stopSoundStreamUser(){
+	
+}
 
-int main(int argc, char argv[argvItems][MAX_TGDSFILENAME_LENGTH]) {
+void closeSoundUser(){
+	//Stubbed. Gets called when closing an audiostream of a custom audio decoder
+}
+
+int main(int argc, char **argv) {
 	/*			TGDS 1.6 Standard ARM9 Init code start	*/
 	bool isTGDSCustomConsole = false;	//set default console or custom console: default console
 	GUI_init(isTGDSCustomConsole);

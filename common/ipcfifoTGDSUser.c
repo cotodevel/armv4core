@@ -45,7 +45,7 @@ USA
 __attribute__((section(".itcm")))
 #endif
 struct sIPCSharedTGDSSpecific* getsIPCSharedTGDSSpecific(){
-	struct sIPCSharedTGDSSpecific* sIPCSharedTGDSSpecificInst = (__attribute__((packed)) struct sIPCSharedTGDSSpecific*)(TGDSIPCUserStartAddress);
+	struct sIPCSharedTGDSSpecific* sIPCSharedTGDSSpecificInst = (struct sIPCSharedTGDSSpecific*)(TGDSIPCUserStartAddress);
 	return sIPCSharedTGDSSpecificInst;
 }
 
@@ -72,3 +72,15 @@ void HandleFifoEmptyWeakRef(uint32 cmd1,uint32 cmd2){
 }
 
 //project specific stuff
+
+#ifdef ARM9
+
+void updateStreamCustomDecoder(u32 srcFrmt){
+
+}
+
+void freeSoundCustomDecoder(u32 srcFrmt){
+
+}
+
+#endif
