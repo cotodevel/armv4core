@@ -275,7 +275,6 @@ struct gbaheader_t gbaheader;
 
 /*
 //ldr/str (inline)
-inline __attribute__((always_inline))
 u32 ldru32inlasm(u32 x1){
 u32 y1;
 __asm__ volatile(
@@ -306,7 +305,6 @@ __asm__ volatile(
 return y1;
 }
 
-inline __attribute__((always_inline))
 u8 stru8inlasm(u32 x1,u32 x2,u8 y1){
 u8 out;
 __asm__ volatile(
@@ -319,7 +317,6 @@ __asm__ volatile(
 return out;
 }
 
-inline __attribute__((always_inline))
 u16 stru16inlasm(u32 x1,u32 x2,u16 y1){
 u16 out;
 __asm__ volatile(
@@ -332,7 +329,6 @@ __asm__ volatile(
 return out;
 }
 
-inline __attribute__((always_inline))
 u32 stru32inlasm(u32 x1,u32 x2,u32 y1){
 u32 out;
 __asm__ volatile(
