@@ -98,6 +98,19 @@ void closeSoundUser(){
 	//Stubbed. Gets called when closing an audiostream of a custom audio decoder
 }
 
+//ToolchainGenericDS-LinkedModule User implementation: Vanilla TGDS Project
+char args[8][MAX_TGDSFILENAME_LENGTH];
+char *argvs[8];
+int TGDSProjectReturnFromLinkedModule(){
+	//Return from TGDS-LinkedModule? Restore services
+	u8 DSHardware = ARM7ReloadFlashSync();
+	IRQInit(DSHardware);
+	int readaArgc = getGlobalArgc();
+	char** readaArgv = getGlobalArgv();
+	return main(readaArgc, readaArgv);
+}
+
+static bool needToReload = true;
 int main(int argc, char **argv) {
 	/*			TGDS 1.6 Standard ARM9 Init code start	*/
 	bool isTGDSCustomConsole = false;	//set default console or custom console: default console
@@ -105,10 +118,6 @@ int main(int argc, char **argv) {
 	GUI_clear();
 	printf("              ");
 	printf("              ");
-	
-	bool isCustomTGDSMalloc = true;
-	setTGDSMemoryAllocator(getProjectSpecificMemoryAllocatorSetup(TGDS_ARM7_MALLOCSTART, TGDS_ARM7_MALLOCSIZE, isCustomTGDSMalloc));
-	sint32 fwlanguage = (sint32)getLanguage();
 	
 	#ifdef ARM7_DLDI
 	setDLDIARM7Address((u32 *)TGDSDLDI_ARM7_ADDRESS);	//Required by ARM7DLDI!
@@ -123,10 +132,17 @@ int main(int argc, char **argv) {
 	{
 		printf("FS Init error.");
 	}
-	switch_dswnifi_mode(dswifi_idlemode);
-	asm("mcr	p15, 0, r0, c7, c10, 4");
-	flush_icache_all();
-	flush_dcache_all();
+	if(needToReload == true){
+		bool isCustomTGDSMalloc = true;
+		setTGDSMemoryAllocator(getProjectSpecificMemoryAllocatorSetup(TGDS_ARM7_MALLOCSTART, TGDS_ARM7_MALLOCSIZE, isCustomTGDSMalloc));
+		sint32 fwlanguage = (sint32)getLanguage();
+		
+		switch_dswnifi_mode(dswifi_idlemode);
+		asm("mcr	p15, 0, r0, c7, c10, 4");
+		flush_icache_all();
+		flush_dcache_all();
+		needToReload = false;
+	}
 	/*			TGDS 1.6 Standard ARM9 Init code end	*/
 	
 	printf("Available heap memory: %d", getMaxRam());
@@ -150,6 +166,29 @@ int main(int argc, char **argv) {
 	while( ShowBrowser((char *)startPath, (char *)curChosenBrowseFile) == true ){	//as long you keep using directories ShowBrowser will be true
 		//navigating DIRs here...
 	}
+	
+	//Boot .NDS file! (homebrew only)
+	char tmpName[256];
+	char ext[256];
+	strcpy(tmpName, curChosenBrowseFile);
+	separateExtension(tmpName, ext);
+	strlwr(ext);
+	if(strncmp(ext,".nds", 4) == 0){
+		TGDSMultibootRunNDSPayload(curChosenBrowseFile);
+	}
+	else if(strncmp(ext,".bin", 4) == 0){
+		int argCount = 2;	
+		strcpy(&args[0][0], TGDSPROJECTNAME);	//Arg0: Parent TGDS Project name
+		strcpy(&args[1][0], curChosenBrowseFile);	//Arg1: self TGDS-LinkedModule filename
+		
+		int i = 0;
+		for(i = 0; i < argCount; i++){
+			argvs[i] = (char*)&args[i][0];
+		}
+		
+		TGDSProjectRunLinkedModule(curChosenBrowseFile, argCount, argvs, TGDSPROJECTNAME);
+	}
+	
 	#endif
 	
 	//show gbadata

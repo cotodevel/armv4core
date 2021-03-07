@@ -7,6 +7,8 @@
 #include "fatfslayerTGDS.h"
 #include "utilsTGDS.h"
 
+#define TGDSPROJECTNAME ((char*) "armv4core")
+
 #endif
 
 #ifdef __cplusplus
@@ -31,6 +33,8 @@ extern char biospath[MAX_TGDSFILENAME_LENGTH+1];
 extern char savepath[MAX_TGDSFILENAME_LENGTH+1];
 extern char patchpath[MAX_TGDSFILENAME_LENGTH+1];
 extern int main(int argc, char **argv);
+extern char args[8][MAX_TGDSFILENAME_LENGTH];
+extern char *argvs[8];
 
 #ifdef __cplusplus
 }
