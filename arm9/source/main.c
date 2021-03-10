@@ -105,7 +105,6 @@ int TGDSProjectReturnFromLinkedModule() __attribute__ ((optnone)) {
 	return -1;
 }
 
-static bool needToReload = true;
 int main(int argc, char **argv) {
 	/*			TGDS 1.6 Standard ARM9 Init code start	*/
 	bool isTGDSCustomConsole = false;	//set default console or custom console: default console
@@ -127,17 +126,14 @@ int main(int argc, char **argv) {
 	{
 		printf("FS Init error.");
 	}
-	if(needToReload == true){
-		bool isCustomTGDSMalloc = true;
-		setTGDSMemoryAllocator(getProjectSpecificMemoryAllocatorSetup(TGDS_ARM7_MALLOCSTART, TGDS_ARM7_MALLOCSIZE, isCustomTGDSMalloc));
-		sint32 fwlanguage = (sint32)getLanguage();
-		
-		switch_dswnifi_mode(dswifi_idlemode);
-		asm("mcr	p15, 0, r0, c7, c10, 4");
-		flush_icache_all();
-		flush_dcache_all();
-		needToReload = false;
-	}
+	bool isCustomTGDSMalloc = true;
+	setTGDSMemoryAllocator(getProjectSpecificMemoryAllocatorSetup(TGDS_ARM7_MALLOCSTART, TGDS_ARM7_MALLOCSIZE, isCustomTGDSMalloc));
+	sint32 fwlanguage = (sint32)getLanguage();
+	
+	switch_dswnifi_mode(dswifi_idlemode);
+	asm("mcr	p15, 0, r0, c7, c10, 4");
+	flush_icache_all();
+	flush_dcache_all();	
 	/*			TGDS 1.6 Standard ARM9 Init code end	*/
 	
 	printf("Available heap memory: %d", getMaxRam());
