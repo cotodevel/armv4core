@@ -110,12 +110,10 @@ int main(int argc, char **argv) {
 	bool isTGDSCustomConsole = false;	//set default console or custom console: default console
 	GUI_init(isTGDSCustomConsole);
 	GUI_clear();
-	printf("              ");
-	printf("              ");
 	
-	#ifdef ARM7_DLDI
-	setDLDIARM7Address((u32 *)TGDSDLDI_ARM7_ADDRESS);	//Required by ARM7DLDI!
-	#endif
+	bool isCustomTGDSMalloc = true;
+	setTGDSMemoryAllocator(getProjectSpecificMemoryAllocatorSetup(TGDS_ARM7_MALLOCSTART, TGDS_ARM7_MALLOCSIZE, isCustomTGDSMalloc));
+	sint32 fwlanguage = (sint32)getLanguage();
 	
 	int ret=FS_init();
 	if (ret == 0)
@@ -126,9 +124,6 @@ int main(int argc, char **argv) {
 	{
 		printf("FS Init error.");
 	}
-	bool isCustomTGDSMalloc = true;
-	setTGDSMemoryAllocator(getProjectSpecificMemoryAllocatorSetup(TGDS_ARM7_MALLOCSTART, TGDS_ARM7_MALLOCSIZE, isCustomTGDSMalloc));
-	sint32 fwlanguage = (sint32)getLanguage();
 	
 	switch_dswnifi_mode(dswifi_idlemode);
 	asm("mcr	p15, 0, r0, c7, c10, 4");
