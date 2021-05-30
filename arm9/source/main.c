@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
 	patchpath[0] = 0;
 	
 	// GBA EMU INIT
-	DisableIrq(IRQ_TIMER3);
+	irqDisable(IRQ_TIMER3);
 	
 	#ifndef ROMTEST
 	char startPath[MAX_TGDSFILENAME_LENGTH+1];
