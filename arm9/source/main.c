@@ -102,7 +102,7 @@ void closeSoundUser(){
 //ToolchainGenericDS-LinkedModule User implementation: Called if TGDS-LinkedModule fails to reload ARM9.bin from DLDI.
 char args[8][MAX_TGDSFILENAME_LENGTH];
 char *argvs[8];
-int TGDSProjectReturnFromLinkedModule() __attribute__ ((optnone)) {
+int TGDSProjectReturnFromLinkedModule() {
 	return -1;
 }
 
