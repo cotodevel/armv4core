@@ -1,5 +1,7 @@
 ![ToolchainGenericDS](img/TGDS-Logo.png)
 
+master: Development branch. Use TGDS1.64Stable: branch for stable features.
+
 This is the Toolchain Generic DS armv4core project:
 
 Compile Toolchain: To compile this project you will need to follow the steps at https://bitbucket.org/Coto88/toolchaingenericds : Then simply extract the project somewhere.
@@ -21,6 +23,11 @@ The problem: Between core 1 and core 2 there was different "GBA" systems. This w
 Merging these was the way to go, but couldn't because of the toolchain. Thus I began improving the toolchain so all critical runtime errors would be left out. And now, as of 2020, the work is done.
 Now I merged both cores (1 and 2) + brought the newest changes from gbaarmhook, and the armv4core behaves exactly as the older core (core2) which was executing gba routines and drawing basic homebrew.
 There are still some segfaults here and there, because of the new environment. Anyway... here's hoping I can implement the full ARMv4t set.
+
+/release folder has the latest binary precompiled for your convenience.
+
+Latest stable release:
+https://bitbucket.org/Coto88/armv4core/get/TGDS1.64Stable.zip
 
 Coto
 
