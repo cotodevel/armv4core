@@ -161,6 +161,11 @@ int main(int argc, char **argv) {
 	separateExtension(tmpName, ext);
 	strlwr(ext);
 	if(strncmp(ext,".nds", 4) == 0){
+		char thisArgv[3][MAX_TGDSFILENAME_LENGTH];
+		memset(thisArgv, 0, sizeof(thisArgv));
+		strcpy(&thisArgv[0][0], curChosenBrowseFile);	//Arg0:	NDS Binary loaded
+		strcpy(&thisArgv[1][0], "");				//Arg1: ARGV0
+		addARGV(2, (char*)&thisArgv);
 		TGDSMultibootRunNDSPayload(curChosenBrowseFile);
 	}
 	else if(strncmp(ext,".bin", 4) == 0){
