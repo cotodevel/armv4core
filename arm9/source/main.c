@@ -87,7 +87,6 @@ static inline void menuShow(){
 	printf("(Start): Clear screen. ");
 	printf("(A): CPU Info. ");
 	printf("Available heap memory: %d", getMaxRam());
-	printarm7DebugBuffer();
 }
 
 int internalCodecType = SRC_NONE;//Internal because WAV raw decompressed buffers are used if Uncompressed WAV or ADPCM
