@@ -87,7 +87,6 @@ static inline void menuShow(){
 	printf("(Start): Clear screen. ");
 	printf("(A): CPU Info. ");
 	printf("Available heap memory: %d", getMaxRam());
-	printarm7DebugBuffer();
 }
 
 int internalCodecType = SRC_NONE;//Internal because WAV raw decompressed buffers are used if Uncompressed WAV or ADPCM
@@ -112,10 +111,21 @@ int main(int argc, char **argv) {
 	GUI_init(isTGDSCustomConsole);
 	GUI_clear();
 	
+	//xmalloc init removes args, so save them
+	int i = 0;
+	for(i = 0; i < argc; i++){
+		argvs[i] = argv[i];
+	}
+
 	bool isCustomTGDSMalloc = true;
 	setTGDSMemoryAllocator(getProjectSpecificMemoryAllocatorSetup(TGDS_ARM7_MALLOCSTART, TGDS_ARM7_MALLOCSIZE, isCustomTGDSMalloc, TGDSDLDI_ARM7_ADDRESS));
 	sint32 fwlanguage = (sint32)getLanguage();
 	
+	//argv destroyed here because of xmalloc init, thus restore them
+	for(i = 0; i < argc; i++){
+		argv[i] = argvs[i];
+	}
+
 	int ret=FS_init();
 	if (ret == 0)
 	{
