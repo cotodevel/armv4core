@@ -27,7 +27,7 @@ There are still some segfaults here and there, because of the new environment. A
 /release folder has the latest binary precompiled for your convenience.
 
 Latest stable release:
-https://bitbucket.org/Coto88/armv4core/get/TGDS1.64Stable.zip
+https://bitbucket.org/Coto88/armv4core/get/TGDS1.65.zip
 
 Coto
 
