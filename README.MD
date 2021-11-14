@@ -1,6 +1,6 @@
 ![ToolchainGenericDS](img/TGDS-Logo.png)
 
-TGDS1.64Stable: branch for stable features.
+TGDS1.65: branch for stable features.
 
 This is the Toolchain Generic DS armv4core project:
 
