@@ -188,7 +188,7 @@ int main(int argc, char **argv) {
 			argvs[i] = (char*)&args[i][0];
 		}
 		
-		TGDSProjectRunLinkedModule(curChosenBrowseFile, argCount, argvs, TGDSPROJECTNAME);
+		TGDSProjectRunLinkedModule(curChosenBrowseFile, argCount, argvs, TGDSPROJECTNAME, 0, 0, 0, 0);
 	}
 	
 	#endif
