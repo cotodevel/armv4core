@@ -98,12 +98,8 @@ void closeSoundUser(){
 	//Stubbed. Gets called when closing an audiostream of a custom audio decoder
 }
 
-//ToolchainGenericDS-LinkedModule User implementation: Called if TGDS-LinkedModule fails to reload ARM9.bin from DLDI.
 char args[8][MAX_TGDSFILENAME_LENGTH];
 char *argvs[8];
-int TGDSProjectReturnFromLinkedModule() {
-	return -1;
-}
 
 int main(int argc, char **argv) {
 	/*			TGDS 1.6 Standard ARM9 Init code start	*/
@@ -178,19 +174,6 @@ int main(int argc, char **argv) {
 		addARGV(3, (char*)&thisArgv);
 		TGDSMultibootRunNDSPayload(curChosenBrowseFile);
 	}
-	else if(strncmp(ext,".bin", 4) == 0){
-		int argCount = 2;	
-		strcpy(&args[0][0], TGDSPROJECTNAME);	//Arg0: Parent TGDS Project name
-		strcpy(&args[1][0], curChosenBrowseFile);	//Arg1: self TGDS-LinkedModule filename
-		
-		int i = 0;
-		for(i = 0; i < argCount; i++){
-			argvs[i] = (char*)&args[i][0];
-		}
-		
-		TGDSProjectRunLinkedModule(curChosenBrowseFile, argCount, argvs, TGDSPROJECTNAME, 0, 0, 0, 0);
-	}
-	
 	#endif
 	
 	//show gbadata
