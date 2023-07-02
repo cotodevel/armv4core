@@ -7,8 +7,6 @@
 #include "fatfslayerTGDS.h"
 #include "utilsTGDS.h"
 
-#define TGDSPROJECTNAME ((char*) "armv4core")
-
 #endif
 
 #ifdef __cplusplus
