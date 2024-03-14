@@ -24,6 +24,11 @@ USA
 #include "wifi_arm7.h"
 #include "dldi.h"
 #include "ipcfifoTGDSUser.h"
+#include "loader.h"
+
+//TGDS-MB v3 bootloader
+void bootfile(){
+}
 
 //---------------------------------------------------------------------------------
 #if (defined(__GNUC__) && !defined(__clang__))
