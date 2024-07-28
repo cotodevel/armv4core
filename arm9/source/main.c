@@ -49,6 +49,15 @@ USA
 #include "arm7vram.h"
 #include "arm7vram_twl.h"
 
+u32 * getTGDSMBV3ARM7Bootloader(){
+	if(__dsimode == false){
+		return (u32*)&arm7vram[0];	
+	}
+	else{
+		return (u32*)&arm7vram_twl[0];
+	}
+}
+
 char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH+1];
 char biospath[MAX_TGDSFILENAME_LENGTH+1];
 char savepath[MAX_TGDSFILENAME_LENGTH+1];
@@ -209,8 +218,8 @@ int main(int argc, char **argv) {
 			strcpy(&thisArgv[0][0], curChosenBrowseFile);	//Arg0:	Chainload caller: TGDS-MB
 			strcpy(&thisArgv[1][0], thisTGDSProject);	//Arg1:	NDS Binary reloaded through ChainLoad
 			strcpy(&thisArgv[2][0], (char*)arg0);	//Arg2: NDS Binary reloaded through ChainLoad's ARG0
-			addARGV(newArgc, (char*)&thisArgv);				
-			if(TGDSMultibootRunNDSPayload(curChosenBrowseFile) == false){ //should never reach here, nor even return true. Should fail it returns false
+			u32 * payload = getTGDSMBV3ARM7Bootloader();		
+			if(TGDSMultibootRunNDSPayload(curChosenBrowseFile, (u8*)payload, newArgc, (char*)&thisArgv) == false){ //should never reach here, nor even return true. Should fail it returns false
 				
 			}
 		}
@@ -251,8 +260,8 @@ int main(int argc, char **argv) {
 		strcpy(&thisArgv[0][0], TGDSPROJECTNAME);	//Arg0:	This Binary loaded
 		strcpy(&thisArgv[1][0], curChosenBrowseFile);	//Arg1:	NDS Binary reloaded
 		strcpy(&thisArgv[2][0], "");					//Arg2: NDS Binary ARG0
-		addARGV(3, (char*)&thisArgv);
-		TGDSMultibootRunNDSPayload(curChosenBrowseFile);
+		u32 * payload = getTGDSMBV3ARM7Bootloader();
+		TGDSMultibootRunNDSPayload(curChosenBrowseFile, (u8*)payload, 3, (char*)&thisArgv);
 	}
 	#endif
 	
