@@ -13,6 +13,7 @@
 extern "C" {
 #endif
 
+extern u32 * getTGDSMBV3ARM7Bootloader();
 extern u32 SPswi;
 extern u32 SPirq;
 extern u32 SPusr;
