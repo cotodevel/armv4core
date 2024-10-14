@@ -13,7 +13,9 @@
 extern "C" {
 #endif
 
-extern u32 * getTGDSMBV3ARM7Bootloader();
+extern u32 * getTGDSMBV3ARM7Bootloader(); //Required by ToolchainGenericDS-multiboot v3
+extern u32 * getTGDSARM7VRAMCore();	//TGDS Project specific ARM7 VRAM Core
+
 extern u32 SPswi;
 extern u32 SPirq;
 extern u32 SPusr;
