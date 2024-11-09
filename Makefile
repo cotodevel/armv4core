@@ -19,8 +19,8 @@
 #TGDS1.6 compatible Makefile
 
 #ToolchainGenericDS specific: Use Makefiles from either TGDS, or custom
-export SOURCE_MAKEFILE7 = default
-export SOURCE_MAKEFILE9 = default
+export SOURCE_MAKEFILE7 = custom
+export SOURCE_MAKEFILE9 = custom
 
 #Shared
 ifeq ($(TGDS_ENV),windows)
@@ -63,8 +63,8 @@ export TARGET_LIBRARY_CRT0_FILE_7 = nds_arm_ld_crt0
 export TARGET_LIBRARY_CRT0_FILE_9 = nds_arm_ld_crt0
 export TARGET_LIBRARY_CRT0_FILE_COMPRESSED_9 = nds_arm_ld_crt0
 
-export TARGET_LIBRARY_LINKER_FILE_7 = $(TARGET_LIBRARY_PATH)$(TARGET_LIBRARY_LINKER_SRC)/$(TARGET_LIBRARY_CRT0_FILE_7).S
-export TARGET_LIBRARY_LINKER_FILE_9 = $(TARGET_LIBRARY_PATH)$(TARGET_LIBRARY_LINKER_SRC)/$(TARGET_LIBRARY_CRT0_FILE_9).S
+export TARGET_LIBRARY_LINKER_FILE_7 = ../$(TARGET_LIBRARY_CRT0_FILE_7).S
+export TARGET_LIBRARY_LINKER_FILE_9 = ../$(TARGET_LIBRARY_CRT0_FILE_9).S
 export TARGET_LIBRARY_LINKER_FILE_COMPRESSED_9 = ../$(DECOMPRESSOR_BOOTCODE_9)/$(TARGET_LIBRARY_CRT0_FILE_COMPRESSED_9).S
 
 export TARGET_LIBRARY_TGDS_NTR_7 = toolchaingen7
@@ -111,6 +111,8 @@ export DIRS_ARM9_SRC = data/	\
 			source/interrupts/	\
 			source/gui/	\
 			source/TGDSMemoryAllocator/	\
+			source/project/src/glm/	\
+			source/project/src/	\
 			../common/	\
 			../common/templateCode/source/	\
 			../common/templateCode/data/arm9/	
@@ -121,6 +123,8 @@ export DIRS_ARM9_HEADER = data/	\
 			source/	\
 			source/gui/	\
 			source/TGDSMemoryAllocator/	\
+			source/project/src/glm/	\
+			source/project/src/	\
 			../common/	\
 			../common/templateCode/source/	\
 			../common/templateCode/data/arm9/	\
@@ -140,13 +144,15 @@ compile	:
 	-cp	-r	$(TARGET_LIBRARY_MAKEFILES_SRC9_FPIC)	$(CURDIR)/$(PosIndCodeDIR_FILENAME)/$(DIR_ARM9)
 	-$(MAKE)	-R	-C	$(PosIndCodeDIR_FILENAME)/$(DIR_ARM9)/
 	-cp	-r	$(TARGET_LIBRARY_MAKEFILES_SRC7_NOFPIC)	$(CURDIR)/common/templateCode/stage1_7/
-	-cp	-r	$(TARGET_LIBRARY_MAKEFILES_SRC7VRAM_NOFPIC)	$(CURDIR)/$(DIR_ARM7)/Makefile
-	$(MAKE)	-R	-C	$(CURDIR)/common/templateCode/stage1_7/
 	$(MAKE)	-R	-C	$(DIR_ARM7)/
 	$(MAKE)	-R	-C	$(CURDIR)/common/templateCode/arm7bootldr/
+	$(MAKE)	-R	-C	$(CURDIR)/common/templateCode/stage1_7/
 	
 	-mv $(DIR_ARM7)/arm7vram.bin	$(DIR_ARM9)/data/arm7vram.bin
 	-mv $(DIR_ARM7)/arm7vram_twl.bin	$(DIR_ARM9)/data/arm7vram_twl.bin
+	
+	-mv $(CURDIR)/common/templateCode/stage1_7/arm7.bin		$(DIR_ARM9)/data/arm7_stage1.bin
+	-mv $(CURDIR)/common/templateCode/stage1_7/arm7_twl.bin		$(DIR_ARM9)/data/arm7_stage1_twl.bin
 	
 ifeq ($(SOURCE_MAKEFILE9),default)
 	cp	-r	$(TARGET_LIBRARY_MAKEFILES_SRC9_NOFPIC)	$(CURDIR)/$(DIR_ARM9)
@@ -154,8 +160,8 @@ endif
 	$(MAKE)	-R	-C	$(DIR_ARM9)/
 $(EXECUTABLE_FNAME)	:	compile
 	-@echo 'ndstool begin'
-	$(NDSTOOL)	-v	-c $@	-7  $(CURDIR)/common/templateCode/stage1_7/$(BINSTRIP_RULE_7)	-e7  0x02380000	-9 $(CURDIR)/arm9/$(BINSTRIP_RULE_9) -e9  0x02000800	-r9 0x02000000	-b	icon.bmp "ToolchainGenericDS SDK;$(TGDSPROJECTNAME) NDS Binary; "
-	$(NDSTOOL)	-c 	${@:.nds=.srl} -7  $(CURDIR)/common/templateCode/stage1_7/arm7_twl.bin	-e7  0x02380000	-9 $(CURDIR)/arm9/arm9_twl.bin -e9  0x02000800	-r9 0x02000000	\
+	$(NDSTOOL)	-v	-c $@	-7  $(CURDIR)/arm7/arm7.bin	-e7  0x02380000	-9 $(CURDIR)/arm9/$(BINSTRIP_RULE_9) -e9  0x02000800	-r9 0x02000000	-b	icon.bmp "ToolchainGenericDS SDK;$(TGDSPROJECTNAME) NDS Binary; "
+	$(NDSTOOL)	-c 	${@:.nds=.srl} -7  $(CURDIR)/arm7/arm7_twl.bin	-e7  0x02380000	-9 $(CURDIR)/arm9/arm9_twl.bin -e9  0x02000800	-r9 0x02000000	\
 	-g "TGDS" "NN" "NDS.TinyFB"	\
 	-z 80040000 -u 00030004 -a 00000138 \
 	-b icon.bmp "$(TGDSPROJECTNAME);$(TGDSPROJECTNAME) TWL Binary;" \
@@ -181,7 +187,7 @@ endif
 	-@rm -rf $(CURDIR)/$(PosIndCodeDIR_FILENAME)/$(DIR_ARM7)/Makefile
 	-@rm -rf $(CURDIR)/$(PosIndCodeDIR_FILENAME)/$(DIR_ARM9)/Makefile
 	-@rm -fr $(EXECUTABLE_FNAME)	$(TGDSPROJECTNAME).srl	$(CURDIR)/common/templateCode/
-	-@rm -rf $(CURDIR)/$(DIR_ARM7)/Makefile	$(DIR_ARM9)/data/arm7vram.bin	$(DIR_ARM9)/data/arm7vram_twl.bin
+	-@rm -rf $(DIR_ARM9)/data/arm7vram.bin	$(DIR_ARM9)/data/arm7vram_twl.bin	$(DIR_ARM9)/data/arm7_stage1.bin	$(DIR_ARM9)/data/arm7_stage1_twl.bin
 
 rebase:
 	git reset --hard HEAD

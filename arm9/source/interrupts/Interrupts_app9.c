@@ -28,6 +28,11 @@ USA
 #include "utilsTGDS.h"
 #include "spifwTGDS.h"
 #include "gba.arm.core.h"
+#include "videoGL.h"
+#include "videoTGDS.h"
+#include "math.h"
+#include "imagepcx.h"
+#include "keypadTGDS.h"
 
 //User Handler Definitions
 
@@ -50,6 +55,17 @@ void Timer0handlerUser(){
 }
 
 #ifdef ARM9
+__attribute__((section(".dtcm")))
+#endif
+int msCounter = 0;
+
+#ifdef ARM9
+__attribute__((section(".dtcm")))
+#endif
+bool runGameTick = false;
+
+
+#ifdef ARM9
 __attribute__((section(".itcm")))
 #endif
 void Timer1handlerUser(){
@@ -65,6 +81,11 @@ void Timer2handlerUser(){
 __attribute__((section(".itcm")))
 #endif
 void Timer3handlerUser(){
+	if(msCounter > 25){ //every 25ms scene runs
+		runGameTick = true;
+		msCounter = 0;	
+	}
+	msCounter++;
 }
 
 #ifdef ARM9

@@ -343,27 +343,6 @@ return out;
 
 */
 
-//counts leading zeroes :)
-u8 clzero(u32 var){   
-    u8 cnt=0;
-    u32 var3;
-    if (var>0xffffffff) return 0;
-   
-    var3=var; //copy
-    var=0xFFFFFFFF-var;
-    while((var>>cnt)&1){
-        cnt++;
-    }
-    if ( (((var3&0xf0000000)>>28) >0x7) && (((var3&0xff000000)>>24)<0xf)){
-        var=((var3&0xf0000000)>>28);
-        var-=8; //bit 31 can't count to zero up to this point
-            while(var&1) {
-                cnt++; var=var>>1;
-            }
-    }
-	return cnt;
-}
-
 
 // returns unary(decimal) ammount of bits using the Hamming Weight approach 
 
@@ -744,7 +723,7 @@ void initemu(){
 	map[4].mask = 0x3FF;
 	map[5].address = palram;
 	map[5].mask = 0x3FF;
-	map[6].address = vram;
+	map[6].address = gba_vram;
 	map[6].mask = 0x1FFFF;
 	map[7].address = oam;
 	map[7].mask = 0x3FF;
