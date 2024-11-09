@@ -35,10 +35,14 @@ USA
 
 #ifdef ARM7
 #include <string.h>
-
 #include "main.h"
-#include "spifwTGDS.h"
 #include "wifi_arm7.h"
+#include "spifwTGDS.h"
+
+#if defined(ARM7VRAMCUSTOMCORE)
+#include "pff.h"
+#include "ima_adpcm.h"
+#endif
 
 #endif
 
@@ -48,6 +52,11 @@ USA
 #include "main.h"
 #include "wifi_arm9.h"
 #include "dswnifi_lib.h"
+#include "soundTGDS.h"
+#include "biosTGDS.h"
+#include "dmaTGDS.h"
+#include "timerTGDS.h"
+
 #endif
 
 #ifdef ARM9
@@ -58,18 +67,44 @@ struct sIPCSharedTGDSSpecific* getsIPCSharedTGDSSpecific(){
 	return sIPCSharedTGDSSpecificInst;
 }
 
-
 #ifdef ARM9
 __attribute__((section(".itcm")))
 #endif
-void HandleFifoNotEmptyWeakRef(u32 cmd1, uint32 cmd2){	
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__ ((optnone))
+#endif
+void HandleFifoNotEmptyWeakRef(u32 cmd1, uint32 cmd2){
 	switch (cmd1) {
 		//NDS7: 
 		#ifdef ARM7
+		
+			#if defined(ARM7VRAMCUSTOMCORE)
+			case(FIFO_STOP_ARM7_VRAM_CORE):{
+				playerStopARM7();
+				uint32 * fifomsg = (uint32 *)NDS_UNCACHED_SCRATCHPAD;
+				setValueSafe(&fifomsg[34], (uint32)0);
+			}
+			break;
+			
+			case(FIFO_STOPSOUNDSTREAM_FILE):{
+				stopBGMusic7();
+			}
+			break;
+			
+			case(FIFO_PLAYSOUNDSTREAM_FILE):{
+				playSoundStreamARM7();
+			}
+			break;
+			#endif
+			
 		#endif
 		
 		//NDS9: 
 		#ifdef ARM9
+		
 		#endif
 	}
 }
@@ -83,18 +118,108 @@ void HandleFifoEmptyWeakRef(uint32 cmd1,uint32 cmd2){
 //project specific stuff
 
 #ifdef ARM9
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
 
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__ ((optnone))
+#endif
+void BgMusic(char * filename){
+	//ARM7 ADPCM playback 
+	char * filen = FS_getFileName(filename);
+	strcat(filen, ".ima");
+	u32 streamType = FIFO_PLAYSOUNDSTREAM_FILE;
+	playSoundStreamFromFile((char*)&filen[2], true, streamType);
+}
+
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
+
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__ ((optnone))
+#endif
+void BgMusicOff(){
+	SendFIFOWords(FIFO_STOPSOUNDSTREAM_FILE, 0xFF);
+}
+
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
+
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__ ((optnone))
+#endif
+void haltARM7(){
+	uint32 * fifomsg = (uint32 *)NDS_UNCACHED_SCRATCHPAD;
+	setValueSafe(&fifomsg[34], (uint32)FIFO_STOP_ARM7_VRAM_CORE);
+	SendFIFOWords(FIFO_STOP_ARM7_VRAM_CORE, 0xFF);
+	while( getValueSafe(&fifomsg[34]) == (uint32)FIFO_STOP_ARM7_VRAM_CORE){
+		swiDelay(1);
+	}
+	
+}
+
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
+
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__ ((optnone))
+#endif
 void updateStreamCustomDecoder(u32 srcFrmt){
 
 }
 
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
+
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__ ((optnone))
+#endif
 void freeSoundCustomDecoder(u32 srcFrmt){
 
 }
 
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
 #endif
 
-//Libutils setup: TGDS project doesn't use any libutils extensions.
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__ ((optnone))
+#endif
+u32 playSoundStreamFromFile(char * videoStructFDFilename, bool loop, u32 streamType){
+	struct sIPCSharedTGDSSpecific* sharedIPC = getsIPCSharedTGDSSpecific();
+	char * filename = (char*)&sharedIPC->filename[0];
+	strcpy(filename, videoStructFDFilename);
+	
+	uint32 * fifomsg = (uint32 *)NDS_UNCACHED_SCRATCHPAD;
+	setValueSafe(&fifomsg[33], (uint32)0xFFFFCCAA);
+	setValueSafe(&fifomsg[34], (uint32)loop);
+	setValueSafe(&fifomsg[35], (uint32)streamType);
+	SendFIFOWords(FIFO_PLAYSOUNDSTREAM_FILE, 0xFF);
+
+	//If audio stream track... reset everytime entirely. Otherwise for sound effects play right away
+	if(streamType != FIFO_PLAYSOUNDEFFECT_FILE){
+		while( getValueSafe(&fifomsg[33]) == (uint32)0xFFFFCCAA){
+			swiDelay(1);
+		}
+	}
+	return fifomsg[33];
+}
+
+#endif
+
+//Libutils setup: TGDS project uses WIFI, ARM7 malloc, except custom sound + bootloader.
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
+
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__ ((optnone))
+#endif
 void setupLibUtils(){
 	//libutils:
 	
@@ -114,11 +239,11 @@ void setupLibUtils(){
 	#ifdef ARM7
 	initializeLibUtils7(
 		(HandleFifoNotEmptyWeakRefLibUtils_fn)&libUtilsFIFONotEmpty, //ARM7 & ARM9
-		(wifiUpdateVBLANKARM7LibUtils_fn)&Wifi_Update, //ARM7
-		(wifiInterruptARM7LibUtils_fn)&Wifi_Interrupt,  //ARM7
-		(SoundStreamTimerHandlerARM7LibUtils_fn)&TIMER1Handler, //ARM7: void TIMER1Handler()
-		(SoundStreamStopSoundARM7LibUtils_fn)&stopSound, 	//ARM7: void stopSound()
-		(SoundStreamSetupSoundARM7LibUtils_fn)&setupSound,	//ARM7: void setupSound()
+		(wifiUpdateVBLANKARM7LibUtils_fn)&Wifi_Update, //ARM7 : Wifi7
+		(wifiInterruptARM7LibUtils_fn)&Wifi_Interrupt,  //ARM7 : Wifi7
+		NULL, //ARM7: void TIMER1Handler()	//Custom ARM7 Sound
+		NULL, 	//ARM7: void stopSound()	//Custom ARM7 Sound
+		NULL,	//ARM7: void setupSound()	//Custom ARM7 Sound
 		(initMallocARM7LibUtils_fn)&initARM7Malloc, //ARM7: void initARM7Malloc(u32 ARM7MallocStartaddress, u32 ARM7MallocSize);
 		(wifiDeinitARM7ARM9LibUtils_fn)&DeInitWIFI,  //ARM7 & ARM9: DeInitWIFI()
 		(MicInterruptARM7LibUtils_fn)&micInterrupt, //ARM7: micInterrupt()
@@ -127,3 +252,136 @@ void setupLibUtils(){
 	);
 	#endif
 }
+
+
+#ifdef ARM9
+
+//Initializes NTR/TWL hardware context for the ToolchainGenericDS ecosystem in ARM7 / ARM9 and sets the current NTR/TWL(__dsimode) mode globally.
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__ ((optnone))
+#endif
+void initHardwareCustom(u8 DSHardware) {
+//---------------------------------------------------------------------------------
+	swiDelay(15000);
+	#ifdef TWLMODE
+	u32 SCFG_EXT9 = 0x80070180; //yes, override the ones from TWL header to ensure TGDS TWL projects do work even with tampered extended headers
+	
+	//7     Revised Card Interface Circuit (0=NITRO, 1=Revised) = TWL
+	//8     Extended ARM9 Interrupts       (0=NITRO, 1=Extended) = TWL
+	//12    Extended LCD Circuit           (0=NITRO, 1=Extended) = NTR
+	//13    Extended VRAM Access           (0=NITRO, 1=Extended) = NTR
+	//14-15 Main Memory RAM Limit (0..1=4MB/DS, 2=16MB/DSi, 3=32MB/DSiDebugger) = 4MB + (2) mirrors NTR mode
+	//16    Access to New DMA Controller   (0=Disable, 1=Enable) (40041xxh) = TWL
+	
+	*(u32*)0x04004008 = SCFG_EXT9;
+	
+	int TGDSInitLoopCount = 0;
+	while( ((u32)(*(u32*)0x04004008) != SCFG_EXT9) && (DSHardware == 0x57) ) {
+		if(TGDSInitLoopCount > 1048576){
+			u8 fwNo = *(u8*)(0x027FF000 + 0x5D);
+			int stage = 5;
+			handleDSInitError(stage, (u32)fwNo);			
+		}
+		TGDSInitLoopCount++;
+	}
+	
+	setCpuClock(false);	//true: 133Mhz / false: 66Mhz (TWL Mode only)
+	#endif
+	
+	//Disable mpu
+	CP15ControlRegisterDisable(CR_M);
+	
+	//Hardware ARM9 Init
+	{	
+		register int i;
+		//clear out ARM9 DMA channels
+		for (i=0; i<4; i++) {
+			DMAXCNT(i) = 0;
+			DMAXSAD(i) = 0;
+			DMAXDAD(i) = 0;
+			TIMERXCNT(i) = 0;
+			TIMERXDATA(i) = 0;
+		}
+
+		#ifdef ARM9
+		VRAM_CR = 0x80808080;
+		VRAM_E_CR = 0x80;
+		VRAM_F_CR = 0x80;
+		VRAM_G_CR = 0x80;
+		VRAM_H_CR = 0x80;
+		VRAM_I_CR = 0x80;
+
+		// clear vram
+		uint16 * vram = (uint16 *)0x06800000;
+		memset(vram, 0, 656 * 1024);
+
+		// clear video palette
+		memset(BG_PALETTE, 0, 2048 );	//BG_PALETTE[0] = RGB15(1,1,1);
+		memset(BG_PALETTE_SUB, 0, 2048 );	//BG_PALETTE[0] = RGB15(1,1,1);
+
+		// clear video object attribution memory
+		memset(OAM, 0, 2048 );	//BG_PALETTE[0] = RGB15(1,1,1);
+		memset(OAM_SUB, 0, 2048 );	//BG_PALETTE[0] = RGB15(1,1,1);
+
+		// clear video object data memory
+		memset(SPRITE_GFX, 0, 128 * 1024 );	//BG_PALETTE[0] = RGB15(1,1,1);
+		memset(SPRITE_GFX_SUB, 0, 128 * 1024 );	//BG_PALETTE[0] = RGB15(1,1,1);
+
+		// clear main display registers
+		memset((void*)0x04000000, 0, 0x6c );	//BG_PALETTE[0] = RGB15(1,1,1);
+
+		// clear sub display registers
+		memset((void*)0x04001000, 0, 0x6c );	//BG_PALETTE[0] = RGB15(1,1,1);
+
+		// clear maths registers
+		memset((void*)0x04000280, 0, 0x40 );	//BG_PALETTE[0] = RGB15(1,1,1);
+
+		REG_DISPSTAT = 0;
+		SETDISPCNT_MAIN(0);
+		SETDISPCNT_SUB(0);
+		VRAM_A_CR = 0;
+		VRAM_B_CR = 0;
+		VRAM_C_CR = 0;
+		VRAM_D_CR = 0;
+		VRAM_E_CR = 0;
+		VRAM_F_CR = 0;
+		VRAM_G_CR = 0;
+		VRAM_H_CR = 0;
+		VRAM_I_CR = 0;
+		VRAM_CR   = 0x03000000;
+		REG_POWERCNT  = 0x820F; //NDS9 - POWCNT1 
+
+		//set WORKRAM 32K to ARM7 by default
+		WRAM_CR = WRAM_0KARM9_32KARM7;
+		
+		IRQInit(DSHardware);
+	}
+	//Enable mpu
+	CP15ControlRegisterEnable(CR_M);
+	
+	//Library init code
+	
+	//Newlib init
+	//Stream Devices Init: see devoptab_devices.c
+	//setbuf(stdin, NULL);
+	setbuf(stdout, NULL);	//iprintf directs to DS Framebuffer (printf already does that)
+	//setbuf(stderr, NULL);
+	
+	TryToDefragmentMemory();
+	
+	//Enable TSC
+	setTouchScreenEnabled(true);
+	
+	handleARM9InitSVC();
+	#endif
+	
+	savedDSHardware = (u32)DSHardware; //Global DS Firmware ARM7/ARM9
+	
+	//Shared ARM Cores
+	disableTGDSDebugging(); //Disable debugging by default
+}
+
+#endif
