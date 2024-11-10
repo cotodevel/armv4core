@@ -24,7 +24,12 @@ USA
 
 #include "InterruptsARMCores_h.h"
 #include "interrupts.h"
+#include "wifi_arm7.h"
 #include "main.h"
+
+#include "biosTGDS.h"
+#include "spiTGDS.h"
+#include "clockTGDS.h"
 
 //User Handler Definitions
 
@@ -58,7 +63,7 @@ void Timer1handlerUser(){
 __attribute__((section(".itcm")))
 #endif
 void Timer2handlerUser(){
-	
+	timerAudioCallback();
 }
 
 #ifdef ARM9

@@ -880,7 +880,7 @@ void  CPUUpdateRegister(u32 address, u16 value){
 				// display modes above 0-5 are prohibited
 				GBADISPCNT = (value & 7);
 			}
-			bool change = (0 != ((GBADISPCNT ^ value) & 0x80)); //forced vblank? (1 means delta time vram access)
+			bool change = (0 != ((GBADISPCNT ^ value) & 0x80)); //forced vblank? (1 means delta time gba_vram access)
 			bool changeBG = (0 != ((GBADISPCNT ^ value) & 0x0F00));
 			u16 changeBGon = ((~GBADISPCNT) & value) & 0x0F00; // these layers are being activated
 			
@@ -1592,7 +1592,7 @@ u32 CPUReadMemory(u32 address)
       address &= 0x17fff;
     
     //ori: 
-    value = *(u32*)((u8*)vram+address);
+    value = *(u32*)((u8*)gba_vram+address);
     
     /*
     //new: detect source gba addresses here and redirect to nds ppu engine
@@ -1829,7 +1829,7 @@ u16 CPUReadHalfWord(u32 address)
     }
     if ((address & 0x18000) == 0x18000)
       address &= 0x17fff;
-    value = *(u16*)((u8*)vram+address);
+    value = *(u16*)((u8*)gba_vram+address);
     break;
   case 7:
 #ifdef checkclearaddrrw
@@ -2019,7 +2019,7 @@ printf("r8 %02x",address);
         return 0;
     if ((address & 0x18000) == 0x18000)
       address &= 0x17fff;
-    return (u8)*(vram+address);
+    return (u8)*(gba_vram+address);
   case 7:
 #ifdef checkclearaddrrw
 	if(address > 0x07000400)goto unreadable;
@@ -2154,7 +2154,7 @@ void CPUWriteMemory(u32 address, u32 value)
     else
 #endif
     
-    *(u32*)((u8*)vram+address) = value;	
+    *(u32*)((u8*)gba_vram+address) = value;	
     break;
   case 0x07:
 #ifdef checkclearaddrrw
@@ -2277,7 +2277,7 @@ printf("w16 %04x to %08x\r",value,address);
                           value);
     else
 #endif
-    *(u16*)((u8*)vram+address) = value; 
+    *(u16*)((u8*)gba_vram+address) = value; 
     break;
   case 7:
 #ifdef BKPT_SUPPORT
@@ -2455,7 +2455,7 @@ void CPUWriteByte(u32 address, u8 b)
         cheatsWriteByte(address + 0x06000000, b);
       else
 #endif  
-        *(u16*)((u8*)vram+address) = (b << 8) | b;
+        *(u16*)((u8*)gba_vram+address) = (b << 8) | b;
     }
     break;
   case 7:

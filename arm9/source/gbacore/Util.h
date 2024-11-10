@@ -233,10 +233,9 @@ extern u16 armfetchpc_thumb(u32 address);
 extern void vblank_thread();
 extern void hblank_thread();
 extern void vcount_thread();
-
 extern u32 swi_virt(u32 swinum);
-
 extern u32 debuggeroutput();
+extern memoryMap map[256];
 
 #ifdef __cplusplus
 }

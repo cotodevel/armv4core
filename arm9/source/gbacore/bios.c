@@ -169,7 +169,7 @@ u32 bios_registerramreset(u32 flags){
 		}
 		if(flags & 0x08) {
 			// clear VRAM
-			//memset(vram, 0, 0x18000);
+			//memset(gba_vram, 0, 0x18000);
 		}
 		if(flags & 0x10) {
 			// clean OAM
