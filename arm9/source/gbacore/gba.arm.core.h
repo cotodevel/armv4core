@@ -5,22 +5,11 @@
 #include "dsregs.h"
 #include "dsregs_asm.h"
 
-//arm9 main libs
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <ctype.h>
-#include "Util.h"
-
 #define bios (u8*)(gbabios)
 #define internalRAM (u8*)(gbaintram)
 #define workRAM (u8*)(gbawram)
 #define paletteRAM (u8*)(palram)
-#define vram (u8*)(0x06200000)	//VRAM_C_0x06200000_ENGINE_B_BG;	//NDS BMP rgb15 mode + keyboard -> see TGDS gui_console_connector.c
+#define gba_vram (u8*)(0x06200000)	//VRAM_C_0x06200000_ENGINE_B_BG;	//NDS BMP rgb15 mode + keyboard -> see TGDS gui_console_connector.c
 #define oam (u8*)(gbaoam)
 
 typedef struct{
@@ -119,7 +108,6 @@ extern u32  SPSR_und[0x1];
 //  12    Keypad                         (etc.)
 //  13    Game Pak (external IRQ source) (etc.)
 
-extern memoryMap map[256];
 extern bool ioReadable[0x400];
 extern bool armIrqEnable ;
 extern u32 armNextPC ;

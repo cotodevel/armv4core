@@ -18,10 +18,35 @@ USA
 
 */
 
+#include <stdio.h>
+#include <string.h>
+#include <stdarg.h>
+#include <stdlib.h>
+
+#ifdef ARM9
+#include <ctype.h>
+#include <stdlib.h>
+#include <_ansi.h>
+#include <reent.h>
+#include "videoTGDS.h"
+#include "posixHandleTGDS.h"
+#include "consoleTGDS.h"
+#include "debugNocash.h"
 #include "main.h"
 #include "translator.h"
+#include "spitscTGDS.h"
+#include "timerTGDS.h"
 #include "keypadTGDS.h"
 #include "biosTGDS.h"
+#include "InterruptsARMCores_h.h"
+#include "interrupts.h"
+#include "ipcfifoTGDSUser.h"
+#include "loader.h"
+#include "grass_tex.h"
+#include "fish_tex.h"
+#include <ctype.h>
+#include "dswnifi_lib.h"
+#include "TGDSLogoLZSSCompressed.h"
 #include "dldi.h"
 #include "Util.h"
 #include "fileBrowse.h"
@@ -49,9 +74,9 @@ USA
 #include "arm7bootldr.h"
 #include "arm7bootldr_twl.h"
 
-//ARM7 VRAM core
-#include "arm7vram.h"
-#include "arm7vram_twl.h"
+//TGDS-MB ARM7 Stage 1
+#include "arm7_stage1.h"
+#include "arm7_stage1_twl.h"
 
 u32 * getTGDSMBV3ARM7Bootloader(){	//Required by ToolchainGenericDS-multiboot v3
 	if(__dsimode == false){
@@ -62,16 +87,16 @@ u32 * getTGDSMBV3ARM7Bootloader(){	//Required by ToolchainGenericDS-multiboot v3
 	}
 }
 
-u32 * getTGDSARM7VRAMCore(){	//TGDS Project specific ARM7 VRAM Core
+u32 * getTGDSMBV3ARM7Stage1(){	//required by TGDS-mb v3's ARM7 @ 0x03800000
 	if(__dsimode == false){
-		return (u32*)&arm7vram[0];	
+		return (u32*)&arm7_stage1[0];	
 	}
 	else{
-		return (u32*)&arm7vram_twl[0];
+		return (u32*)&arm7_stage1_twl[0];
 	}
 }
 
-char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH+1];
+char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH];
 char biospath[MAX_TGDSFILENAME_LENGTH+1];
 char savepath[MAX_TGDSFILENAME_LENGTH+1];
 char patchpath[MAX_TGDSFILENAME_LENGTH+1];
@@ -104,59 +129,72 @@ int u32count_values(u32 u32word){
 	return i;
 }
 
-static inline void menuShow(){
-	clrscr();
-	printf("     ");
-	printf("     ");
-	
-	printf("ARMV4Core: ARM7TDMI Emulator ");
-	printf("(Select): Run CPU ");
-	printf("(Start): Clear screen. ");
-	printf("(A): CPU Info. ");
-	printf("Available heap memory: %d", getMaxRam());
-}
+#ifdef __cplusplus
+extern "C"{
+#endif
 
-int internalCodecType = SRC_NONE;//Internal because WAV raw decompressed buffers are used if Uncompressed WAV or ADPCM
-bool stopSoundStreamUser(){
-	
-}
+extern int vsnprintf(char *str, size_t size, const char *format, va_list ap);
 
-void closeSoundUser(){
-	//Stubbed. Gets called when closing an audiostream of a custom audio decoder
+#ifdef __cplusplus
 }
+#endif
+
+#endif
+
+#include "Scene.h"
+
+#ifndef _MSC_VER
+					// //
+#define ARM9 1		// Enable only if not real GCC + NDS environment
+#undef _MSC_VER		// //
+#undef WIN32		// //
+#endif
+
+struct Scene scene;	/// the scene we render
 
 #if (defined(__GNUC__) && !defined(__clang__))
 __attribute__((optimize("Os")))
 #endif
+
 #if (!defined(__GNUC__) && defined(__clang__))
 __attribute__ ((optnone))
 #endif
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
+	#ifdef _MSC_VER
+	startTGDSProject(argc, argv);
+	#endif
+
+	#ifdef ARM9
 	/*			TGDS 1.6 Standard ARM9 Init code start	*/
 	//Save Stage 1: IWRAM ARM7 payload: NTR/TWL (0x03800000)
-	memcpy((void *)TGDS_MB_V3_ARM7_STAGE1_ADDR, (const void *)0x02380000, (int)(96*1024));	//
-	coherent_user_range_by_size((uint32)TGDS_MB_V3_ARM7_STAGE1_ADDR, (int)(96*1024)); //		also for TWL binaries 
+	memcpy((void *)TGDS_MB_V3_ARM7_STAGE1_ADDR, (const void *)getTGDSMBV3ARM7Stage1(), (int)(96*1024));
+	coherent_user_range_by_size((uint32)TGDS_MB_V3_ARM7_STAGE1_ADDR, (int)(96*1024));
 	
-	//Execute Stage 2: VRAM ARM7 payload: NTR/TWL (0x06000000)
-	u32 * payload = getTGDSARM7VRAMCore();
-	executeARM7Payload((u32)0x02380000, 96*1024, payload);
+	//NTR mode requires ARM7DLDI layout set up before malloc setup
+	if(__dsimode == false){
+		bool isCustomTGDSMalloc = true;
+		setTGDSMemoryAllocator(getProjectSpecificMemoryAllocatorSetup(isCustomTGDSMalloc));
+		sint32 fwlanguage = (sint32)getLanguage();
+	}
 	
-	bool isTGDSCustomConsole = false;	//set default console or custom console: default console
+	bool isTGDSCustomConsole = true;	//set default console or custom console: custom console
 	GUI_init(isTGDSCustomConsole);
 	GUI_clear();
-
-	bool isCustomTGDSMalloc = true;
-	setTGDSMemoryAllocator(getProjectSpecificMemoryAllocatorSetup(isCustomTGDSMalloc));
-	sint32 fwlanguage = (sint32)getLanguage();
-
-	bool minimumFSInitialization = false;
-	int ret=FS_init(minimumFSInitialization);
-	if (ret == 0)
-	{
-		printf("FS Init ok.");
+	
+	int ret=FS_init();
+	if (ret != 0){
+		printf("%s: FS Init error: %d >%d", TGDSPROJECTNAME, ret, TGDSPrintfColor_Red);
+		while(1==1){
+			swiDelay(1);
+		}
 	}
-	else{
-		printf("FS Init error: %d", ret);
+	
+	//TWL mode doesn't care about ARM7DLDI layout, but requires malloc to be setup after it in order to allocate 16MB of EWRAM 
+	if(__dsimode == true){
+		bool isCustomTGDSMalloc = true;
+		setTGDSMemoryAllocator(getProjectSpecificMemoryAllocatorSetup(isCustomTGDSMalloc));
+		sint32 fwlanguage = (sint32)getLanguage();		
 	}
 	
 	switch_dswnifi_mode(dswifi_idlemode);
@@ -164,9 +202,6 @@ int main(int argc, char **argv) {
 	flush_icache_all();
 	flush_dcache_all();	
 	/*			TGDS 1.6 Standard ARM9 Init code end	*/
-	
-	//Show logo
-	RenderTGDSLogoMainEngine((uint8*)&TGDSLogoLZSSCompressed[0], TGDSLogoLZSSCompressed_size);
 	
 	REG_IME = 0;
 	set0xFFFF0000FastMPUSettings();
@@ -178,13 +213,13 @@ int main(int argc, char **argv) {
 	
 	setupDisabledExceptionHandler();
 	
+	// GBA EMU INIT
 	biospath[0] = 0;
 	savepath[0] = 0;
 	patchpath[0] = 0;
-	
-	// GBA EMU INIT
 	irqDisable(IRQ_TIMER3);
-	
+	setBacklight(POWMAN_BACKLIGHT_TOP_BIT | POWMAN_BACKLIGHT_BOTTOM_BIT); //Dual3D or debug session enabled screens
+
 	#ifndef ROMTEST
 	char startPath[MAX_TGDSFILENAME_LENGTH+1];
 	strcpy(startPath,"/");
@@ -205,147 +240,356 @@ int main(int argc, char **argv) {
 	}
 	#endif
 	
-	//show gbadata
-	//printgbainfo (curChosenBrowseFile);
-
-	//debugging is enabled at startup
-	isdebugemu_defined();
-
-	/******************************************************** GBA EMU INIT CODE *********************************************************************/
-	/*				 allocate segments
-	 GBA Memory Map
-
-	General Internal Memory
-	  00000000-00003FFF   BIOS - System ROM         (16 KBytes)
-	  00004000-01FFFFFF   Not used
-	  02000000-0203FFFF   WRAM - On-board Work RAM  (256 KBytes) 2 Wait
-	  02040000-02FFFFFF   Not used
-	  03000000-03007FFF   WRAM - On-chip Work RAM   (32 KBytes)
-	  03008000-03FFFFFF   Not used
-	  04000000-040003FE   I/O Registers
-	  04000400-04FFFFFF   Not used
-	Internal Display Memory
-	  05000000-050003FF   BG/OBJ Palette RAM        (1 Kbyte)
-	  05000400-05FFFFFF   Not used
-	  06000000-06017FFF   VRAM - Video RAM          (96 KBytes)
-	  06018000-06FFFFFF   Not used
-	  07000000-070003FF   OAM - OBJ Attributes      (1 Kbyte)
-	  07000400-07FFFFFF   Not used
-	External Memory (Game Pak)
-	  08000000-09FFFFFF   Game Pak ROM/FlashROM (max 32MB) - Wait State 0
-	  0A000000-0BFFFFFF   Game Pak ROM/FlashROM (max 32MB) - Wait State 1
-	  0C000000-0DFFFFFF   Game Pak ROM/FlashROM (max 32MB) - Wait State 2
-	  0E000000-0E00FFFF   Game Pak SRAM    (max 64 KBytes) - 8bit Bus width
-	  0E010000-0FFFFFFF   Not used
-	*/
-
-	initmemory();
-	bool extram = false; //enabled for dsi
-	bool failed = !CPULoadRom(curChosenBrowseFile, extram);
-	if(failed)
-	{
-		printf("CPULoadRom: failed");
-		while(1);
+	argv[1] = (char*)0xFF; //comment out to enable video intro
+	
+	//Play game intro if coldboot
+	if(argv[1] == NULL){
+		char tmpName[256];
+		char bootldr[256];
+		
+		//Show logo
+		RenderTGDSLogoMainEngine((uint8*)&TGDSLogoLZSSCompressed[0], TGDSLogoLZSSCompressed_size);
+		strcpy(curChosenBrowseFile, videoIntro);
+	
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		char startPath[MAX_TGDSFILENAME_LENGTH+1];
+		strcpy(startPath,"/");
+		if(__dsimode == true){
+			strcpy(bootldr, "0:/ToolchainGenericDS-videoplayer.srl");
+		}
+		else{
+			strcpy(bootldr, "0:/ToolchainGenericDS-videoplayer.nds");
+		}
+		//Send args
+		int argcCount = 0;
+		argcCount++;
+		printf("[Booting... Please wait] >%d", TGDSPrintfColor_Red);
+		
+		char thisArgv[3][MAX_TGDSFILENAME_LENGTH];
+		memset(thisArgv, 0, sizeof(thisArgv));
+		strcpy(&thisArgv[0][0], TGDSPROJECTNAME);		//Arg0:	This Binary loaded
+		strcpy(&thisArgv[1][0], bootldr);				//Arg1:	NDS Binary reloaded
+		strcpy(&thisArgv[2][0], curChosenBrowseFile);	//Arg2: NDS Binary ARG0
+		u32 * payload = getTGDSMBV3ARM7Bootloader();
+		if(TGDSMultibootRunNDSPayload(bootldr, (u8*)payload, 3, (char*)&thisArgv) == false){ //should never reach here, nor even return true. Should fail it returns false
+			printf("Invalid NDS/TWL Binary >%d", TGDSPrintfColor_Yellow);
+			printf("or you are in NTR mode trying to load a TWL binary. >%d", TGDSPrintfColor_Yellow);
+			printf("or you are missing the TGDS-multiboot payload in root path. >%d", TGDSPrintfColor_Yellow);
+			printf("Press (A) to continue. >%d", TGDSPrintfColor_Yellow);
+			while(1==1){
+				scanKeys();
+				if(keysDown()&KEY_A){
+					scanKeys();
+					while(keysDown() & KEY_A){
+						scanKeys();
+					}
+					break;
+				}
+			}
+			menuShow();
+		}
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	}
-	useBios = false;
-	CPUInit(biospath, useBios,false);
-	bios_cpureset();
-	bios_registerramreset(0xFF);
 	
 	clrscr();
-	printf(" - ");
-	printf(" ARMv4 Core start.");
-	
-	/*
-	printf("R15: %x", exRegs[15]);
-	while(1==1){}
-	*/
-	
-	//old entrypoint: gba map cant reach this ... so
-	//exRegs[0xf] = (u32)&gba_setup;
-	
-	
-	#ifndef ROMTEST
-	/*
-	//
-	//Helper to implement and test ARM/THUMB full set opcodes
-	u8* gba_stack_src =(u8*)0x03000000;
-	//new
-	u32 * PATCH_BOOTCODE_PTR = (u32*)&gba_setup;
-	//required if buffer from within a destructable function
-	static u8 somebuf[32*1024];
-	u32 rom_pool_end = 0x03007f00;  //the last ARM disassembled opcode (top) from our function.
-	int PATCH_BOOTCODE_SIZE = 0;
-	PATCH_BOOTCODE_SIZE = extract_word(PATCH_BOOTCODE_PTR,(PATCH_BOOTCODE_PTR[0]),(u32*)&somebuf[0],rom_pool_end,32);
+	printf("---");
+	printf("---");
+	printf("---");
+	printf("starting TGDS Project");
 
-	//printf("payload 1st op:%x / payload size: %d ",(PATCH_BOOTCODE_PTR[0]),PATCH_BOOTCODE_SIZE);
-	nds_2_gba_copy((u8*)&somebuf[0], gba_stack_src, PATCH_BOOTCODE_SIZE*4);
+	ret = startTGDSProject(argc, argv);
 
-	//printf("gba read @ %x:%x ",(u32)(u8*)gba_src,CPUReadMemory((u32)(u8*)gba_src));
-	printf("nds payload set correctly! payload size: %d",(int)PATCH_BOOTCODE_SIZE*4);
-	
-	//int size_dumped = ram2file_nds((const char*)"fat:/armv4dump.bin",(u8*)&puzzle_original[0],puzzle_original_size);
-	*/
-	
-	//re enable when opcodes are implemented
-	#else
-		//jump to homebrew rom : But rom is mapped to 0x08000000 because branch relative precalculated offsets are from 0x08000000 base.
-		
-		//so you cant recompile payloads that use branch relocated addresses from a map different than 0x08000000 (if you plan to stream them from that map)
-		//so: rom is set at 0x08000000 and streamed instead ROP approach
-		
-		//nds_2_gba_copy(rom,gba_src,puzzle_original_size);
-		//printf("nds gba homebrew set correctly @ %x! payload size: %d",gba_src,puzzle_original_size);
-		
-	//re enable when opcodes are implemented
-	#endif
+	clrscr();
+	printf("---");
+	printf("---");
+	printf("---");
+	printf("ending TGDS Project. Halt");
+	while(1==1){
 
-	#ifdef SPINLOCK_CODE
-	//spinlock code
-
-	//spinlock_createproc(u8 process_id,u8 status,u32cback_ptr new_callback);
-	spinlock_createproc(0,0,(u32cback_ptr) vblank_thread);
-	spinlock_createproc(1,1,(u32cback_ptr) 0);
-	spinlock_createproc(2,1,(u32cback_ptr) 0);
-	spinlock_createproc(3,1,(u32cback_ptr) 0);
-	spinlock_createproc(4,1,(u32cback_ptr) 0);
-	spinlock_createproc(5,1,(u32cback_ptr) 0);
-	spinlock_createproc(6,1,(u32cback_ptr) 0);
-	spinlock_createproc(7,1,(u32cback_ptr) 0);
-	spinlock_createproc(8,1,(u32cback_ptr) 0);
-	spinlock_createproc(9,1,(u32cback_ptr) 0);
-	#endif
-	
-	
-	
-	while (1){
-		scanKeys();
-		if(keysDown() & KEY_A){
-			clrscr();
-			printf("     ");
-			printGBACPU();
-			scanKeys();
-			while(keysDown() & KEY_A){
-				scanKeys();
-			}
-		}
-		
-		if (keysDown() & KEY_START){
-			clrscr();
-			printf("     ");
-		}
-			
-		if(keysDown() & KEY_SELECT){
-			cpu_fdexecute();
-			scanKeys();
-			while(keysDown() & KEY_SELECT){
-				scanKeys();
-			}
-		}
-		
-		handleARM9SVC();	/* Do not remove, handles TGDS services */
-		IRQVBlankWait();
 	}
+	#endif
 	
 	return 0;
 }
+
+void TGDSAPPExit(u32 fn_address){
+#ifdef ARM9
+	clrscr();
+	printf("----");
+	printf("----");
+	printf("----");
+	printf("TGDSAPP:Exit(); From Addr: %x", fn_address);
+	while(1==1){
+		swiDelay(1);
+	}
+#endif
+}
+
+/// Animates the scene. This function just renders the scene every
+/// 25 milliseconds. A timer is used to give smooth animation at the
+/// same rate on differnt computers. idle function draws the scenes
+/// at way too different speeds on different computers
+void animateScene(int type)
+{
+#ifdef _MSC_VER
+	glutPostRedisplay();
+	glutTimerFunc(25, animateScene, 0);
+#endif
+}
+
+/// Handles keyboard input for normal keys
+void keyboardInput(unsigned char key, int x, int y)
+{
+	switch(key) {
+	
+		case 27:	// ESC key (Quits)
+			exit(0);
+			break;
+
+		case ' ':	// SPACE key (Toggle flat/smooth shading)
+			scene.flatShading = !scene.flatShading;
+			if (scene.flatShading) glShadeModel(GL_FLAT);
+			else glShadeModel(GL_SMOOTH);
+			break;
+
+		case 'A':
+		case 'a':
+			tiltdown(&scene.camera);
+			break;
+
+		case 'Z':
+		case 'z':
+			tiltup(&scene.camera);
+			break;
+
+		case 'W':
+		case 'w':	// toggles wireframe mode on/off
+			scene.wireMode = !scene.wireMode;
+			if (!scene.wireMode) {
+				glDisable(GL_BLEND);
+			} else {
+				glEnable(GL_BLEND);
+			}
+			break;
+
+		case 'f':
+		case 'F':{	// toggles fog on/off
+			
+		#ifdef _MSC_VER
+			if (scene.fogMode) glEnable(GL_FOG);
+			else glDisable(GL_FOG);
+		#endif
+		}break;
+
+		case '1':{	// toggles light 0 on / off
+			scene.light0On = !scene.light0On;
+			if (scene.light0On){
+				glEnable(GL_LIGHTING);
+				glEnable(GL_LIGHT0);
+			}
+			else {
+				glDisable(GL_LIGHTING);
+				glDisable(GL_LIGHT0);
+			}
+		}break;
+
+		case '2':{	// toggles light 1 on / off
+			scene.light1On = !scene.light1On;
+			if (scene.light1On){
+				glEnable(GL_LIGHTING);
+				glEnable(GL_LIGHT1);
+			}
+			else {
+				glDisable(GL_LIGHTING);
+				glDisable(GL_LIGHT1);
+			}
+		}break;
+	}
+}
+
+
+/// Processes special keyboard keys like F1, F2, etc
+void keyboardInputSpecial(int key, int x, int y){
+	switch (key){
+	
+		//WIN32 ONLY
+		#ifdef _MSC_VER
+		case GLUT_KEY_F1:{
+			
+		}break;
+		case GLUT_KEY_F2:{
+			
+		}break;
+		case GLUT_KEY_F3:{
+			
+		}break;
+		case GLUT_KEY_F4:{
+			
+		}break;
+		case GLUT_KEY_F5:{
+			
+		}break;
+		case GLUT_KEY_F6:{
+			
+		}break;
+		#endif
+
+		//WIN32 & NDS Shared
+		#ifdef _MSC_VER
+		case GLUT_KEY_LEFT:
+		#endif
+		#ifdef ARM9
+		case KEY_UP:
+		#endif
+		{
+			anticlockwise(&scene.camera);
+		}break;
+
+		#ifdef _MSC_VER
+		case GLUT_KEY_RIGHT:
+		#endif
+		#ifdef ARM9
+		case KEY_DOWN:
+		#endif
+		{
+			clockwise(&scene.camera);
+		}break;
+		#ifdef _MSC_VER
+		case GLUT_KEY_UP:
+		#endif
+		#ifdef ARM9
+		case KEY_LEFT:
+		#endif
+		{
+			inc(&scene.camera);
+		}break;
+
+		#ifdef _MSC_VER
+		case GLUT_KEY_DOWN:
+		#endif
+		#ifdef ARM9
+		case KEY_RIGHT:
+		#endif
+		{
+			dec(&scene.camera);
+		}break;
+
+		//NDS only
+		#ifdef ARM9
+		case KEY_L:{
+			keyboardInput('L', 0, 0); // toggles lighting calculations on/off
+		}break;
+
+		case KEY_A:{
+			BgMusicOff();
+			BgMusic("0:/bgm.ima"); //turn on bg music
+		}break;
+		
+		case KEY_B:{
+			BgMusicOff(); //turn off bg music
+		}break;
+		#endif
+	}
+}
+
+#ifdef _MSC_VER
+void load_image(const char* filename)
+{
+    int width, height;
+    unsigned char* image = SOIL_load_image(filename, &width, &height, 0, SOIL_LOAD_RGB);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+    SOIL_free_image_data(image);
+}
+#endif
+
+//ARM9 printf nocash debugger
+int TWLPrintf(const char *fmt, ...){
+#ifdef ARM9
+	va_list args;
+	va_start (args, fmt);
+	vsnprintf ((sint8*)ConsolePrintfBuf, 64, fmt, args);
+	va_end (args);
+	
+	nocashMessage((char*)ConsolePrintfBuf);
+#endif
+	return 0;
+}
+
+/////////////////////////////////////////////////////////// TGDS Project ARM9 specifics ///////////////////////////////////////
+#ifdef ARM9
+
+__attribute__((section(".dtcm")))
+int pendPlay = 0;
+
+/////////////////////////////////////////////////////////////////////////////////////
+
+//true: pen touch
+//false: no tsc activity
+#ifdef ARM9
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__((optnone))
+#endif
+#endif
+bool get_pen_delta( int *dx, int *dy ){
+	static int prev_pen[2] = { 0x7FFFFFFF, 0x7FFFFFFF };
+	
+	// TSC Test.
+	struct touchPosition touch;
+	XYReadScrPosUser(&touch);
+	
+	if( (touch.px == 0) && (touch.py == 0) ){
+		prev_pen[0] = prev_pen[1] = 0x7FFFFFFF;
+		*dx = *dy = 0;
+		return false;
+	}
+	else{
+		if( prev_pen[0] != 0x7FFFFFFF ){
+			*dx = (prev_pen[0] - touch.px);
+			*dy = (prev_pen[1] - touch.py);
+		}
+		prev_pen[0] = touch.px;
+		prev_pen[1] = touch.py;
+	}
+	return true;
+}
+
+void menuShow(){
+	clrscr();
+	printf(" ---- ");
+	printf(" ---- ");
+	printf(" ---- ");
+	printf("[%s] running. >%d", TGDSPROJECTNAME, TGDSPrintfColor_Yellow);
+	printf("Free Mem: %d KB >%d", ((int)TGDSARM9MallocFreeMemory()/1024), TGDSPrintfColor_Cyan);
+}
+
+//TGDS Soundstreaming API
+int internalCodecType = SRC_NONE; //Returns current sound stream format: WAV, ADPCM or NONE
+struct fd * _FileHandleVideo = NULL; 
+struct fd * _FileHandleAudio = NULL;
+
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
+
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__ ((optnone))
+#endif
+bool stopSoundStreamUser(){
+	return stopSoundStream(_FileHandleVideo, _FileHandleAudio, &internalCodecType);
+}
+
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
+
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__ ((optnone))
+#endif
+void closeSoundUser(){
+	//Stubbed. Gets called when closing an audiostream of a custom audio decoder
+}
+
+#endif
