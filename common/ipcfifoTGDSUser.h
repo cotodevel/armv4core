@@ -98,8 +98,6 @@ struct sIPCSharedTGDSSpecific {
 #ifdef ARM7
 #if defined(ARM7VRAMCUSTOMCORE)
 	extern IMA_Adpcm_Player backgroundMusicPlayer;	//Sound stream Background music Instance
-	extern IMA_Adpcm_Player SoundEffect0Player;	//Sound stream Background music Instance
-
 	extern FATFS fileHandle; //Sound stream handle
 	extern FATFS FatfsFILESoundSample0; //Sound effect handle #0
 #endif
