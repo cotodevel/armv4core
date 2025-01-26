@@ -74,6 +74,7 @@ extern void closeSoundUser();
 extern bool get_pen_delta( int *dx, int *dy );	
 extern int pendPlay;
 
+extern void onThreadOverflowUserCode(u32 * args);
 #ifdef __cplusplus
 }
 #endif

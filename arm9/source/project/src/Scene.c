@@ -236,6 +236,7 @@ __attribute__ ((optnone))
 #endif
 void drawScene(){
 	struct Scene * Inst = &scene;
+	struct task_Context * TGDSThreads = getTGDSThreadSystem();
 
 	#ifdef ARM9
 	//NDS: Dual 3D Render implementation. Must be called right before a new 3D scene is drawn
@@ -384,9 +385,9 @@ void drawScene(){
 
 	#ifdef ARM9
     glFlush();
-	handleARM9SVC();	/* Do not remove, handles TGDS services */
-    IRQVBlankWait();
-    #endif
+	bool waitForVblank = true; //Need Vblank irqs to draw OpenGL surface
+	int threadsRan = runThreads(TGDSThreads, waitForVblank);
+	#endif
 }
 
 void glut2SolidCube0_06f() {
@@ -793,7 +794,6 @@ int startTGDSProject(int argc, char *argv[])
 #if defined(ARM9)
 	BgMusicOff();
 	BgMusic("0:/bgm.ima");
-	startTimerCounter(tUnitsMilliseconds, 1);
     glMaterialShinnyness();
 	glReset(); //Depend on GX stack to render scene
 	while(1==1){

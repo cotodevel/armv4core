@@ -69,6 +69,7 @@ USA
 #include "bios.h"
 #include "TGDSLogoLZSSCompressed.h"
 #include "global_settings.h"
+#include "TGDS_threads.h"
 
 //TGDS-MB ARM7 Bootldr
 #include "arm7bootldr.h"
@@ -304,8 +305,10 @@ int main(int argc, char **argv)
 	printf("---");
 	printf("---");
 	printf("ending TGDS Project. Halt");
+	struct task_Context * TGDSThreads = getTGDSThreadSystem();
 	while(1==1){
-
+		bool waitForVblank = false;
+		int threadsRan = runThreads(TGDSThreads, waitForVblank);
 	}
 	#endif
 	
@@ -593,3 +596,66 @@ void closeSoundUser(){
 }
 
 #endif
+
+//////////////////////////////////////////////////////// Threading User code start : TGDS Project specific ////////////////////////////////////////////////////////
+//User callback when Task Overflows. Intended for debugging purposes only, as normal user code tasks won't overflow if a task is implemented properly.
+//	u32 * args = This Task context
+#if (defined(__GNUC__) && !defined(__clang__))
+__attribute__((optimize("O0")))
+#endif
+
+#if (!defined(__GNUC__) && defined(__clang__))
+__attribute__ ((optnone))
+#endif
+void onThreadOverflowUserCode(u32 * args){
+	struct task_def * thisTask = (struct task_def *)args;
+	struct task_Context * parentTaskCtx = thisTask->parentTaskCtx;	//get parent Task Context node 
+
+	char threadStatus[64];
+	switch(thisTask->taskStatus){
+		case(INVAL_THREAD):{
+			strcpy(threadStatus, "INVAL_THREAD");
+		}break;
+		
+		case(THREAD_OVERFLOW):{
+			strcpy(threadStatus, "THREAD_OVERFLOW");
+		}break;
+		
+		case(THREAD_EXECUTE_OK_WAIT_FOR_SLEEP):{
+			strcpy(threadStatus, "THREAD_EXECUTE_OK_WAIT_FOR_SLEEP");
+		}break;
+		
+		case(THREAD_EXECUTE_OK_WAKEUP_FROM_SLEEP_GO_IDLE):{
+			strcpy(threadStatus, "THREAD_EXECUTE_OK_WAKEUP_FROM_SLEEP_GO_IDLE");
+		}break;
+	}
+	
+	char debOut2[256];
+	char timerUnitsMeasurement[32];
+	if( thisTask->taskStatus == THREAD_OVERFLOW){
+		if(thisTask->timerFormat == tUnitsMilliseconds){
+			strcpy(timerUnitsMeasurement, "ms");
+		}
+		else if(thisTask->timerFormat == tUnitsMicroseconds){
+			strcpy(timerUnitsMeasurement, "us");
+		} 
+		else{
+			strcpy(timerUnitsMeasurement, "-");
+		}
+		sprintf(debOut2, "[%s]. Thread requires at least (%d) %s. ", threadStatus, thisTask->remainingThreadTime, timerUnitsMeasurement);
+	}
+	else{
+		sprintf(debOut2, "[%s]. ", threadStatus);
+	}
+	
+	int TGDSDebuggerStage = 10;
+	u8 fwNo = *(u8*)(0x027FF000 + 0x5D);
+	handleDSInitOutputMessage((char*)debOut2);
+	handleDSInitError(TGDSDebuggerStage, (u32)fwNo);
+	
+	while(1==1){
+		HaltUntilIRQ();
+	}
+}
+
+//////////////////////////////////////////////////////////////////////// Threading User code end /////////////////////////////////////////////////////////////////////////////
