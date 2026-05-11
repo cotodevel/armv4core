@@ -71,31 +71,34 @@ USA
 #include "global_settings.h"
 #include "TGDS_threads.h"
 
+//TGDS Project's ARM7 VRAM Core ARM7 @ 0x06000000
+#include "arm7vram.h"
+#include "arm7vram_twl.h"
+
+u32 * getTGDSARM7VRAMCore(){
+	if(__dsimode == false){
+		swiDecompressLZSSWram((u8*)&arm7vram[0], (u8*)TGDS_MB_V3_ARM7_SCRATCHPAD_LZSS_DECOMP_BUF);
+	}
+	else{
+		swiDecompressLZSSWram((u8*)&arm7vram_twl[0], (u8*)TGDS_MB_V3_ARM7_SCRATCHPAD_LZSS_DECOMP_BUF);
+	}
+	return (u32*)TGDS_MB_V3_ARM7_SCRATCHPAD_LZSS_DECOMP_BUF;
+}
+
 //TGDS-MB ARM7 Bootldr
 #include "arm7bootldr.h"
 #include "arm7bootldr_twl.h"
 
-//TGDS-MB ARM7 Stage 1
-#include "arm7_stage1.h"
-#include "arm7_stage1_twl.h"
-
 u32 * getTGDSMBV3ARM7Bootloader(){	//Required by ToolchainGenericDS-multiboot v3
 	if(__dsimode == false){
-		return (u32*)&arm7bootldr[0];	
+		swiDecompressLZSSWram((u8*)&arm7bootldr[0], (u8*)TGDS_MB_V3_ARM7_SCRATCHPAD_LZSS_DECOMP_BUF);	
 	}
 	else{
-		return (u32*)&arm7bootldr_twl[0];
+		swiDecompressLZSSWram((u8*)&arm7bootldr_twl[0], (u8*)TGDS_MB_V3_ARM7_SCRATCHPAD_LZSS_DECOMP_BUF);
 	}
+	return (u32*)TGDS_MB_V3_ARM7_SCRATCHPAD_LZSS_DECOMP_BUF;
 }
 
-u32 * getTGDSMBV3ARM7Stage1(){	//required by TGDS-mb v3's ARM7 @ 0x03800000
-	if(__dsimode == false){
-		return (u32*)&arm7_stage1[0];	
-	}
-	else{
-		return (u32*)&arm7_stage1_twl[0];
-	}
-}
 
 char curChosenBrowseFile[MAX_TGDSFILENAME_LENGTH];
 char biospath[MAX_TGDSFILENAME_LENGTH+1];
@@ -168,9 +171,14 @@ int main(int argc, char **argv)
 
 	#ifdef ARM9
 	/*			TGDS 1.6 Standard ARM9 Init code start	*/
+	
 	//Save Stage 1: IWRAM ARM7 payload: NTR/TWL (0x03800000)
-	memcpy((void *)TGDS_MB_V3_ARM7_STAGE1_ADDR, (const void *)getTGDSMBV3ARM7Stage1(), (int)(96*1024));
-	coherent_user_range_by_size((uint32)TGDS_MB_V3_ARM7_STAGE1_ADDR, (int)(96*1024));
+	memcpy((void *)TGDS_MB_V3_ARM7_STAGE1_ADDR, (const void *)0x02380000, (int)(96*1024));	//
+	coherent_user_range_by_size((uint32)TGDS_MB_V3_ARM7_STAGE1_ADDR, (int)(96*1024)); //		also for TWL binaries 
+	
+	//Execute Stage 2: VRAM ARM7 payload: NTR/TWL (0x06000000)
+	u32 * payload = getTGDSARM7VRAMCore();
+	executeARM7Payload((u32)0x02380000, 96*1024, payload);
 	
 	//NTR mode requires ARM7DLDI layout set up before malloc setup
 	if(__dsimode == false){
@@ -210,9 +218,8 @@ int main(int argc, char **argv)
 	if(__dsimode == true){
 		TWLSetTouchscreenTWLMode();
 	}
-	REG_IME = 1;
-	
 	setupDisabledExceptionHandler();
+	REG_IME = 1;
 	
 	// GBA EMU INIT
 	biospath[0] = 0;
@@ -231,6 +238,11 @@ int main(int argc, char **argv)
 	//Boot .NDS file! (homebrew only)
 	bool isTGDSTWLHomebrew = false;
 	if(isNTROrTWLBinary(curChosenBrowseFile, &isTGDSTWLHomebrew) != notTWLOrNTRBinary){
+		
+		//Execute Stage 1: IWRAM ARM7 payload: NTR/TWL (0x03800000)
+		payload = (u32 *)TGDS_MB_V3_ARM7_STAGE1_ADDR;
+		executeARM7Payload((u32)0x02380000, 96*1024, payload);
+
 		char thisArgv[3][MAX_TGDSFILENAME_LENGTH];
 		memset(thisArgv, 0, sizeof(thisArgv));
 		strcpy(&thisArgv[0][0], "");	//Arg0:	This Binary loaded
