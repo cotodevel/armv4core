@@ -88,10 +88,13 @@ void playSoundStreamARM7(){
 	if(streamType == FIFO_PLAYSOUNDEFFECT_FILE){
 		if (fresult != FR_OK) { 
 			//soundeffect failed to open
+			strcpy((char*)0x02000000, "ARM7 SND FAIL");
 		}
 		else{
 			//soundeffect open OK
+			strcpy((char*)0x02000000, "ARM7 SND OK");
 		}
+		while(1==1){}
 	}
 	pf_lseek(0, currentFH);
 	
